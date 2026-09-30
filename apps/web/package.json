@@ -1,0 +1,46 @@
+{
+  "name": "@template/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "check-types": "tsc --noEmit",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "5.7.1",
+    "@tanstack/react-query": "5.101.4",
+    "@template/contracts": "workspace:*",
+    "axios": "1.19.0",
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "7.84.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@template/eslint-config": "workspace:*",
+    "@template/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.3",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "24.13.3",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "9.39.1",
+    "jsdom": "30.0.1",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=24 <25"
+  }
+}

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Turborepo
+.turbo/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+coverage/
+packages/database/src/generated/prisma/
+apps/web/next-env.d.ts
+
+# Environment variables
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+*.log
+.local-emails/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
+
+# Deployment
+.vercel/
+
+# IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Local read-only implementation reference
+tas3er-pro/
+
+# Operating systems
+.DS_Store
+Thumbs.db

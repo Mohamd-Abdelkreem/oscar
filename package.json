@@ -1,0 +1,35 @@
+{
+  "name": "full-stack-boilerplate",
+  "private": true,
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "verify:build-output": "node scripts/assert-build-output.mjs",
+    "db:format": "pnpm --filter @template/database db:format",
+    "db:validate": "pnpm --filter @template/database db:validate",
+    "db:generate": "pnpm --filter @template/database db:generate",
+    "db:migrate:dev": "pnpm --filter @template/database db:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter @template/database db:migrate:deploy",
+    "db:migrate:reset": "pnpm --filter @template/database db:migrate:reset",
+    "db:push": "pnpm --filter @template/database db:push",
+    "db:studio": "pnpm --filter @template/database db:studio",
+    "db:seed": "pnpm --filter @template/database db:seed",
+    "verify": "pnpm db:format && pnpm db:validate && pnpm db:generate && pnpm format:check && pnpm lint && pnpm check-types && pnpm test && pnpm test:integration && pnpm build && pnpm verify:build-output && git diff --check",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,mdx,yml,yaml,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,mdx,yml,yaml,css}\""
+  },
+  "devDependencies": {
+    "@template/prettier-config": "workspace:*",
+    "prettier": "3.9.6",
+    "turbo": "2.10.8"
+  },
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11 <12"
+  },
+  "packageManager": "pnpm@11.17.0"
+}

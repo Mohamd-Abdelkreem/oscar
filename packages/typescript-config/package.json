@@ -1,0 +1,9 @@
+{
+  "name": "@template/typescript-config",
+  "private": true,
+  "exports": {
+    "./base.json": "./base.json",
+    "./node.json": "./node.json",
+    "./nextjs.json": "./nextjs.json"
+  }
+}

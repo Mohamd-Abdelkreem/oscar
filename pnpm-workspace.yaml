@@ -1,0 +1,24 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+overrides:
+  "ajv@^6.0.0": "6.15.0"
+  "brace-expansion@^1.0.0": "1.1.18"
+  "brace-expansion@^2.0.0": "2.1.4"
+  "flatted@^3.0.0": "3.4.4"
+  "js-yaml@^4.0.0": "4.3.1"
+  "minimatch@^3.0.0": "3.1.5"
+  "minimatch@^9.0.0": "9.0.9"
+  "picomatch@^2.0.0": "2.3.2"
+  "picomatch@^4.0.0": "4.0.5"
+  "postcss@^8.0.0": "8.5.25"
+allowBuilds:
+  "@prisma/engines": true
+  argon2: true
+  cpu-features: false
+  esbuild: false
+  prisma: true
+  protobufjs: false
+  sharp: true
+  ssh2: false
+  unrs-resolver: true
