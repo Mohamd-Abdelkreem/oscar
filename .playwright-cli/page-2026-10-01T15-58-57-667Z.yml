@@ -1,0 +1,76 @@
+- generic [active] [ref=f112e1]:
+  - button "Open Next.js Dev Tools" [ref=f112e221] [cursor=pointer]
+  - alert [ref=f112e238]: المهام اليومية
+  - generic [ref=f112e354]:
+    - generic [ref=f112e356]:
+      - banner [ref=f112e357]:
+        - generic [ref=f112e359]:
+          - heading "المهام اليومية" [level=1] [ref=f112e360]
+          - paragraph [ref=f112e361]: "نافذة التنفيذ: 12:00 - 18:00 (توقيت بغداد)"
+      - generic [ref=f112e362]:
+        - generic [ref=f112e363]:
+          - button "مهمة اليوم" [ref=f112e364] [cursor=pointer]
+          - button "سجل المهام" [ref=f112e365] [cursor=pointer]
+        - generic [ref=f112e437]:
+          - generic [ref=f112e438]:
+            - generic [ref=f112e439]:
+              - generic [ref=f112e440]:
+                - generic [ref=f112e441]: منصب S1
+                - generic [ref=f112e442]: "النافذة: 12:00 - 18:00"
+              - generic [ref=f112e443]: قيد التدقيق والمراجعة
+            - heading "مراجعة جودة محتوى وتقييم تطبيق الشريك" [level=2] [ref=f112e449]
+            - paragraph [ref=f112e450]: قم بزيارة رابط الشريك المعتمد أدناه، وإبداء الرأي الموضوعي في واجهة الاستخدام، ثم التقط لقطة شاشة تثبت تفاعلك وارفعها للمراجعة.
+            - generic [ref=f112e451]:
+              - generic [ref=f112e452]: "مكافأة إتمام المهمة:"
+              - generic [ref=f112e453]:
+                - generic [ref=f112e454]: "+2.00"
+                - generic [ref=f112e455]: USDT
+          - generic [ref=f112e456]:
+            - img "نموذج توضيحي لتنفيذ المهمة" [ref=f112e458]
+            - generic [ref=f112e459]:
+              - generic [ref=f112e460]: منصة التقييم المعتمدة أوسكار
+              - link "الانتقال لرابط الشريك" [ref=f112e461] [cursor=pointer]:
+                - /url: "#task-partner-preview"
+          - generic [ref=f112e467]:
+            - heading "خطوات التنفيذ المعتمدة:" [level=3] [ref=f112e468]
+            - list [ref=f112e469]:
+              - listitem [ref=f112e470]:
+                - generic [ref=f112e471]: "1"
+                - generic [ref=f112e472]: اضغط على زر (الانتقال لمنصة الشريك) واستعرض واجهة الاستخدام.
+              - listitem [ref=f112e473]:
+                - generic [ref=f112e474]: "2"
+                - generic [ref=f112e475]: قم بكتابة تقييم موجز لا يقل عن سطرين حول سرعة الاستجابة وسهولة الوصول.
+              - listitem [ref=f112e476]:
+                - generic [ref=f112e477]: "3"
+                - generic [ref=f112e478]: التقط لقطة شاشة شاشة واضحة (Screenshot) تظهر التقييم وحسابك.
+              - listitem [ref=f112e479]:
+                - generic [ref=f112e480]: "4"
+                - generic [ref=f112e481]: ارفع ملف لقطة الشاشة (PNG أو JPG بحد أقصى 5 ميجابايت).
+              - listitem [ref=f112e482]:
+                - generic [ref=f112e483]: "5"
+                - generic [ref=f112e484]: فعّل خيار الإقرار الإلزامي ثم اضغط (تأكيد إرسال المهمة).
+          - generic [ref=f112e525]:
+            - generic [ref=f112e526]:
+              - generic [ref=f112e527]: تم إرسال مهمة اليوم بنجاح (18:58)
+              - paragraph [ref=f112e532]: أضيفت المكافأة (2.00 USDT) إلى رصيدك وهي قيد المراجعة التدقيقية. يمكنك استبدال لقطة الشاشة أدناه في حال رغبت بتعديل التوثيق دون تغيير المكافأة.
+            - generic [ref=f112e533]:
+              - generic [ref=f112e534]: لقطة شاشة إثبات التنفيذ (Screenshot) *
+              - button "Choose File" [ref=f112e535]
+              - generic [ref=f112e536]:
+                - img "معاينة لقطة الشاشة المرفوعة" [ref=f112e537]
+                - generic [ref=f112e538]:
+                  - generic [ref=f112e539]: تم اختيار الصورة بنجاح
+                  - button "إلغاء الصورة" [ref=f112e544] [cursor=pointer]
+            - button "تحديث لقطة الشاشة المرفقة" [ref=f112e549] [cursor=pointer]
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f112e383]:
+      - generic [ref=f112e384]:
+        - link "الرئيسية" [ref=f112e385] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=f112e391] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f112e399] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f112e406] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f112e414] [cursor=pointer]:
+          - /url: /employee/account

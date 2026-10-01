@@ -1,0 +1,37 @@
+async (page) => {
+  const evidence = [];
+  const assert = (condition, message) => {if (!condition) throw new Error(message);};
+  await page.setViewportSize({width:1280,height:844});
+  await page.goto('http://localhost:3000/admin/settings/admins');
+  await page.getByRole('button',{name:'إضافة مسؤول جديد',exact:true}).click();
+  let dialog = page.getByRole('dialog',{name:'إضافة مسؤول نظام جديد'});
+  evidence.push({flow:'create admin modal focus',state:await dialog.evaluate(el=>({focusInside:el.contains(document.activeElement),overflow:document.body.style.overflow,unlabelledFields:[...el.querySelectorAll('input')].filter(input=>input.labels.length===0).length}))});
+  await dialog.getByRole('button',{name:'إلغاء',exact:true}).click();
+  await page.getByRole('button',{name:'إضافة مسؤول جديد',exact:true}).click();
+  await dialog.getByPlaceholder('مثال: حسام التميمي').fill('Audit Administrator');
+  await dialog.getByPlaceholder('admin@oscar-platform.com').fill('audit-local@example.com');
+  await dialog.getByRole('button',{name:'إنشاء الحساب',exact:true}).click();
+  const adminRow = page.getByRole('row').filter({has:page.getByText('audit-local@example.com',{exact:true})});
+  await adminRow.getByRole('button',{name:'تعديل',exact:true}).click();
+  dialog = page.getByRole('dialog',{name:'تعديل بيانات المسؤول: Audit Administrator'});
+  await dialog.locator('input[type="text"]').fill('Audit Administrator Updated');
+  await dialog.getByRole('button',{name:'حفظ التعديلات',exact:true}).click();
+  assert((await adminRow.innerText()).includes('Audit Administrator Updated'),'Admin update missing');
+  evidence.push({flow:'admin create cancel/confirm and edit',passed:true,row:await adminRow.innerText()});
+  await page.goto('http://localhost:3000/admin/finance');
+  await page.getByRole('combobox',{name:'تصفية حسب طبيعة العملية'}).click();
+  await page.getByRole('option',{name:'حجز أو فك حجز الرصيد',exact:true}).click();
+  await page.getByRole('button',{name:'تفاصيل',exact:true}).first().click();
+  dialog = page.getByRole('dialog').filter({has:page.getByRole('heading',{name:/تفاصيل العملية:/})});
+  evidence.push({flow:'neutral ledger filter and detail',text:await dialog.innerText()});
+  await dialog.getByRole('button',{name:'إغلاق',exact:true}).last().click();
+  await page.goto('http://localhost:3000/employee/packages');
+  await page.getByRole('button',{name:'تفعيل المنصب الآن',exact:true}).nth(1).click();
+  dialog = page.getByRole('dialog');
+  const packageText = await dialog.innerText();
+  assert(packageText.includes('540.00') && packageText.includes('40.00') && packageText.includes('500.00'),'Upgrade arithmetic changed');
+  evidence.push({flow:'S1 to O1 upgrade preview',passed:true,text:packageText});
+  await page.screenshot({path:'output/playwright/audit-2026-10-01/upgrade-dialog-1280.png',fullPage:true});
+  await page.getByRole('button',{name:'إغلاق النافذة',exact:true}).click();
+  return evidence;
+}

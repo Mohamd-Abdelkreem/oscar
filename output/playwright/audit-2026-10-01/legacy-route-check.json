@@ -1,0 +1,198 @@
+[
+  {
+    "route": "/auth/login",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/auth/login",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/register",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/auth/register",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/forgot-password",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/auth/forgot-password",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/reset-password",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/auth/reset-password",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/verify-email",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/auth/verify-email",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/dashboard",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/settings",
+    "width": 390,
+    "status": 200,
+    "url": "http://localhost:3000/settings",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/login",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/auth/login",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/register",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/auth/register",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/forgot-password",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/auth/forgot-password",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/reset-password",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/auth/reset-password",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/auth/verify-email",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/auth/verify-email",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/dashboard",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  },
+  {
+    "route": "/settings",
+    "width": 1440,
+    "status": 200,
+    "url": "http://localhost:3000/settings",
+    "text": "Unable to reach the server. Check your connection and try again.\n\nRetry",
+    "errors": [],
+    "failedRequests": [
+      {
+        "url": "http://localhost:4000/api/v1/auth/refresh",
+        "reason": "net::ERR_CONNECTION_REFUSED"
+      }
+    ]
+  }
+]

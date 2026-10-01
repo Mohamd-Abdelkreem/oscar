@@ -1,0 +1,37 @@
+- generic [active] [ref=f112e1]:
+  - button "Open Next.js Dev Tools" [ref=f112e221] [cursor=pointer]
+  - alert [ref=f112e238]: جارٍ تحميل أوسكار...
+  - generic [ref=f112e354]:
+    - generic [ref=f112e356]:
+      - banner [ref=f112e357]:
+        - generic [ref=f112e359]:
+          - heading "المهام اليومية" [level=1] [ref=f112e360]
+          - paragraph [ref=f112e361]: "نافذة التنفيذ: 12:00 - 18:00 (توقيت بغداد)"
+      - generic [ref=f112e362]:
+        - generic [ref=f112e363]:
+          - button "مهمة اليوم" [ref=f112e364] [cursor=pointer]
+          - button "سجل المهام" [ref=f112e365] [cursor=pointer]
+        - generic [ref=f112e366]:
+          - generic [ref=f112e372]:
+            - heading "رمز فتح المهمة" [level=3] [ref=f112e373]
+            - paragraph [ref=f112e374]: أدخل الرمز المخصص لمهمة اليوم للوصول إلى تفاصيل المهمة ورفع لقطة الشاشة
+          - generic [ref=f112e375]:
+            - generic [ref=f112e376]:
+              - generic [ref=f112e377] [cursor=pointer]: رمز فتح المهمة
+              - textbox "رمز فتح المهمة" [ref=f112e379]:
+                - /placeholder: "مثال: OSCAR-TASK-2026"
+              - paragraph [ref=f112e380]: أدخل الرمز المخصص لمهمة اليوم
+            - button "فتح المهمة" [disabled] [ref=f112e381]
+            - generic [ref=f112e382]: "رمز المعاينة التجريبي اليوم: OSCAR-TASK-2026"
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f112e383]:
+      - generic [ref=f112e384]:
+        - link "الرئيسية" [ref=f112e385] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=f112e391] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f112e399] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f112e406] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f112e414] [cursor=pointer]:
+          - /url: /employee/account

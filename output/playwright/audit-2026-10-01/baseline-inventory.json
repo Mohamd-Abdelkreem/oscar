@@ -1,0 +1,1967 @@
+﻿[
+    {
+        "path":  "scripts\\assert-build-output.mjs",
+        "lines":  62,
+        "sha256":  "E05F462760EF8E29736DFA4E06E5006EF1C6525998BC68CF1012CC97B8180D71"
+    },
+    {
+        "path":  "packages\\contracts\\eslint.config.mjs",
+        "lines":  6,
+        "sha256":  "F15931E0DD8ABAB7B9E190866C16F133B298B35066865C309F7DE53DAEE77CC8"
+    },
+    {
+        "path":  "packages\\typescript-config\\package.json",
+        "lines":  9,
+        "sha256":  "2F9AA42A778BB9E2594871CD4A93131770FEC0A1BB565628527E40084A8D23C0"
+    },
+    {
+        "path":  "packages\\typescript-config\\node.json",
+        "lines":  12,
+        "sha256":  "E475B2A5F1C4B2E78BCD36ADFBEF2D2892763D7A71327564E33296817561A406"
+    },
+    {
+        "path":  "packages\\typescript-config\\nextjs.json",
+        "lines":  14,
+        "sha256":  "19816A995518A4DE5CE41BE292F9CFA856BFF992C7DC735367976607A16E25BB"
+    },
+    {
+        "path":  "packages\\typescript-config\\base.json",
+        "lines":  23,
+        "sha256":  "A580864A20F5A43F046C61508963DDCBF00F0BF145D91F4E1662EDCD5476805F"
+    },
+    {
+        "path":  "apps\\web\\AGENTS.md",
+        "lines":  5,
+        "sha256":  "E3447D84251880FB34CFAE09131CB4C57471529BBFE60976A3245793CF621627"
+    },
+    {
+        "path":  "apps\\web\\.env.example",
+        "lines":  1,
+        "sha256":  "D06D873243B7F57193F95AB55FE8F8319980A62A35845D9AEA76EB99894D8D90"
+    },
+    {
+        "path":  "apps\\web\\CLAUDE.md",
+        "lines":  1,
+        "sha256":  "336CC4FBF19BEAADA7CCF9986414FA91851A8D7A07DFB3CCBE800A69EED0AB49"
+    },
+    {
+        "path":  "packages\\contracts\\vitest.config.ts",
+        "lines":  9,
+        "sha256":  "A6947FE922D57C4AFDD0950E12B729078FD4B092339FE7B899CCC5B458124512"
+    },
+    {
+        "path":  "packages\\contracts\\tsconfig.json",
+        "lines":  10,
+        "sha256":  "37D8FD80ADEF8016455B2BB558C1D71CC58DD60D59B49A703CB09B9DB880EB0B"
+    },
+    {
+        "path":  "packages\\contracts\\tsconfig.build.json",
+        "lines":  21,
+        "sha256":  "20DEE2A5AF070FBB5EC1963AE26669B221318FE5E1DBCDBB6BD904EF39FE8DB2"
+    },
+    {
+        "path":  "packages\\contracts\\package.json",
+        "lines":  37,
+        "sha256":  "C691CFF7C81728000C0D835DBD31AEC4814333B9091A80A27EA27D0F0D71BD2A"
+    },
+    {
+        "path":  "apps\\web\\eslint.config.mjs",
+        "lines":  6,
+        "sha256":  "F58F76B5D0EBE2C90266A234031FC3BFAC5760668FE75F8F410668E0A48AA222"
+    },
+    {
+        "path":  "packages\\eslint-config\\README.md",
+        "lines":  5,
+        "sha256":  "0377A1AA66E95BCA591E3C261B26678898DC372A339E207C482BF70FC3307FA8"
+    },
+    {
+        "path":  "packages\\eslint-config\\package.json",
+        "lines":  23,
+        "sha256":  "6D86E53965E182B325CDBCB7AA9B4054E23E7F9FB820DCE7AB2BDEEB4609D16B"
+    },
+    {
+        "path":  "packages\\eslint-config\\node.mjs",
+        "lines":  11,
+        "sha256":  "3F62DF49B34F152E7812AF6C184EAA8293E03E9D641D0F6FB6220000E6FB618A"
+    },
+    {
+        "path":  "packages\\eslint-config\\next.mjs",
+        "lines":  19,
+        "sha256":  "5D37E51E5840F74F91FAB9CE7EC3B5545565E8248E119E1F586C0D7EAA2175BE"
+    },
+    {
+        "path":  "packages\\eslint-config\\base.mjs",
+        "lines":  58,
+        "sha256":  "1ACC3E636A493EEDAF58878792BB3329692652FCF0C92674B5152B42AAD2C24F"
+    },
+    {
+        "path":  "packages\\database\\eslint.config.mjs",
+        "lines":  11,
+        "sha256":  "EFE4B9196D90D5896C394CF55B0593820B305B802D6D30535E6A161DB530A4AD"
+    },
+    {
+        "path":  "packages\\prettier-config\\index.mjs",
+        "lines":  13,
+        "sha256":  "D57FBEEF77E4F2674DF086A9CCF66E550ECD9D4BF507357A637D12E69F363FEC"
+    },
+    {
+        "path":  "packages\\contracts\\src\\index.ts",
+        "lines":  51,
+        "sha256":  "AB58F403A39B5F00958547F5D31854DAB4899EFC4E742AFA3923C20BE6740ED9"
+    },
+    {
+        "path":  "apps\\web\\vitest.config.ts",
+        "lines":  18,
+        "sha256":  "1FDDAAC3B2BBC59235C452D511E8503C470D81A3E6F14FEB39858E028F7DF44B"
+    },
+    {
+        "path":  "apps\\web\\tsconfig.json",
+        "lines":  18,
+        "sha256":  "595E2B62CAA17A6379083C641C1DD72592620AAC52B49D701848C34FF0FBF409"
+    },
+    {
+        "path":  "packages\\prettier-config\\package.json",
+        "lines":  12,
+        "sha256":  "00CD663E111BB74A961F7A2B90D4E23CAD6D2D0D46237E6F55395BC1DCE9D8D0"
+    },
+    {
+        "path":  "packages\\contracts\\src\\http\\http.schema.ts",
+        "lines":  88,
+        "sha256":  "660186EF92F6A15322CB99354D4E1828F5413D41945970314499AA7CF63922F3"
+    },
+    {
+        "path":  "packages\\contracts\\src\\http\\http.schema.test.ts",
+        "lines":  83,
+        "sha256":  "C59A902D67C1982D5F4DB6B8FC2D7F84EB6280ACED7E0C7F6283051ECC86D6C3"
+    },
+    {
+        "path":  "apps\\api\\package.json",
+        "lines":  60,
+        "sha256":  "B699E898DE457B93AA363AF333FDF6E6307DCD79FFCB102F9331EC57F1150F54"
+    },
+    {
+        "path":  "apps\\api\\eslint.config.mjs",
+        "lines":  10,
+        "sha256":  "F3F904CEAD635F9EB57D3ABDD42DACDE225273159A105FBA04EDB6EF89283038"
+    },
+    {
+        "path":  "packages\\contracts\\src\\account\\account.schema.ts",
+        "lines":  57,
+        "sha256":  "BD59D567B22113B08906FA2141164E53C347CDA8E3E5912DD01702662019871A"
+    },
+    {
+        "path":  "packages\\contracts\\src\\account\\account.schema.test.ts",
+        "lines":  37,
+        "sha256":  "EEC22FA4C070168CD86D2051EBCA461F71DFE56574151F6CDFE4AEECB1E6D432"
+    },
+    {
+        "path":  "packages\\database\\prisma.config.ts",
+        "lines":  37,
+        "sha256":  "EB593642857B697345DC2E60BF34B08198BBAB3B09AAE069F73141E0C0E27663"
+    },
+    {
+        "path":  "packages\\database\\vitest.integration.config.ts",
+        "lines":  16,
+        "sha256":  "D5C13A9D3B7DCE180E91C4376729E3B602E07756A75B4FE5286E97C72CA5D83E"
+    },
+    {
+        "path":  "packages\\database\\vitest.config.ts",
+        "lines":  10,
+        "sha256":  "48C4F8EC3301C210AB0C0271EA892ACA432ADED9FF1EE10025D9D326D94DDD2B"
+    },
+    {
+        "path":  "packages\\database\\tsconfig.json",
+        "lines":  10,
+        "sha256":  "37D8FD80ADEF8016455B2BB558C1D71CC58DD60D59B49A703CB09B9DB880EB0B"
+    },
+    {
+        "path":  "packages\\database\\tsconfig.build.json",
+        "lines":  12,
+        "sha256":  "395894EEF8A755129C5CDE8463CBA38DE19DCECB370AD526CFA5501A3E8944D4"
+    },
+    {
+        "path":  "apps\\api\\vitest.setup.ts",
+        "lines":  25,
+        "sha256":  "FC5A4CB5EB8EF86A6A6F8397B1F2A6F7AB1D08A2B73BB5559E28F32AC3F16F2F"
+    },
+    {
+        "path":  "apps\\api\\vitest.integration.config.ts",
+        "lines":  17,
+        "sha256":  "8E420BE911B6C4C2BFE48DF87986A56FBEED8405590E2BB3E3A4BA0BF4EFC36C"
+    },
+    {
+        "path":  "apps\\api\\vitest.config.ts",
+        "lines":  11,
+        "sha256":  "3750BB6AE98BBB68C955512C6B7D1D9ABB041BFDB40094A5DC4BF9AB0DD53010"
+    },
+    {
+        "path":  "apps\\api\\tsconfig.json",
+        "lines":  12,
+        "sha256":  "D2889D9191A92AD9818E6A934808C25C478C7C0D8E43C9DA49E1C8CB7E595740"
+    },
+    {
+        "path":  "apps\\api\\tsconfig.build.json",
+        "lines":  19,
+        "sha256":  "E3E421F9061A10FDEFE104C113E5A9420CE6F06D2D468C27221C9C6A518C55B7"
+    },
+    {
+        "path":  "packages\\contracts\\src\\auth\\auth.schema.ts",
+        "lines":  91,
+        "sha256":  "4B1812731C50D7C7CD651B36FE6A56FB681F5055C1898A53CFE8584610FB5F49"
+    },
+    {
+        "path":  "packages\\database\\prisma\\seed.ts",
+        "lines":  36,
+        "sha256":  "E00EEDA2136F1D5CC07BC4F9D5B0C64C8EEE8742665A66E47A6D0BEA1DC786E5"
+    },
+    {
+        "path":  "packages\\database\\prisma\\schema.prisma",
+        "lines":  59,
+        "sha256":  "D2C6B7A46F928E5D926F3B9BF60433758E81BAF60337558B47FE3476F27FB7D5"
+    },
+    {
+        "path":  "packages\\contracts\\src\\auth\\auth.schema.test.ts",
+        "lines":  54,
+        "sha256":  "2E9A1D825259474D852B88FB626DD451290DD6B5CC8ACA7F8B798F1102D94520"
+    },
+    {
+        "path":  "apps\\api\\src\\app.ts",
+        "lines":  85,
+        "sha256":  "94873F80473AA87F8C5A6266808F87C99A35AEEA335491529E84BD9C70415558"
+    },
+    {
+        "path":  "apps\\api\\src\\app.integration.test.ts",
+        "lines":  451,
+        "sha256":  "784DB31D66B65EA5E0DF242D69A5CCA5C0F119EBB6D0F22303B75CA84FF4A194"
+    },
+    {
+        "path":  "apps\\api\\src\\server.ts",
+        "lines":  94,
+        "sha256":  "2BFC09FC0CCD90F610B31D1D485EFFB3E279D40B0B184978E97F899F8B3C5502"
+    },
+    {
+        "path":  "apps\\api\\src\\router.ts",
+        "lines":  40,
+        "sha256":  "9BC9E460386E188A58263E4274A127A99408F7715F91317750C2596A2999A931"
+    },
+    {
+        "path":  "apps\\api\\tests\\tsconfig.json",
+        "lines":  9,
+        "sha256":  "BEA28159A6AE59C918D74C17296E73811F077132B301353662F45CFB5A2DEA87"
+    },
+    {
+        "path":  "packages\\database\\prisma\\migrations\\migration_lock.toml",
+        "lines":  3,
+        "sha256":  "99836963713B4F5B269AD49AF0ED3D7B0B2E336115C2F92DC9AC683D139D0900"
+    },
+    {
+        "path":  "packages\\database\\tests\\tsconfig.json",
+        "lines":  9,
+        "sha256":  "BEA28159A6AE59C918D74C17296E73811F077132B301353662F45CFB5A2DEA87"
+    },
+    {
+        "path":  "packages\\database\\tests\\seed-config.test.ts",
+        "lines":  105,
+        "sha256":  "2BC6F3BEFED530C884EB2567D4E08A132D24D3EA9E249D58AD258AD5F9EE5D0C"
+    },
+    {
+        "path":  "packages\\database\\tests\\schema-contract.test.ts",
+        "lines":  31,
+        "sha256":  "3237758D86DB12C7664A81C8461001AAEB0D0D6B91AC7D03D76C3AC11EC4F772"
+    },
+    {
+        "path":  "apps\\web\\src\\types\\environment.d.ts",
+        "lines":  5,
+        "sha256":  "B8D0A9869FBE8964FBED435E7FF7FC84992BDAFD47B54FCC562BBDAAA266A628"
+    },
+    {
+        "path":  "apps\\api\\tests\\integration\\global-setup.ts",
+        "lines":  50,
+        "sha256":  "F34B22D16594D3E4B5A3A8A625DE85040DFDEB41AD64AFA8F5613BE7C1A6B15D"
+    },
+    {
+        "path":  "packages\\database\\prisma\\migrations\\20260818000000_init_authentication\\migration.sql",
+        "lines":  66,
+        "sha256":  "7D7D6EACBF0FD2397CD7F1D614C2EEA6DF161EE07431E46EF92D64CCE5F5FC59"
+    },
+    {
+        "path":  "packages\\database\\package.json",
+        "lines":  55,
+        "sha256":  "FB02F275FA690BA1CED1B0F69620705A85DAA5E080BB818DC27CFFAAC3121007"
+    },
+    {
+        "path":  "apps\\web\\src\\test\\setup.ts",
+        "lines":  7,
+        "sha256":  "F6DACD0C48CAA5C15C870A23F157A9801EEA0C792F9C6E4D9A29374FA10B3E39"
+    },
+    {
+        "path":  "packages\\database\\tests\\integration\\migration.integration.test.ts",
+        "lines":  176,
+        "sha256":  "1931956B400352152EFCC84C08440F0DF2915979DE4AFD8A591A48E379098F02"
+    },
+    {
+        "path":  "packages\\database\\tests\\integration\\global-setup.ts",
+        "lines":  49,
+        "sha256":  "5511303BCCE18E0DF38DFE87B5229AD332B3B1DA063020D0E361464FF938C3EE"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\date-only.ts",
+        "lines":  49,
+        "sha256":  "FE12E9313B0016C81FC6C13704C2CC8AAB5B182B5A94C5CFD1A8B4C28930DD5C"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\date-only.test.ts",
+        "lines":  26,
+        "sha256":  "0E91085AA952C917ED7BE0FE8313E6C6C7169CF3E8EE17BBBEDFC7C725C41101"
+    },
+    {
+        "path":  "packages\\database\\src\\seed-config.ts",
+        "lines":  111,
+        "sha256":  "6644FD40C34A11B93DE4B54D3B7DF86D44253D2BE4747E58506074B0B943C1E6"
+    },
+    {
+        "path":  "packages\\database\\src\\index.ts",
+        "lines":  8,
+        "sha256":  "83FB4E25704C590A462C250BD59806B2FD49D5831AE22CD4A9ADF0110295D1A3"
+    },
+    {
+        "path":  "packages\\database\\src\\client.ts",
+        "lines":  13,
+        "sha256":  "489D4E7E60B13031CA31B0A57C83806D65D938B0548375601827965C4D6EDB13"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\constants\\index.ts",
+        "lines":  1,
+        "sha256":  "5B9EBBC6769B4F6619748EF9129EB08FAA3995F77487DEF4D59E13A8399A3C5A"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\users.service.ts",
+        "lines":  55,
+        "sha256":  "5C0C5A4CADB42656CF25EA9FA9B4E6BC2C83D65A9416CF957FFC54FEE96ADAEE"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\constants\\http-status.constants.ts",
+        "lines":  13,
+        "sha256":  "86F5353B8DAE3E2B65ACD68D7C609A563631D4BA14684753457BF06926EF529E"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\users.routes.ts",
+        "lines":  25,
+        "sha256":  "C6AA9AA5579EA04E9BB3B1891A1FA94E778688051EC3263A4097F4419F16694F"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\users.mapper.ts",
+        "lines":  30,
+        "sha256":  "44CC6A7077834CEBF723D10C8D458D0031CC1EACFFA90263C1C9865B61487149"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\users.controller.ts",
+        "lines":  38,
+        "sha256":  "A56DADEBF1528C7EF97169680787468224713922049E071C909A8580EA1499E3"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\index.ts",
+        "lines":  4,
+        "sha256":  "BE8E65163DAB5B2079CCD99BA2FF1E0E3D08F052BE5372715E33588FE181CFB9"
+    },
+    {
+        "path":  "apps\\web\\src\\styles\\globals.css",
+        "lines":  1194,
+        "sha256":  "FB485D7F68623D0CB54FFDDC96D557EE85EF88679354B55BA2701372B3EB70F6"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\workspace\\workspace-shell.tsx",
+        "lines":  78,
+        "sha256":  "06873309CD0F527BABDB96932E59D2CC0C21117A37859F82AC980C41ED5AAC01"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\types\\request-context.types.ts",
+        "lines":  9,
+        "sha256":  "DA435E55A4A5B13BEAF4F03B862F83DFEF4CEE83567D04BF042DAD7F490BD58F"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\types\\index.ts",
+        "lines":  4,
+        "sha256":  "50C61FF23E743255271839C05690D37361E36C926E78DAD58FC7B5CD1D8FE2B2"
+    },
+    {
+        "path":  "apps\\web\\src\\styles\\employee.css",
+        "lines":  257,
+        "sha256":  "1D212456CBB8EE748562174772C79888C248FBDB3AB1778A44F975835E172AE2"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\types\\express.d.ts",
+        "lines":  16,
+        "sha256":  "63E2215C872A29775C07A7EC392FA7565CD703C860E5FFAC29AA3F1C7F511B5D"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\workspace\\workspace-shell.test.tsx",
+        "lines":  106,
+        "sha256":  "97B7293D9D50E4323A8C759B4B804EA57A3882717D210B81BD00224D291CA669"
+    },
+    {
+        "path":  "apps\\web\\src\\styles\\admin.css",
+        "lines":  199,
+        "sha256":  "EDBD2386C8487B577BBA27279874EE4C12F9CB23C93EAA1AB5599D9B2ABC2138"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\pagination\\pagination.ts",
+        "lines":  113,
+        "sha256":  "7413A5ED4024B7CE6F94C2BDDD69801E6CD2281227B003523A3CEC1023A6CFE7"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\pagination\\pagination.test.ts",
+        "lines":  50,
+        "sha256":  "63B79D3C6886940D7D421B2DC83E740703E6D5EC41C129103CDB8CB7A0AF9437"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\pagination\\pagination.dto.ts",
+        "lines":  28,
+        "sha256":  "1577EADD3B26932224B9F1F583C2256ED9F5CF8BE255E2A2CC0F2EBE32BF5BDD"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\pagination\\index.ts",
+        "lines":  17,
+        "sha256":  "95F3E43DA2A0F68529EC614200ADD51924A6E1183BB8A846DE3D0429D9A6D285"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\users\\dto\\update-profile.dto.ts",
+        "lines":  5,
+        "sha256":  "96659586DF71D7CE35D910E57B91892359D0F2B132C1AD6B5C4FB6FB6FC7CDEC"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\index.ts",
+        "lines":  8,
+        "sha256":  "B1AC0E204B9E473C72974299F28548D69A9FDCA5438CEBEFE558BA3CBC967AB7"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\forms\\form-field.tsx",
+        "lines":  39,
+        "sha256":  "5D588FBD6DC01F6001F87198784E6CB477C464FB751486CF83E90A648908C173"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\brand\\protocol-trace.tsx",
+        "lines":  26,
+        "sha256":  "8D07661F0DAF9DD4B608CA65989E6971A884BD92E940FA09E3DAF1AF47C8B462"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\brand\\brand-mark.tsx",
+        "lines":  17,
+        "sha256":  "C75C52556BEDFE24CCC8214E3BE1477178C1C31875CE7CB299DA6CD861ED684A"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\resend.config.ts",
+        "lines":  27,
+        "sha256":  "A2400672597503CDD366C0F3C59C2F05BF03CEB30F813F0406284FE09F65D9BF"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\rate-limit.config.ts",
+        "lines":  11,
+        "sha256":  "6B7E02EEA9912B3DA404FD9577F01996BDAF52923FA49208BF5C7FAEF5982F35"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\mailer.config.ts",
+        "lines":  33,
+        "sha256":  "9037E6A59D0265C57FFF5D3D637EEB0830E71872B29DF9F7D316823D6C0D7DD0"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\logger.config.ts",
+        "lines":  24,
+        "sha256":  "BA3A7213119F5A058FF9884ECF766FF7706B4EFA8D2C869A086A61D24E68F04C"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\index.ts",
+        "lines":  23,
+        "sha256":  "CE7A6966367C9BFDC6825DD8BBEAADAC5925C55717B76D355A34FF1633B0F4FF"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\env.ts",
+        "lines":  101,
+        "sha256":  "31E2677CC668AD422A23519BC245DE6C03D80A653059E75ABCF2BA25BA14E29E"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\email.config.ts",
+        "lines":  108,
+        "sha256":  "82376D379E3C653563D1D38F8464A374492A57FE7A3FE6AF8F753FEC2857E69A"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\database.config.ts",
+        "lines":  19,
+        "sha256":  "6774DCBCE5E22F0E30343FAAF674D9D65B6D32D2F495D417A1CBB5F8A8F996F7"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\csrf.config.ts",
+        "lines":  6,
+        "sha256":  "A78803CB321DCEB8254CD5706B8BE7E1DE5BDEA437744884DB1917F8405DB300"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\cors.config.ts",
+        "lines":  21,
+        "sha256":  "E2810DBE980794802E50AD58DE7F24B879DD9803595D9F743A03A70DD25A40F7"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\cookie.config.ts",
+        "lines":  27,
+        "sha256":  "692EAC323E128435C2686B06A21161C7E789CF00E52F6CDBDCEFB319520487A3"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\auth.config.ts",
+        "lines":  81,
+        "sha256":  "00488B8E5ADFF6B9747FC351D102EEFEE23CD8CD5257C52067CD60BACDE1E3DF"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\auth-rate-limit.config.ts",
+        "lines":  118,
+        "sha256":  "BCD88FD60D85EE8F31125B08D73CE784E03E9447F1DF483DE143147CB787346E"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\config\\app.config.ts",
+        "lines":  54,
+        "sha256":  "CA038F8D5451E76714B09096620D620364A6967F7DF8C190BF5A83A6178A3F89"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\query\\query-client.ts",
+        "lines":  28,
+        "sha256":  "D53ABCCAB82D23881904D9589EBE05A443FE4D90188A7361183163B921FBA7D7"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\query\\query-client.test.ts",
+        "lines":  47,
+        "sha256":  "1643FE0C50007B53FCBB52EF125F77B6C14129C70C0B6667FDC8E9F5AE755999"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\query\\index.ts",
+        "lines":  1,
+        "sha256":  "7A0BDC5D1E58EB330B376CE8B9C383FD96E4D0E9CF9FE19AEE3A8A28E32BB5E6"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\health\\index.ts",
+        "lines":  4,
+        "sha256":  "DC8B99034D7ED621185D0966DC7D724DFE8CED90C087107CEF3AB918D0C4E121"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\health\\health.types.ts",
+        "lines":  6,
+        "sha256":  "DAFD3F52FF92374193691217CA005D5D464B68A50A460A92A923A9F51E9D34D4"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\health\\health.service.ts",
+        "lines":  36,
+        "sha256":  "F24BB0C314E76368C5EBA1B75DD1A8CE7243C7580FD80F8ECD5FCBBC3F4425ED"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\health\\health.routes.ts",
+        "lines":  12,
+        "sha256":  "2ECE032EE98003427A0B16BC7CF631A0E0CEB54BAD355C44DB095D9D62527E50"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\health\\health.controller.ts",
+        "lines":  38,
+        "sha256":  "AD38D9A5B8144C5E4B68AC8543D4C4FEF2602656C78C3B008D7E9374039B0C55"
+    },
+    {
+        "path":  "apps\\web\\postcss.config.mjs",
+        "lines":  7,
+        "sha256":  "DFAC7AC2D86D326A0E5ADB024E7943C181393ED17A5FCB8F0315B24C7DA6DDDE"
+    },
+    {
+        "path":  "apps\\web\\package.json",
+        "lines":  51,
+        "sha256":  "469D122BFD9784D6F8ECF78F46552B29BD997D5014AAD2E1646D50F2263CBFB0"
+    },
+    {
+        "path":  "apps\\web\\next.config.ts",
+        "lines":  16,
+        "sha256":  "C729DE534DE8E727E227DEA6A3F7B8FC9685E4D8EB5721DEF4FBADAD3655EBE9"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\forbidden.error.ts",
+        "lines":  9,
+        "sha256":  "742E12BCD91B2EA1DB36638143D18E6D196D01E389A824F65CE99B1D82EB2BFB"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\conflict.error.ts",
+        "lines":  9,
+        "sha256":  "972E26A14EE0CDEF1C93002AC37709BD2E60F28A11B52EA241477E3CE28013AB"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\bad-request.error.ts",
+        "lines":  10,
+        "sha256":  "82A5F5A39B395923546E35E6B7773C523F590986BEC0C41FBA005340CEA9D639"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\app.error.ts",
+        "lines":  29,
+        "sha256":  "C701D9608384C6B728D73B7ADEAF8E1E4EBCB11C728ECA7DDD19D922F664CAF3"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\internal-server.error.ts",
+        "lines":  14,
+        "sha256":  "F09CC674069768BA4AC6F2247668C9F47C358DBD69B7A09210E1EB3BD9C6F162"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\index.ts",
+        "lines":  10,
+        "sha256":  "2654A4776479DCC4712F68F2D88AC5560908E98F3425F80B621E44C482E3D779"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\not-found.error.ts",
+        "lines":  9,
+        "sha256":  "F75F0C54C81DF4324CC7950EDC46D70D696568DDC31B5926E3FE3582EA547C70"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\auth-shell.tsx",
+        "lines":  43,
+        "sha256":  "910B2D23B964EBB7FE256D3D387C4F25C671F2D28E127E4BE2C1EAF5D086A286"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\guest-only-route.tsx",
+        "lines":  76,
+        "sha256":  "8BC2956F3DB7959156AEE8F9CDAD3B0E241092FD9F7AE57C9CD816F5448D19FB"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\forms\\form.test.ts",
+        "lines":  36,
+        "sha256":  "BC66592978FDA775E8102A989E70F8C781B039B526EC7EACF55647329E11740C"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.rate-limiters.ts",
+        "lines":  89,
+        "sha256":  "A0A76E5A28915079A883141CFF98CE5D275308E5E2EAEF19B8924B978DBAF4B2"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.controller.ts",
+        "lines":  275,
+        "sha256":  "91214CBFB4C9C4666D38CD7267CC34C9AA62B8B4776FC2BBDE5A82F4809D83DE"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.controller.test.ts",
+        "lines":  127,
+        "sha256":  "7AECA1AEDBF7E64E7EE379264F75FD2349E17F975374F4BFDA7EDF7317F08DF2"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.constants.ts",
+        "lines":  36,
+        "sha256":  "1A627B949C38BE9458F4A959367BACA3CEC78730F387A781785E74791E899AC2"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\types\\auth.types.ts",
+        "lines":  56,
+        "sha256":  "DF46ED0D2FD94C170E59510E2FC1B72AF7F05CB3E6485CDFD3921C951FAC2E8A"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\index.ts",
+        "lines":  3,
+        "sha256":  "92C06E2AB4AFAC9D37A7EB684A5C8C221D5C98A94B5990019596C2A1F4D98BD0"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\serialization\\index.ts",
+        "lines":  7,
+        "sha256":  "9239B83E1D71B08AB218EDF353F8CEE04E40A86E0CD6546BBB1DC951144E598B"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\serialization\\decimal.ts",
+        "lines":  102,
+        "sha256":  "BC62F2C91902B932D857E3E9748AD207F0DC77D82B34243A4C27386EAD1D5762"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\serialization\\decimal.test.ts",
+        "lines":  51,
+        "sha256":  "04F1543AAA263A03D794163C11AC643100963EFECCF31B7BDCF27F0E9077FC1A"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\session-loader.tsx",
+        "lines":  9,
+        "sha256":  "B70B030FA4420C98FDBADF47CC587BD91DB825F3B6E44A5B970006F0D5DB532B"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\routes.test.tsx",
+        "lines":  143,
+        "sha256":  "6CC3A93B45174C3F22E8A94B23AD35FF0F9C0BA518E45ABC73D11B2003699E22"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\route-state.test.ts",
+        "lines":  90,
+        "sha256":  "B7F3D52A74D7FBE1A735E31E4FD3827D7C501E76C73F4BF27D4A780E3114AA12"
+    },
+    {
+        "path":  "apps\\web\\src\\components\\auth\\protected-route.tsx",
+        "lines":  101,
+        "sha256":  "E50FFF19B0D029A0367D4834330533B6239514BA0A8CFECC0E6CB3AD0949EB13"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.service.integration.test.ts",
+        "lines":  279,
+        "sha256":  "936616B5FEA2F6913C2CF9DE15D36F89BFFCE34DB0FA3330A98B3470341BAD68"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.routes.ts",
+        "lines":  110,
+        "sha256":  "A6341473997A149453348858099F92CC670E4B4879969BDE4C58E2AECB270963"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.service.test.ts",
+        "lines":  232,
+        "sha256":  "B2FCDA31B377F4B388A701A833267D3821F8C94362053D01D382ABB7DB13569E"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\auth.service.ts",
+        "lines":  580,
+        "sha256":  "0DA3BEF042DFDA2878671603C117C6F9BD4B0BB0975F9D5BAA72215AA08C5570"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\too-many-requests.error.ts",
+        "lines":  9,
+        "sha256":  "6180BE333B64D343E3E25A877D25B9D7B311E1A567D5DEB7BE2613FA8873919D"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\service-unavailable.error.ts",
+        "lines":  9,
+        "sha256":  "425A4786ADEC18B6CF7D7CAF546FAE66358642E40947D74E09762830948974CF"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\unauthorized.error.ts",
+        "lines":  9,
+        "sha256":  "A6CB70708D14C8304138BC1B9591906B749266B5B737F75068D295CDC21F1EFE"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\errors\\validation.error.ts",
+        "lines":  10,
+        "sha256":  "6C1D18DCC2F783BB44EC58831E75C60AD31B9CC6EEE63CC51927A561634B92A8"
+    },
+    {
+        "path":  "apps\\web\\src\\config\\public-environment.ts",
+        "lines":  19,
+        "sha256":  "0BBE926CB53D3ABF6D0449076B945782F07FF517ACE695F8055E608EA963401B"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\forms\\index.ts",
+        "lines":  1,
+        "sha256":  "1FBC502DF7D6A4DA8D9A97D4C5CFF635DA9E59FA76E80BEA7614EC573626F5ED"
+    },
+    {
+        "path":  "apps\\web\\src\\shared\\forms\\form.ts",
+        "lines":  50,
+        "sha256":  "951918C744F4A469E758E78872DE30DE9D68940F6A981C3B0C1AA32DDA8B6A42"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\responses\\index.ts",
+        "lines":  7,
+        "sha256":  "058E7A0ACAE500B6F79C6F55A95582E20A6746462640B4A9C8C6DDC30F3666A5"
+    },
+    {
+        "path":  "apps\\api\\src\\core\\responses\\api-response.ts",
+        "lines":  88,
+        "sha256":  "FD20F609AE0A6A88C8100E938BDC2B295FDB5056BB007AB3277797AE625B353A"
+    },
+    {
+        "path":  "apps\\web\\src\\services\\api\\index.ts",
+        "lines":  9,
+        "sha256":  "EB283EECC5886C0DF48176BE736C7BC48B00AD2A2922FDB8B0A0A4B205225542"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\providers.tsx",
+        "lines":  16,
+        "sha256":  "E3AAD8EC1789E9E37ACA3D43E4B9DD18FD419D5CE6EBAD2EEE42655C1B837307"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\page.tsx",
+        "lines":  5,
+        "sha256":  "B78652789DEB3DB465D2710215326183614F34F97D5F99D2900C8A8BD79345FE"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\not-found.tsx",
+        "lines":  11,
+        "sha256":  "D7319B487931EA45917DCCA86B88F5ED12463DEB3406411C4E0063B6431365EE"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\loading.tsx",
+        "lines":  39,
+        "sha256":  "B5C21BD3958973811790F8B08BB2601B241FA0436B320D2D47DBAFC432C56B1D"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\layout.tsx",
+        "lines":  26,
+        "sha256":  "2DD476022C032015D616E904B45F6131D08FA7D557AB08C9BB48636318A87301"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\global-error.tsx",
+        "lines":  17,
+        "sha256":  "DAC9FA6E72D02C90FE34B875A564DFE19A17A032ABFD081E76A54C76CAF78480"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\workspace\\components\\dashboard-overview.tsx",
+        "lines":  97,
+        "sha256":  "258C6D3CB36580DC87C4115C8C8A48A1E7E85B4C9358ACB1C84274090B0FC0DF"
+    },
+    {
+        "path":  "apps\\web\\src\\services\\api\\browser-location.ts",
+        "lines":  16,
+        "sha256":  "419FD92BD84CAF589CC0F6663B6055D5A12E091DD1DA22D40E17DD2146B30FA8"
+    },
+    {
+        "path":  "apps\\web\\src\\services\\api\\api-client.ts",
+        "lines":  306,
+        "sha256":  "53AA40420F7E74D228D08C2E6C21FDD3F669BD2E18E732ED9FFB0EA2203A0E34"
+    },
+    {
+        "path":  "apps\\web\\src\\services\\api\\api-client.test.ts",
+        "lines":  509,
+        "sha256":  "FFA2F4BDAF6886CCCC1D57F7830ADA445DCFEBF48CB78CBF403E099913F77E31"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\context\\admin-state.context.tsx",
+        "lines":  1621,
+        "sha256":  "9B2D0989CDB6C24BDA5E6CD149393D29DD50CE968F56FD83E2A19E4796B7719D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\utils\\time.utils.ts",
+        "lines":  132,
+        "sha256":  "80F0FC151AB352ABCE5A9D501F49991E956C9491B250CB30DF5CF353E7CCF012"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\utils\\time.utils.test.ts",
+        "lines":  98,
+        "sha256":  "14E4A76F0C3C6F03908342EA44D7F29CDA980E706231C3FF25EBB52741FEE8E7"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\utils\\referral.utils.ts",
+        "lines":  135,
+        "sha256":  "55A706B128FCCF31CE7D3D343255F653F6A36884D1C0412EDAC699D1A233E2F3"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\utils\\referral.utils.test.ts",
+        "lines":  266,
+        "sha256":  "A6F1CD1FDA0D4B57D97F57D78867E4CD222046AC9E816D07EA3CF08167A20939"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\token-hasher.ts",
+        "lines":  4,
+        "sha256":  "4D5ECD646A1C5751F9A2D58C3E0FA260942406CF240F07181FF2BCEB53342CF9"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\token-hasher.test.ts",
+        "lines":  11,
+        "sha256":  "FBE3CDA6007898CFBCFA137FFA7EF29EF3AC116784B5CF7C68727E3F0F860A0D"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\password-hasher.ts",
+        "lines":  22,
+        "sha256":  "E9C82ED971FCB82A46B97B576DEEB20C983542807231245C94F4B1F0F0918C84"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\password-hasher.test.ts",
+        "lines":  17,
+        "sha256":  "DB74B887F3C81440CC7B3E8BF1DB29E8AA2F70D2AD16A43DC903A88B5489E981"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\jwt.service.ts",
+        "lines":  247,
+        "sha256":  "558032C84E13B900177EF849F683F9F4DAC191CE06D3393D8AE29BC19B04E05D"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\jwt.service.test.ts",
+        "lines":  46,
+        "sha256":  "7FD4F32CA3FD6B598C8CB75FF45A923582F0291B06E1122C4F6F76DDAF6D6312"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\security\\index.ts",
+        "lines":  11,
+        "sha256":  "3343F414DAE3873F479CE62024A7BC5F9D22D074965DB5720CBE33F820BB0D88"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\layout.tsx",
+        "lines":  26,
+        "sha256":  "6B2CC3D26EE23FAA9C1A411D9FF2C11AA9F2A5EE20436A382FFC922E3337AA76"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\types\\admin.types.ts",
+        "lines":  262,
+        "sha256":  "372DBE24A5A37B740E95B78D06F66E408BDFB0C2C010B102330D028F97C89886"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\users\\hooks\\users.hooks.ts",
+        "lines":  16,
+        "sha256":  "640CA6AC76514306DCD2CED92833A2D3EFB6A178904548CBAE806D749E44C005"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\context\\admin-state.context.test.tsx",
+        "lines":  539,
+        "sha256":  "B2E5AE152F1DDD1F1620407BE90237AC662618F5252320F793C96BEB05A8D58A"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\users\\hooks\\users.hooks.test.tsx",
+        "lines":  53,
+        "sha256":  "AB987373F1155B5F325BA5681A35F2714E21164F4FD054307D77C8C04F3CE82F"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\layout.tsx",
+        "lines":  45,
+        "sha256":  "5B09AB80CE9DCA0D38F8DE0E49ACB69CA8D3E1F1D0DD77D208D4B7E1DC893183"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\openapi\\openapi.ts",
+        "lines":  285,
+        "sha256":  "651FC583541554A8B0FA354E60F1EFFAB70F484884482E60026586C2E86E5419"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\openapi\\openapi.test.ts",
+        "lines":  35,
+        "sha256":  "3886EA8038D599EB8C3C7A68D51391708181B644C8D378921AA6533492CE6F07"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\openapi\\openapi.routes.ts",
+        "lines":  11,
+        "sha256":  "E8E7799DD5899BED67DC337876A76ABB8B01B04418EBB392C1A607DE5CBAF745"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\openapi\\index.ts",
+        "lines":  2,
+        "sha256":  "37D8D3E2847525F2DD963C0372C5FCB20BED7786100E960A926DDEE83E4F81F1"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\hooks\\use-task-code-gate.ts",
+        "lines":  27,
+        "sha256":  "721087E4C9B2E308392E66E76DC2EA9115154196C40495738DD1BA57FEC561A3"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\users\\components\\profile-form.tsx",
+        "lines":  97,
+        "sha256":  "7CA0DFEAD43A7DF8337BF035E66F84A15B2992FC7C2CC910F8039F4F24BFA38C"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\token-query.dto.ts",
+        "lines":  5,
+        "sha256":  "94D8C027085209FC6920F8F4F5F95A8DD39B8D7C197150F1B2D1BE77767C0DAA"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\reset-password.dto.ts",
+        "lines":  5,
+        "sha256":  "C49FAE5D3005C8C11A6D280BF5B400A61D89CCF2367CD9D7BCEAC294503A8919"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\register.dto.ts",
+        "lines":  5,
+        "sha256":  "8F2514C896BF4C92A10492C757406E78007D6D9E39D6A5A73577F058A1E1270F"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\login.dto.ts",
+        "lines":  5,
+        "sha256":  "2488421175F16C9F6A83F5484E79C7D752F5A9A514B84BC7251FE3B5B95A5DE0"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\index.ts",
+        "lines":  15,
+        "sha256":  "E4BA8202A80F7622FC08AE58DA3BC2BEACFF94A122CBB5361F9B3E26BFEA0EF8"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\email-request.dto.ts",
+        "lines":  5,
+        "sha256":  "F0BD5E4F540A2415BA1A215EE210E6D7215044728CC0197F65555F89E21BA7C7"
+    },
+    {
+        "path":  "apps\\api\\src\\modules\\auth\\dto\\change-password.dto.ts",
+        "lines":  5,
+        "sha256":  "2F95D52ADBA8937D902D5EE42E178595FE41E225F7A6D47A1E71DBECEAFB67B9"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\logger\\request-sanitizer.ts",
+        "lines":  70,
+        "sha256":  "CB1A67240B9F5AA0CCB572A7596EE0A3F653F97D255CCB3ED4A9A32F4B000713"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\logger\\request-sanitizer.test.ts",
+        "lines":  48,
+        "sha256":  "7E04311732A15E142FD308D1DA2CF8D1D3494FB5B9403DD382000339F380642D"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\logger\\logger.ts",
+        "lines":  84,
+        "sha256":  "E16411355AA0307957E120D70E2B12FAC0F323EAB49126186A1CAD2145F78824"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\logger\\logger.test.ts",
+        "lines":  71,
+        "sha256":  "F8B46107D9348BFED52ABE9BFB7536CC042FB1EC26FCE6EBFED06FD114011B7E"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\logger\\index.ts",
+        "lines":  6,
+        "sha256":  "47C20ACA795FA890E98C263068A3EF7B61DA7CA5256440AA99A3A7CC575FFDAA"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\withdrawals\\withdrawals-screen.tsx",
+        "lines":  532,
+        "sha256":  "DDDE49D50545A332A0636703E08AA9B580377E3A71A0D2CB95F8AE5EF8F2D680"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\withdrawals\\extend-schedule-dialog.tsx",
+        "lines":  307,
+        "sha256":  "529578F0CC39DDE91C57A2D410613FF690D1ED2390626A24DAD9FFCF3C842796"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\auth\\verify-email\\page.tsx",
+        "lines":  17,
+        "sha256":  "BA3739C424295320673AC206506FB2CE23594C045399FE1100DACAE237893F8C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\users\\api\\users.api.ts",
+        "lines":  18,
+        "sha256":  "C6CF09DCEA56EBF18D2B888226CBAD00E0AC7430A8C2B058E526E54C2CB070A4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\fixtures\\admin.fixtures.ts",
+        "lines":  1321,
+        "sha256":  "DAF45FE267917526BB3C1E9A02491F866BE15F6799564133F2F577C6A1FDF4A4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\account\\components\\session-controls.tsx",
+        "lines":  52,
+        "sha256":  "2BFE4C07BA306A3DC836E9778616339F4CC1E4D82EA36F87FB0E3B6C36A27499"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\account\\components\\session-controls.test.tsx",
+        "lines":  80,
+        "sha256":  "CB5DBB3F3C3FD3101726575A28E866B5A14793D16197489D739D8EAA6124599E"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\account\\components\\password-form.tsx",
+        "lines":  98,
+        "sha256":  "F4D556FC79EC38BEE00B0AB9AEF47E6CBF50F1BE3B2EB564D78C780BC6D4F833"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\account\\components\\account-settings.tsx",
+        "lines":  26,
+        "sha256":  "52A62E96DAF0E8F798D78497F735B9A22EE50F9FE61BAD81AFC22E4A3383BA8F"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\validation.middleware.ts",
+        "lines":  78,
+        "sha256":  "1055AFCF6032A8F2C853BEC63232C68FAEA5712074218B2CDF22243BA8EDBDB0"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\validation.middleware.test.ts",
+        "lines":  73,
+        "sha256":  "6010B604AC8195C2FAC8F9E019454BBA03A4C53466846AC96369A3647E9BC208"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\request-logger.middleware.ts",
+        "lines":  23,
+        "sha256":  "53A78F53D3B496701D776F974224DA0302BB5D1FA1A2976EE2DEB364F197A481"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\request-id.middleware.ts",
+        "lines":  23,
+        "sha256":  "6224F494DFA5B49DDC70B35E6B054205FA92AAC30052D1D10B6303DA5931641B"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\rate-limit.middleware.ts",
+        "lines":  44,
+        "sha256":  "BD32336B6478BB2BC310AF3699CA8DE58DF795D2AF2DA87F2F349BC4CC105D64"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\not-found.middleware.ts",
+        "lines":  15,
+        "sha256":  "56963B9FC817D68E7ED4D7C4FE1372E699998A865F2411C345FFC92B562BA685"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\index.ts",
+        "lines":  22,
+        "sha256":  "670B0EC00142343962FA57E4A9A234CBCFB641478E14F27EF4D0A400AEE560B8"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\error-handler.middleware.ts",
+        "lines":  65,
+        "sha256":  "F4C7A8BEEA59F1F050A1F175BA16040061C9CDC1DCF134E9962D79CAA047B10D"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\error-handler.middleware.test.ts",
+        "lines":  38,
+        "sha256":  "2D00AAFF569124B80D8F9EC6C8FE9DA7B54B8063933C65ABA38DE386678D3369"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\csrf.middleware.ts",
+        "lines":  52,
+        "sha256":  "CDB0F70E9DD931179DE3552D4EAA108E9359FB0FB7EF1D49432421F0BDA6DAEA"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\csrf.middleware.test.ts",
+        "lines":  62,
+        "sha256":  "8E273253E462D49950201C306AF8F57A82A9A1669CAD5FFED429583489B169D4"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\authorization.middleware.ts",
+        "lines":  21,
+        "sha256":  "28BFA498E3739EB04A677C83B819FE51C1E5B5425295BE67C5FB1272B526DD4C"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\authorization.middleware.test.ts",
+        "lines":  34,
+        "sha256":  "FBC77332855698C37ECF40929201FDD570BD462D4EE3EABF7D0FEAC008661A98"
+    },
+    {
+        "path":  "apps\\api\\src\\middlewares\\auth.middleware.ts",
+        "lines":  45,
+        "sha256":  "621C635523B28215F71F26070E1C68267CF3EFEBAD28522558F3AB9151D1FEC9"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\auth\\reset-password\\page.tsx",
+        "lines":  17,
+        "sha256":  "749442A80C0690A78C92C40A905F6D00B1BC99F764895C1E7C33941FD6324B27"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\tasks\\tasks-list-screen.tsx",
+        "lines":  322,
+        "sha256":  "503B38D68504F5554D21591FA9461603118AC65637A2207C02DE8E96D0BBB9FA"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\tasks\\task-form-screen.tsx",
+        "lines":  403,
+        "sha256":  "0375976DC28B6D8AF327FA8DAA585D0A2023B4B4B884D604928E78D0DD29684B"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\tasks\\task-detail-screen.tsx",
+        "lines":  452,
+        "sha256":  "C3C2AACC09BDE1041D217D9C9E81B506B4EC68B0F59489598783216FE808C800"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\auth\\register\\page.tsx",
+        "lines":  5,
+        "sha256":  "697152F52F4779159735366256DC26B1CA06174F1755E924D69150B1DB913B01"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\auth\\login\\page.tsx",
+        "lines":  5,
+        "sha256":  "AFDB9683CEDABB486634D2EF72815A94BBF30C639C11108258ECF0C7389C69D2"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\templates\\verify-email.template.ts",
+        "lines":  12,
+        "sha256":  "351F6C16F83D8C2DA3934CD939E0A311AD1F8B84A501AE32A6451E1062544BEE"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\templates\\reset-password.template.ts",
+        "lines":  12,
+        "sha256":  "C2E73EEC8CE6E593946361EC1CBBB083544B7EFF7EEEB432F16407E60B90E213"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\templates\\html-escape.ts",
+        "lines":  13,
+        "sha256":  "A8C147818112CE5540CFADEB9A759F0C87276200839FD721F1E16431D2F67C7C"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\templates\\base-layout.template.ts",
+        "lines":  26,
+        "sha256":  "9D9F430E5E222F49554C1973CB4D6BCEFB2A2BFF6B7D9E32067C301CF0F68469"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\index.ts",
+        "lines":  15,
+        "sha256":  "92BC9A23631407815B0D3BE98464B1E5103F067D46A08CFC39E57396CBF0382F"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\email.service.ts",
+        "lines":  74,
+        "sha256":  "C5999499374986EBA6DE9B39206109E80DC96FEB45F433983F06BA20914056B7"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\email.service.test.ts",
+        "lines":  50,
+        "sha256":  "DE43A6E4F101E9F2447C26FAE6DF35E5EC0B15F051D936FE64201863850E7955"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\email-delivery.ts",
+        "lines":  287,
+        "sha256":  "F962933C7893D52CBFCA9378A348C73FC5FCC14FAFBCE17CD50E934681A50511"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\email\\email-delivery.test.ts",
+        "lines":  225,
+        "sha256":  "7A1E50BB78A97F2528FA8AF0C441C074660015FA1421D766D54FFE7E4D32D9A6"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(auth)\\auth\\forgot-password\\page.tsx",
+        "lines":  5,
+        "sha256":  "ECF354B81B87134AA04B4A6CC6FC48B2AE04784EAD7314A1B8013C25EE094E37"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\submissions\\submissions-screen.tsx",
+        "lines":  482,
+        "sha256":  "A949BE18D742A3994B1A89B57E385B8E60AE9D962326632CD4A168C13DFA389D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\utils\\withdrawal-request.ts",
+        "lines":  28,
+        "sha256":  "CB1861B15742BE0C14D8141250EA2E219AF3FADE8C581432DAAEB77A849E4CA2"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\utils\\ledger-transactions.ts",
+        "lines":  92,
+        "sha256":  "16D94F5C362E00D967C150AC9D5366F4CA1DFD1C4006453F16F0993473863CDB"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\utils\\financial-calculations.ts",
+        "lines":  42,
+        "sha256":  "625E73ED73BEA7BEA2FEF9F09E1B69DA73982C978B367D494A1E6995A49206E8"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\utils\\balance-transitions.ts",
+        "lines":  61,
+        "sha256":  "7B3D1DD16A8D11A98172C9A5404A901859EC6F3BDCDA81CEF8779BEAAF33875D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\finance\\finance-ledger-screen.tsx",
+        "lines":  411,
+        "sha256":  "70F86C33DEA92188D461CD3D11B423EAB3E5C0CF9A5CFCF12E69F6BDBA4ECE43"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\types\\employee.types.ts",
+        "lines":  150,
+        "sha256":  "72DEB8F595CA8F32C12CA445FCA2FEB94443AD78E4F8F1B49FF9BB31BB3B3459"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\settings\\settings-screen.tsx",
+        "lines":  342,
+        "sha256":  "D882D72DB5B938D197CA997830369722DD157953C78BED89DC48114E89F8EEA4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\settings\\admins-list-screen.tsx",
+        "lines":  527,
+        "sha256":  "7B581C46928B6EACE9A1B9975B95DEEA517D6F704C02C8D16614BCFC42EDF4CD"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\page.tsx",
+        "lines":  5,
+        "sha256":  "0881B4BDE9F0FEB3D75ADB00F790AC93E94FB362F59515A5726F6B2343BBDAD0"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\referrals\\referrals-screen.tsx",
+        "lines":  535,
+        "sha256":  "05070A8DAB0B1E3857B2B0EF202F3398BB3F5F48D5B1BE4A49BA240A6BF0D617"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\employees\\employees-list-screen.tsx",
+        "lines":  351,
+        "sha256":  "4F93914CEEDA713A0AB86379734D4EC339C7CAD4A3076F48852AA815140E7731"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\employees\\employee-detail-screen.tsx",
+        "lines":  1142,
+        "sha256":  "FC442DEEA5B704A898334A840E013A2D73B66EF69A8A2731D928CA0E81BC8E23"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-topbar.tsx",
+        "lines":  83,
+        "sha256":  "2B5A8E26854132AB38A9BCC9E91327B72AB25FF78125904880020E219C4783D4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-table.tsx",
+        "lines":  31,
+        "sha256":  "2CE7550AC8F8B6D364BED424EEC0A3FED1FA3F1B30F10ABA9C653722D0D4D92C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-sidebar.tsx",
+        "lines":  219,
+        "sha256":  "FF995476E2FA06718E7BDEE95F890BC05CA292B7904837B2B3FC6816165B7093"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-shell.tsx",
+        "lines":  43,
+        "sha256":  "797BB6DE1DDB6AE61EC2161953C06564E9E65EBE5A8E0AF23D32E5BEC520515C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-select.tsx",
+        "lines":  99,
+        "sha256":  "32C28147FDD7677AA9B66D325975E1F659CF30F3BFD26BDCF466B4A46E2F0E7B"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-pagination.tsx",
+        "lines":  72,
+        "sha256":  "E2FA086A2D86C37F231AC2F60094FF7196C92E66B78692B38D8748617FB510B2"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-page-header.tsx",
+        "lines":  41,
+        "sha256":  "F3B7DFA01254CC9E6427C288149A87ECF8D79D177488941CE87BB65670670675"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-input.tsx",
+        "lines":  42,
+        "sha256":  "261ADDDDD1484824AAB2EA30E6C6CF54C8E9F28D24714E45AF526AD03815DBFB"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-image-upload.tsx",
+        "lines":  146,
+        "sha256":  "C3FB4021DD3839FBAF953C52F5534B43A32CB11A838FEFF39273A4FB23999E68"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-empty-state.tsx",
+        "lines":  31,
+        "sha256":  "196344AE059B19A93494B13B91F21C374F9CEE1838A114CC209985A92F1BC082"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-confirm-dialog.tsx",
+        "lines":  291,
+        "sha256":  "47AEAE38FB7AA43D39B12A1A00E28CF9EE16F3092DD0BE5F5FB63464DAEC8C79"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-button.tsx",
+        "lines":  142,
+        "sha256":  "DB66A6A7B22A281E47BFE694AEFD3C87CE622C38C579E83815925B6771AD80C3"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-breadcrumbs.tsx",
+        "lines":  60,
+        "sha256":  "AE41848A9782B55DD8EB92658987A09D0B76C0A952AF91B0789601083E190787"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\common\\admin-badge.tsx",
+        "lines":  65,
+        "sha256":  "B1B96ABABF7B15F57354A9CD665541EEB20F02D8E3F5BB0EFFC12D19371EF92F"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\packages\\packages-screen.tsx",
+        "lines":  255,
+        "sha256":  "3FCB27340C2FC36E71B009B32ACCA037631934FD39CD7D5BE437B115B6400213"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\packages\\page.tsx",
+        "lines":  5,
+        "sha256":  "CA61D7CF6318EC3BC9F66E40E90F6B6FBDD47673896ACF5F8198F569783A34B8"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\layout.tsx",
+        "lines":  16,
+        "sha256":  "C57B743E56E87CB135147A41FF7508017343D44B571C07141A245F2FD8B3F904"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\overview\\overview-screen.tsx",
+        "lines":  311,
+        "sha256":  "3B8437EE9B6FDBA83AFE38B43418C483FD24CDA52A33D673BBB82F043737E966"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\faq\\page.tsx",
+        "lines":  5,
+        "sha256":  "88470BEBB2D866A3784A69DDA9706557316944C646EBFF447F3C6AAD6F7A30D1"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\codes\\codes-list-screen.tsx",
+        "lines":  355,
+        "sha256":  "6CB8CAFE62C28DA4B500B6A76B43386E7D86A0D3CBD2B435BD3FEA7BE20BC94C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\codes\\code-detail-screen.tsx",
+        "lines":  460,
+        "sha256":  "3617A130BAB87547D2D412C2777F5943EAD8097A2E5F7C1C0B52B5CA74CFDEF0"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\codes\\code-create-screen.tsx",
+        "lines":  253,
+        "sha256":  "E6A52E74405D758056D7BD823FD4D97D2C797B36C1FD1A3AAE2B5C0E884B5E96"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\database\\index.ts",
+        "lines":  1,
+        "sha256":  "01778CC7CF9A7235DBB85BB7057913B6A5EA2BB5A331F383AA6D955C49C592CE"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\deposit\\page.tsx",
+        "lines":  5,
+        "sha256":  "504037BA9724028E18D5BDA9B4641FD5E846D2238710CD0ED1D687D626530846"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\audit-log\\page.tsx",
+        "lines":  5,
+        "sha256":  "D29427970C6242103C4F847E1CF22DFB52506C22DC82237ECD123DD9B35C3148"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\deposits\\deposits-screen.tsx",
+        "lines":  396,
+        "sha256":  "372553357DB76CA4D2FDE14ACB5F993275E27FCA7A8F069BE107B4664F0B5F1C"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\account\\page.tsx",
+        "lines":  5,
+        "sha256":  "0335F1E6789A5F5AC086A1CEB0CCFD5201233AB6E2AAC7D4497585971085B913"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\components\\audit\\audit-log-screen.tsx",
+        "lines":  194,
+        "sha256":  "91C8F636E3C292AC6BFDEBB7E5CDF34A6A99879976F48245D48819BEFDBFCD8D"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\database\\prisma-error.mapper.test.ts",
+        "lines":  71,
+        "sha256":  "78C426602E5C444ECF1F7F1D43072548FF791FA0BAF1EDD10A5868F72C41A71A"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\employees\\[employeeId]\\page.tsx",
+        "lines":  12,
+        "sha256":  "77676B4F86CD8E50FC25D89FEF96B63AD4C759E58CB132D7475754E5A8DB07B6"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\employees\\page.tsx",
+        "lines":  5,
+        "sha256":  "E13A99CB5FD127E61A01D4F317E5B64898DF220B35894097D3167D7ADC342193"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\page.tsx",
+        "lines":  5,
+        "sha256":  "F9ABDA99F486FDE1C4E35BA88F7975333617452F1ACAD6152E8E60150DC320E5"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\withdraw\\page.tsx",
+        "lines":  17,
+        "sha256":  "302F1150E76CD394AE8CCD389DB8E1C79295339AC2726209D0354E94AAE647AD"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\packages\\page.tsx",
+        "lines":  5,
+        "sha256":  "5BBC7EC915455FD8B0BD6B90B1742F524A2E8078E3A6B35E064EE8A624E8D8C2"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\layout.tsx",
+        "lines":  24,
+        "sha256":  "FC45CFCA14F59D2A5BC9CDC474CA5EB9E50F9DD304FEDCFD3C3648C23F6D1A42"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\(workspace)\\settings\\page.tsx",
+        "lines":  5,
+        "sha256":  "BBBB7C564F43574ABE53D7F5AF51117ACBB879AA16A27D1223F2FD34D92A9BA1"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\(workspace)\\layout.tsx",
+        "lines":  12,
+        "sha256":  "80972AFD07A7BD6ECE65E9D220594433EAF82C97B86A7184D47898DA1481DAD7"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\finance\\page.tsx",
+        "lines":  5,
+        "sha256":  "C0C1810B0562F773D976959755ABA05D460D7025AE472D5051A095AFF0BE098D"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\wallet\\page.tsx",
+        "lines":  5,
+        "sha256":  "EE6B12795ED9436E4442D201A5C03D2C028291018BA433CD0493E66557ED60D6"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\settings\\page.tsx",
+        "lines":  5,
+        "sha256":  "6526433DC3789D5AC8DBF55EAF9119374DFE75265CF7ABE22044C4315D95A833"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\terms\\page.tsx",
+        "lines":  5,
+        "sha256":  "6DB4CC9BE7916998B931F3B16AFBBFAAD4C402EB777806D63E86E6D99688BA62"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\deposits\\page.tsx",
+        "lines":  5,
+        "sha256":  "AF65DA026A9F056B5FA9C360EE6A387932054C84FB5DA522CE0BB9F0BEA93477"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\settings\\admins\\page.tsx",
+        "lines":  5,
+        "sha256":  "2F0F905F0884E82D8C13CC89F21D3B41EFEE9E8E4622D634FF5BD4C52FD2B455"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\team\\page.tsx",
+        "lines":  5,
+        "sha256":  "981F7D45FF0948EBF7EE6BF3043660115CBB4D2E31939F9AA07F2B13E68F961D"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\verify-email\\page.tsx",
+        "lines":  19,
+        "sha256":  "CBADA3F8D0B1D2FFF2830C4FCE80C5FA33FA1269FA23E510DA87A8B652C64C75"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\submissions\\page.tsx",
+        "lines":  5,
+        "sha256":  "693108888C491B76C5882CFF4B0F3592625B636C2CF62E9557B4847A552318F3"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\referrals\\page.tsx",
+        "lines":  5,
+        "sha256":  "905D981BEA80C554721C8B079C63DA0D2FCD9BB7F64835EEC600889BB28B7BD4"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\reset-password\\page.tsx",
+        "lines":  19,
+        "sha256":  "DBFC53B29AA0E42167C881AEE49ED076B1C841F6FD875399F93037BAC26059F3"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\register\\page.tsx",
+        "lines":  14,
+        "sha256":  "DE298A0CDB9C6C0DC6C1F7FB8EAC63F6BF00D54D060966DE8125CB5132322CD8"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\api\\auth.api.ts",
+        "lines":  117,
+        "sha256":  "18CDE4DA1A12C4A524248003A7487F8FA82EC37A5136107D10A351CD0FAD6E2A"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\codes\\[codeId]\\page.tsx",
+        "lines":  12,
+        "sha256":  "0A5296604013993905DD496E2745DA850D9E8CBF71523EF852BE61A494455D75"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\codes\\page.tsx",
+        "lines":  5,
+        "sha256":  "3996B7F46B313A707C3CD7C0B0998976A2A31EB18FC6F340D19236480756A423"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\login\\page.tsx",
+        "lines":  19,
+        "sha256":  "362726340046067694B9994DC2294FE236659C15AF2743CBE2F02C3D18430D6A"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\layout.tsx",
+        "lines":  7,
+        "sha256":  "4935083BA41051A8BA52726D5B2DD5EC674F98B569C335E55C2C50616E7D5B80"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\hooks\\use-task-submission.ts",
+        "lines":  71,
+        "sha256":  "0403654E32E80B4C59A908B07848FA835A3F74E42B7246D93E964EBB8A5B6288"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\hooks\\use-managed-timeout.ts",
+        "lines":  23,
+        "sha256":  "7DCCDF3757773189D4D49F445FDA0DF44E1E42FE0BDC59FC062312852ACA897F"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\hooks\\use-managed-timeout.test.tsx",
+        "lines":  32,
+        "sha256":  "EE1DE5D894D7336CA86B41D967C6569384407951615EE412B165D72E21E201EB"
+    },
+    {
+        "path":  "apps\\api\\src\\infrastructure\\database\\prisma-error.mapper.ts",
+        "lines":  104,
+        "sha256":  "8390B49EAE6A94B4254FA5CB1DC4BC944AF472C09256564B8835FE463BEBFF4F"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\login-form.test.tsx",
+        "lines":  54,
+        "sha256":  "7EE8364560629C6EF59C9C1B4EBAE3441600F768983BD811119E150493CA8E5E"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\forgot-password-form.tsx",
+        "lines":  75,
+        "sha256":  "44B6D05EDC05F99D018373BC92E2FAE7BB9D84C7A2A81AE706134A232E26314A"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\login-form.tsx",
+        "lines":  94,
+        "sha256":  "A7D0D77A2191490FE2D157D538E3D4C8F91BF5F340526C0BAB1FB26E16A9F0EE"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\tasks\\page.tsx",
+        "lines":  17,
+        "sha256":  "F1A98729E97396F57D0F7429967303D048B0FA1BAB2252CD6491C7F8751E5304"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\constants\\auth.constants.ts",
+        "lines":  11,
+        "sha256":  "DDF29F2564972F3BED10AD7B16DF61C9E2EA22A8F0C3C7B450BDC2C725360392"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\auth\\forgot-password\\page.tsx",
+        "lines":  14,
+        "sha256":  "62DC186B244F4AD1D44A02049B9E39F809DB2B6306C73F6022FD2F051291A75A"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\verify-email-panel.tsx",
+        "lines":  120,
+        "sha256":  "92E03778BAC423C9B9C075BBE8EDBC2979F144C4290D6D13A9483D606172A80F"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\reset-password-form.tsx",
+        "lines":  104,
+        "sha256":  "008254DD9427F2806A8F8D414DC0F83E58598C4CECBDA0BE576F46BC93AF3F3C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\components\\register-form.tsx",
+        "lines":  120,
+        "sha256":  "CA9AFCBE4BE5991BB611A78A8040F5DF21C198E3FE202E28A3E42613536363AF"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\tasks\\page.tsx",
+        "lines":  5,
+        "sha256":  "7DB737B95F10081C67C83DCE5CBB5B4A5FFCA4584C8D5F18ADFD4D6BB21E017C"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\codes\\new\\page.tsx",
+        "lines":  10,
+        "sha256":  "AED566BC286580D6AAAE7B56E5C611113D9434125B7780C859C7DE8BE178550F"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\withdrawals\\page.tsx",
+        "lines":  5,
+        "sha256":  "717B09CFA68E4E5CE433384E3162B1E5241DB32B4CDB7B71204EDB52F5790129"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\tasks\\[taskId]\\page.tsx",
+        "lines":  12,
+        "sha256":  "855B2E19AD9CD30D6D51C957BF32DCB8BCF17A9F27CDEB7FCF52016DDAD02B7B"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\employee-arithmetic.test.ts",
+        "lines":  93,
+        "sha256":  "0FF8A92913178A3571104532F11E49C6957C3B8DB7E947BC3D85440ECEDE11F1"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\privacy\\page.tsx",
+        "lines":  5,
+        "sha256":  "3BD1054FE0DC225254045AB80698C10F71F98B1DE0CCA0759475DE4C0348FBF6"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\fixtures\\account.fixtures.ts",
+        "lines":  11,
+        "sha256":  "D3A46B0DCD093559EEF9536EA68FF8908D79F7E8FB00C60C22221904258CC14F"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\tasks\\new\\page.tsx",
+        "lines":  5,
+        "sha256":  "007A34AD8DD09967B0F193D88BCED75E881A88EF6E01917AC7BA4748FBB1DF2D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\fixtures\\package.fixtures.ts",
+        "lines":  103,
+        "sha256":  "AC4554825C8AE72B72538CAC15A6568B889F5FDB81ABC23984E2D6D699E942F9"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\hooks\\auth.hooks.ts",
+        "lines":  149,
+        "sha256":  "17CFAE3EA8918D12E20287AB9463F118B50E9065739AC8D752314D80CAE26AD9"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\hooks\\auth.hooks.test.tsx",
+        "lines":  290,
+        "sha256":  "2F06436CB978F6394E6982F663BE94F5AD735C79B1E0DD8A3DF28D6153E43BDD"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\fixtures\\task.fixtures.ts",
+        "lines":  64,
+        "sha256":  "F867FCF6DD245C14F1354DE863C13470D391FEDF23A0DB56615C9EE48DC53AD0"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\fixtures\\team.fixtures.ts",
+        "lines":  111,
+        "sha256":  "DECA258B9A260E2903FB215F048D7B8517B13FDCB06C3C6BB9E8F123BD1A91DE"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\constants\\branding.ts",
+        "lines":  31,
+        "sha256":  "E241D406EC881857B86ADE847DCE500255016475B248CB4F72CBF55006B8551B"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\employee\\(app)\\support\\page.tsx",
+        "lines":  5,
+        "sha256":  "B9C3C67E5A288E747425FB883E726720F8EA117CAB37903D54BC399DA9E5B0A8"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\admin\\tasks\\[taskId]\\edit\\page.tsx",
+        "lines":  12,
+        "sha256":  "CA53E0BB135A2C05E094374626507012C013D087E10036505874B032D43559BE"
+    },
+    {
+        "path":  "apps\\web\\src\\app\\(workspace)\\dashboard\\page.tsx",
+        "lines":  5,
+        "sha256":  "DE233CBDE27CC1C30A19DD90738FB2263303798159B6D46A87634ECAAB097C19"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\context\\employee-state.context.tsx",
+        "lines":  521,
+        "sha256":  "0196C1140E3C77D51398B9CA321A9231AF3048C95623961E71AA24672BBE4933"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\context\\employee-state.context.test.tsx",
+        "lines":  204,
+        "sha256":  "22638AAA0B7766C609C651FFDE7A38702C8108BB3716B171E98C770804671F13"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\admin\\constants\\admin.constants.ts",
+        "lines":  134,
+        "sha256":  "77BBFCC3A1BEE4EE0806D64396C947148C950BB93B5835BB0A98969080E378DC"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\utils\\safe-return-path.test.ts",
+        "lines":  27,
+        "sha256":  "74140DC00B0789FC874D9355853F7A1CA5F2C8B7410027F1B1860A7F3382BBF6"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\utils\\safe-return-path.ts",
+        "lines":  53,
+        "sha256":  "A618BDE15E07153F3AF686375DE36F8A51A17055054758DB3DD9A39F20A72FD7"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\account\\account-navigation-row.test.tsx",
+        "lines":  19,
+        "sha256":  "6905CB7340C5777BA46D4F792572D11A1684412B9B3592710BBDD5A70524A755"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\account\\change-password-modal.tsx",
+        "lines":  195,
+        "sha256":  "C245A35E8742C9FAD3825773C7AFD45ED30CFB362EA0B7B4156DA48A2047C349"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\account\\account-screen.tsx",
+        "lines":  219,
+        "sha256":  "8743BD0C5AAF6B9672F10041559F6B253B6086039C282F5E1DA3B1259E63629A"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\account\\account-navigation-row.tsx",
+        "lines":  34,
+        "sha256":  "74CA19B59099AEA4D0B4379CA33C43D6A97C9EF697C96C5E3902DC9E7CF40759"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\home\\home-screen.tsx",
+        "lines":  238,
+        "sha256":  "12F9AA8E5B6E6952C753968306274599A1E7952AB2F514A446EEF826DC137CC7"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\auth\\utils\\session-navigation.ts",
+        "lines":  3,
+        "sha256":  "777526070947BB401128B3EF4AE6E3408C044694DE3FAC7E7C16C780B1C81CBE"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\app-shell\\employee-shell.tsx",
+        "lines":  24,
+        "sha256":  "06753A1DD7B4DA172AA9C3583B80805E0DCA5DFB837F1E0B4BC2CF8AD7FA7181"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\auth\\login-screen.tsx",
+        "lines":  144,
+        "sha256":  "FED385F906F86172C00AB92FF64330EEF5F83F18E983391EB709298D48F9E86E"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\auth\\forgot-password-screen.tsx",
+        "lines":  133,
+        "sha256":  "A9D312DA4D61D83D0709222D8355DC2CD9B9BE0A74AC18B5CDB95FA164AED691"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\auth\\register-screen.tsx",
+        "lines":  209,
+        "sha256":  "0B9887823FE7E83C1B80706A41BC96FE23030E923A5B5DE24C1F85FA5012CC14"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\auth\\reset-password-screen.tsx",
+        "lines":  200,
+        "sha256":  "8B29A9E3C793301729BD44CD8FEDF0A2F55F87978E3970F6B86443115F71515F"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\auth\\verify-email-screen.tsx",
+        "lines":  215,
+        "sha256":  "80DF7D4FF80B88C717C234F05F345984AFE8AAFDE139E871C598D29D817E51D2"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\deposit\\address-qr.tsx",
+        "lines":  25,
+        "sha256":  "0C9832647D1243C3544DC66393F107E15A4C06D9A87DD50A4DC4D9E546229330"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\deposit\\deposit-card.tsx",
+        "lines":  192,
+        "sha256":  "B17844E7BC4444430742E6721C19A0281EDB84284C42BFA73FBAD02B02A77130"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\deposit\\deposit-screen.tsx",
+        "lines":  19,
+        "sha256":  "6E963C5B4781D6D28EAC3CE5288B72FDEAA3AC581B5298C30500010024AD6AF5"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\packages\\packages-screen.tsx",
+        "lines":  52,
+        "sha256":  "D0500D6A3C95B94FDB9872C6D68D79BFA8BEF88DD4F13ED7FB064125CF206D7E"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\packages\\package-upgrade-modal.tsx",
+        "lines":  187,
+        "sha256":  "D6E339B34196E15557D00DEC796259BCCB9F5A37BA82D52D6E031684AD44811D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\packages\\package-card.tsx",
+        "lines":  178,
+        "sha256":  "45B0056C72C7AC6B213478D991499B6550FB63A74BA592E7AEAC4CBFA55A8696"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\button.test.tsx",
+        "lines":  53,
+        "sha256":  "99A4C2020B3AE66246E65EB2201D19AFB0BCC25E584B5A2920AF9DABA1A194B4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\button.tsx",
+        "lines":  173,
+        "sha256":  "D71BEAAAF737954A072104BC3842FC69E02897A67BA07F14F38C202C8DEE5E50"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\confirmation-sheet.test.tsx",
+        "lines":  58,
+        "sha256":  "CED35FFFB4F43DD173366BAB350CF652E718465B89C8E07DD115E3759EA12507"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\status-badge.tsx",
+        "lines":  136,
+        "sha256":  "266A86626F380D811286D37113FD78D88A7712BBF1311D7F8D39180000561590"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\password-visibility-toggle.tsx",
+        "lines":  24,
+        "sha256":  "95C88A200307A307F5B3446CF9A7B8A3C182DB2A87A54E1D7EC3D02D0E2F9D66"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\money-amount.tsx",
+        "lines":  51,
+        "sha256":  "DFAC725D5A348CC97C9A43F347A37DB0E9872B1504BE4E345957DDC1644884AB"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\empty-state.tsx",
+        "lines":  33,
+        "sha256":  "F897AA78CB174E88FA4AF20DAC6BD24AA59492CF31940E13B8812F3DF692CD65"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\copy-action.tsx",
+        "lines":  90,
+        "sha256":  "B7FBE1D910911420A45D86A3135BC41B53F0A98DF7DB82B6180869F0F93CC7F6"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\common\\confirmation-sheet.tsx",
+        "lines":  109,
+        "sha256":  "C4A6DE95679E06F05AFCF81C2D409D9C24BB6614439B2F19335378DFEA268048"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\task-availability-card.tsx",
+        "lines":  109,
+        "sha256":  "96AF51812049C9070ECF14A4A4BE49DF378AF46FEBCD2084CEF1975C45A1C476"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\screenshot-upload.tsx",
+        "lines":  154,
+        "sha256":  "23C2DB4DC5B7ED39C98A2D60FAE51D03144780E02B5AB7790C786E00DE04C636"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\screenshot-upload.test.tsx",
+        "lines":  45,
+        "sha256":  "B739AC923ABFF462F97FA2911D72E0DBDB46F5E375561DF53068CE77AF3B7761"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\task-card.test.tsx",
+        "lines":  92,
+        "sha256":  "9EC9F289983D1958026169AD89FB71A3A8694CA3DB85195E3A41182EB4330941"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\task-card.tsx",
+        "lines":  302,
+        "sha256":  "F2EC9B73F036B77881FCC8D58187AC020772BCFEF5BE6D075999590837E8E808"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\navigation\\bottom-navigation.tsx",
+        "lines":  96,
+        "sha256":  "D4AFD811F9AA8CB5EFE482F2D255B3E807A4FD21A05F98711B8AB0B1C9BD1355"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\navigation\\page-header.tsx",
+        "lines":  62,
+        "sha256":  "58398E5E3BEDC879ED8183662CB65980ACC920F98B5407EF8F1C09CB6FA4825D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\tasks-screen.tsx",
+        "lines":  62,
+        "sha256":  "0A65C280E1DA3DD8FF505828A884BA41B2DCE1B4EF80BC8360ABE22C66DB0AE4"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\task-history-list.tsx",
+        "lines":  60,
+        "sha256":  "933AEA0D8F9BCDBC59DD6591FAF6BADD45CEFAA34EA64972FE650483C8172A3C"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\tasks\\task-code-gate.tsx",
+        "lines":  124,
+        "sha256":  "897D28F88E53F3674A9A875FA3A8DFC05EF0C61BDF39A21B093892035F0DBBCC"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\fixtures\\wallet.fixtures.ts",
+        "lines":  159,
+        "sha256":  "0F0EE2598D7072E52E7EDA39C2830E48410459B7BBD4BA51B4F1DFA3BFE07ECC"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\team\\team-stats.tsx",
+        "lines":  218,
+        "sha256":  "468D24E7C16A9DCC68E4A0D398448989D45BF4B33E8537412A7465FE5943C75D"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\team\\team-screen.tsx",
+        "lines":  72,
+        "sha256":  "0CB9A2028E561C2BB467D9FE7671CDED5C5F8D6A046FB4C8B5FCFC35B9388FD8"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\team\\team-commission-history.tsx",
+        "lines":  54,
+        "sha256":  "ECE9EE8EF9F30A71ACCF24999498B026AEAABF5C48EB45020CC98FF09DE3686B"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\team\\member-row.tsx",
+        "lines":  85,
+        "sha256":  "015C584697DFCA82B23D2115A90973751E7F7FE8ED08564792742FA36422F800"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\support\\faq-screen.tsx",
+        "lines":  163,
+        "sha256":  "F8AEE868AAB2BEA00064EE56B2D2691D4D9102C870FF049AC578BB9A0A3238E5"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\wallet\\balance-summary.tsx",
+        "lines":  99,
+        "sha256":  "86A0EC8B6B30CD0201191F014540858769A93D3C6C79D79602573ADAFE820807"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\wallet\\transaction-detail-sheet.tsx",
+        "lines":  96,
+        "sha256":  "CF9FC26A1AB804574C7727D6E1BEC482D4AB1FF071F86B2AA8D8FE00E0CF7C78"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\withdraw\\withdraw-screen.tsx",
+        "lines":  24,
+        "sha256":  "BA66B79A7B72539E4815CFED393B7D32096BFB1F2DC2C6255C0D8BA965D011B3"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\support\\support-screen.tsx",
+        "lines":  124,
+        "sha256":  "BE2349CE2AEEF4602474E9D80AA5FEAD5BAC53481589671523B45D753CF8E349"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\wallet\\transaction-row.tsx",
+        "lines":  94,
+        "sha256":  "E69E8412AB602A64A4F9532A5FE9FC607749247A3934A7B9FE295028E2CE55E9"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\withdraw\\withdrawal-address-card.tsx",
+        "lines":  117,
+        "sha256":  "93AE570DBDCDB8BC4095C1C0E47050CB6F18741585FEFF93F08736B5F1C3E8F9"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\wallet\\wallet-screen.tsx",
+        "lines":  126,
+        "sha256":  "038A9B82BF4BAC602F51323FBBF6811D7D8A8F6C38FA93CAA840A887552C6756"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\withdraw\\withdrawal-form.tsx",
+        "lines":  315,
+        "sha256":  "3DFC4311E220DA5AC338BAEF7E4D8D3ACFA3D7AD7C21E4BB5554B5148AF07114"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\withdraw\\withdrawal-status-card.tsx",
+        "lines":  137,
+        "sha256":  "F4C9D88CF5AFDCFD6D1EB06C96BC934A7E2E26FC0E314A5DC6684B6F7E10DE9B"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\legal\\privacy-screen.tsx",
+        "lines":  82,
+        "sha256":  "F01D3946C930A6437E657DF9CA4464645887DD76570355299DD355D231348D55"
+    },
+    {
+        "path":  "apps\\web\\src\\features\\employee\\components\\legal\\terms-screen.tsx",
+        "lines":  99,
+        "sha256":  "CE7FE4EC6AE13184B12E48690C3EEB0A98432111E0032BE737DB8226D885C150"
+    }
+]

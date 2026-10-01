@@ -51,6 +51,7 @@ export interface DailyTask {
   readonly rejectionReason?: string | undefined;
   readonly submittedScreenshot?: string | undefined;
   readonly submittedAt?: string | undefined;
+  readonly isCodeRequired?: boolean | undefined;
 }
 
 export interface TaskHistoryItem {

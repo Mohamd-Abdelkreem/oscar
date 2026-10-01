@@ -1,0 +1,12 @@
+﻿ M apps/web/package.json
+ M apps/web/src/app/loading.tsx
+ M apps/web/src/app/providers.tsx
+ M apps/web/src/features/employee/components/tasks/task-card.tsx
+ M apps/web/src/features/employee/fixtures/task.fixtures.ts
+ M apps/web/src/features/employee/types/employee.types.ts
+ M pnpm-lock.yaml
+?? apps/web/src/app/admin/
+?? apps/web/src/features/admin/
+?? apps/web/src/features/employee/components/tasks/task-code-gate.tsx
+?? apps/web/src/styles/admin.css
+?? output/playwright/audit-2026-10-01/

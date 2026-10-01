@@ -1,0 +1,227 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - dialog "القائمة الجانبية" [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=e7] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=e8]: أ
+            - generic [ref=e9]:
+              - generic [ref=e10]: أوسكار | الإدارة
+              - generic [ref=e11]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=e12] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=e16]:
+          - generic [ref=e17]:
+            - heading "الرئيسية" [level=2] [ref=e18]
+            - list [ref=e19]:
+              - listitem [ref=e20]:
+                - link "نظرة عامة" [ref=e21] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=e28]:
+            - heading "الموظفون والمناصب" [level=2] [ref=e29]
+            - list [ref=e30]:
+              - listitem [ref=e31]:
+                - link "إدارة الموظفين" [ref=e32] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=e39]:
+                - link "الباقات والمناصب" [ref=e40] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=e46]:
+            - heading "المهام والرموز" [level=2] [ref=e47]
+            - list [ref=e48]:
+              - listitem [ref=e49]:
+                - link "إدارة المهام" [ref=e50] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=e55]:
+                - link "رموز فتح المهام" [ref=e56] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=e61]:
+                - link "مراجعة التنفيذ" [ref=e62] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=e68]:
+            - heading "العمليات المالية" [level=2] [ref=e69]
+            - list [ref=e70]:
+              - listitem [ref=e71]:
+                - link "الإيداعات" [ref=e72] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=e76]:
+                - link "طلبات السحب" [ref=e77] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=e81]:
+                - link "السجل المالي" [ref=e82] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=e87]:
+            - heading "الشبكة والعمولات" [level=2] [ref=e88]
+            - list [ref=e89]:
+              - listitem [ref=e90]:
+                - link "شبكة الإحالات" [ref=e91] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=e98]:
+            - heading "النظام والرقابة" [level=2] [ref=e99]
+            - list [ref=e100]:
+              - listitem [ref=e101]:
+                - link "سجل التدقيق والرقابة" [ref=e102] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=e107]:
+                - link "إعدادات المنصة" [ref=e108] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=e113]:
+                - link "مدراء النظام" [ref=e114] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=e120] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=e125]:
+      - banner [ref=e126]:
+        - generic [ref=e127]:
+          - button "فتح القائمة الجانبية" [ref=e128] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=e130] [cursor=pointer]
+          - generic [ref=e134]: منظومة العمليات التشغيلية والرقابة الفورية
+        - generic [ref=e137]:
+          - link "واجهة الموظف التجريبية" [ref=e138] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=e144]:
+            - generic [ref=e145]: م
+            - generic [ref=e146]:
+              - generic [ref=e147]: محمد عبد الكريم
+              - generic [ref=e148]: مسؤول النظام (ADMIN)
+      - main [ref=e152]:
+        - generic [ref=e154]:
+          - generic [ref=e157]:
+            - heading "نظرة عامة على العمليات" [level=1] [ref=e158]
+            - paragraph [ref=e159]: مؤشرات الأداء المباشرة وسجلات النشاط المالي والتدقيقي لمنصة أوسكار
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - generic [ref=e162]: إجمالي الموظفين
+              - generic [ref=e170]:
+                - generic [ref=e171]: "21"
+                - generic [ref=e172]: (17 باقة مفعّلة)
+              - link "استعراض الموظفين ←" [ref=e174] [cursor=pointer]:
+                - /url: /admin/employees
+            - generic [ref=e175]:
+              - generic [ref=e176]: مهام بانتظار التدقيق
+              - generic [ref=e183]:
+                - generic [ref=e184]: "2"
+                - generic [ref=e185]: يتطلب مراجعة
+              - link "طابور المراجعة ←" [ref=e187] [cursor=pointer]:
+                - /url: /admin/submissions
+            - generic [ref=e188]:
+              - generic [ref=e189]: سحوبات قيد المعالجة
+              - generic [ref=e194]:
+                - generic [ref=e195]: "3"
+                - generic [ref=e196]: (1 معلق)
+              - link "إدارة السحوبات ←" [ref=e198] [cursor=pointer]:
+                - /url: /admin/withdrawals
+            - generic [ref=e199]:
+              - generic [ref=e200]: رموز المهام النشطة
+              - generic [ref=e206]:
+                - generic [ref=e207]: "1"
+                - generic [ref=e208]: (3 فتح اليوم)
+              - link "إدارة الرموز ←" [ref=e210] [cursor=pointer]:
+                - /url: /admin/codes
+          - generic [ref=e211]:
+            - heading "اختصارات طوابير العمليات المباشرة" [level=2] [ref=e212]
+            - generic [ref=e213]:
+              - link "مراجعة المهام المرسلة 2 بانتظار اتخاذ القرار 2" [ref=e214] [cursor=pointer]:
+                - /url: /admin/submissions
+                - generic [ref=e220]:
+                  - generic [ref=e221]: مراجعة المهام المرسلة
+                  - generic [ref=e222]: 2 بانتظار اتخاذ القرار
+                - generic [ref=e223]: "2"
+              - link "طلبات السحب المجدولة 3 طلب تحت المعالجة (72 ساعة) 3" [ref=e225] [cursor=pointer]:
+                - /url: /admin/withdrawals
+                - generic [ref=e229]:
+                  - generic [ref=e230]: طلبات السحب المجدولة
+                  - generic [ref=e231]: 3 طلب تحت المعالجة (72 ساعة)
+                - generic [ref=e232]: "3"
+              - link "إيداعات قيد التحقق 0 إيداع قيد المراجعة 0" [ref=e234] [cursor=pointer]:
+                - /url: /admin/deposits
+                - generic [ref=e238]:
+                  - generic [ref=e239]: إيداعات قيد التحقق
+                  - generic [ref=e240]: 0 إيداع قيد المراجعة
+                - generic [ref=e241]: "0"
+          - generic [ref=e243]:
+            - generic [ref=e244]:
+              - generic [ref=e245]:
+                - heading "أحدث العمليات المالية" [level=2] [ref=e250]
+                - link "عرض السجل الكامل" [ref=e251] [cursor=pointer]:
+                  - /url: /admin/finance
+              - generic [ref=e252]:
+                - generic [ref=e253]:
+                  - generic [ref=e254]:
+                    - generic [ref=e255]: عمولة إحالة - ترقية باقة O1 (المستوى 1)
+                    - generic [ref=e256]:
+                      - generic [ref=e257]: سارة كريم
+                      - generic [ref=e258]: •
+                      - generic [ref=e259]: 2026-09-30 15:20
+                  - generic [ref=e260]: +64.80 USDT
+                - generic [ref=e262]:
+                  - generic [ref=e263]:
+                    - generic [ref=e264]: مكافأة إنجاز مهمة يومية
+                    - generic [ref=e265]:
+                      - generic [ref=e266]: أحمد مروان
+                      - generic [ref=e267]: •
+                      - generic [ref=e268]: 2026-09-30 13:40
+                  - generic [ref=e269]: +2.00 USDT
+                - generic [ref=e271]:
+                  - generic [ref=e272]:
+                    - generic [ref=e273]: عكس مكافأة مهمة - رفض التسليم
+                    - generic [ref=e274]:
+                      - generic [ref=e275]: فاطمة علي
+                      - generic [ref=e276]: •
+                      - generic [ref=e277]: 2026-09-30 17:30
+                  - generic [ref=e278]: "-4.00 USDT"
+                - generic [ref=e280]:
+                  - generic [ref=e281]:
+                    - generic [ref=e282]: حجز رصيد لطلب سحب أرباح
+                    - generic [ref=e283]:
+                      - generic [ref=e284]: محمود حسن
+                      - generic [ref=e285]: •
+                      - generic [ref=e286]: 2026-10-01 10:00
+                  - generic [ref=e287]: +100.00 USDT
+                - generic [ref=e289]:
+                  - generic [ref=e290]:
+                    - generic [ref=e291]: تسوية نهائية لطلب سحب أرباح
+                    - generic [ref=e292]:
+                      - generic [ref=e293]: أحمد مروان
+                      - generic [ref=e294]: •
+                      - generic [ref=e295]: 2026-09-23 14:30
+                  - generic [ref=e296]: "-100.00 USDT"
+            - generic [ref=e298]:
+              - generic [ref=e299]:
+                - heading "أحدث سجلات التدقيق الإداري" [level=2] [ref=e304]
+                - link "عرض سجل التدقيق" [ref=e305] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - generic [ref=e306]:
+                - generic [ref=e307]:
+                  - generic [ref=e308]:
+                    - generic [ref=e309]: إنشاء رمز فتح مهمة
+                    - generic [ref=e310]: 2026-10-01 08:00:15
+                  - generic [ref=e311]:
+                    - text: OSCAR-TASK-2026
+                    - generic [ref=e312]: — إنشاء رمز اليوم لتسهيل دخول الموظفين للنافذة المفتوحة
+                  - generic [ref=e313]: "بواسطة: محمد عبد الكريم"
+                - generic [ref=e314]:
+                  - generic [ref=e315]:
+                    - generic [ref=e316]: اعتماد تسليم مهمة
+                    - generic [ref=e317]: 2026-10-01 13:10:40
+                  - generic [ref=e318]:
+                    - text: تسليم سارة كريم لمهمة اليوم
+                    - generic [ref=e319]: — لقطة الشاشة مطابقة لمعايير التقييم والتوثيق المطلوب
+                  - generic [ref=e320]: "بواسطة: محمد عبد الكريم"
+                - generic [ref=e321]:
+                  - generic [ref=e322]:
+                    - generic [ref=e323]: رفض تسليم مهمة وعكس المكافأة
+                    - generic [ref=e324]: 2026-09-30 17:30:22
+                  - generic [ref=e325]:
+                    - text: تسليم فاطمة علي
+                    - generic [ref=e326]: — لقطة الشاشة غير واضحة ولا تثبت التفاعل المطلوب على المنصة
+                  - generic [ref=e327]: "بواسطة: محمد عبد الكريم"
+                - generic [ref=e328]:
+                  - generic [ref=e329]:
+                    - generic [ref=e330]: زيادة جدولة السحب
+                    - generic [ref=e331]: 2026-09-30 15:30:10
+                  - generic [ref=e332]:
+                    - text: سحب 50 USDT - فاطمة علي
+                    - generic [ref=e333]: — تمديد فترة الجدولة للتحقق الإضافي من عنوان المحفظة
+                  - generic [ref=e334]: "بواسطة: علي السعدي"
+  - button "Open Next.js Dev Tools" [ref=e340] [cursor=pointer]

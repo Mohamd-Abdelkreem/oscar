@@ -1,0 +1,32 @@
+[
+  {
+    "route": "/admin/withdrawals",
+    "width": 390,
+    "before": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 10:55\nاستحقاق: 2026-10-03 10:55\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 ",
+    "after": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 12:12\nاستحقاق: 2026-10-03 12:12\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 "
+  },
+  {
+    "route": "/admin/withdrawals",
+    "width": 1440,
+    "before": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 10:55\nاستحقاق: 2026-10-03 10:55\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 ",
+    "after": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 12:12\nاستحقاق: 2026-10-03 12:12\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 "
+  },
+  {
+    "route": "/admin/withdrawals",
+    "width": 320,
+    "before": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 10:56\nاستحقاق: 2026-10-03 10:56\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 ",
+    "after": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 12:13\nاستحقاق: 2026-10-03 12:13\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 "
+  },
+  {
+    "route": "/admin/withdrawals",
+    "width": 768,
+    "before": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 10:56\nاستحقاق: 2026-10-03 10:56\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 ",
+    "after": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 12:13\nاستحقاق: 2026-10-03 12:13\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 "
+  },
+  {
+    "route": "/admin/withdrawals",
+    "width": 1280,
+    "before": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 10:56\nاستحقاق: 2026-10-03 10:56\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 ",
+    "after": "S7t8U9v0W1x2Y3z4A5b6C\t\nطلب: 2026-09-30 12:14\nاستحقاق: 2026-10-03 12:14\n\t40 ساعة و29 دقيقة\t\nمجدول (72 ساعة)\n\t\nزيادة الجدولة\nإتمام\nرفض\n\n\nأحمد مروان\nahmed.marwan@example.com\n\t60.00 USDT\t12.60 USDT\t47.40 "
+  }
+]

@@ -20,6 +20,7 @@ export const INITIAL_TASK: DailyTask = {
   timezone: "Asia/Baghdad",
   previewImageUrl: "/employee/task-preview.svg",
   status: "open",
+  isCodeRequired: true,
 };
 
 export const INITIAL_TASK_HISTORY: readonly TaskHistoryItem[] = [

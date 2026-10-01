@@ -1,0 +1,1230 @@
+[
+  {
+    "workspace": "@template/web",
+    "name": "@fontsource/cairo",
+    "requested": "^5.3.0",
+    "installed": "5.3.0",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@hookform/resolvers",
+    "requested": "5.7.1",
+    "installed": "5.7.1",
+    "consumers": [
+      "apps/web/src/features/account/components/password-form.tsx",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/users/components/profile-form.tsx",
+      "apps/web/src/shared/forms/form.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@radix-ui/react-dropdown-menu",
+    "requested": "^2.1.24",
+    "installed": "2.1.24",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@radix-ui/react-select",
+    "requested": "^2.3.7",
+    "installed": "2.3.7",
+    "consumers": [
+      "apps/web/src/features/admin/components/common/admin-select.tsx"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@tanstack/react-query",
+    "requested": "5.101.4",
+    "installed": "5.101.4",
+    "consumers": [
+      "apps/web/src/app/providers.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.test.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.ts",
+      "apps/web/src/features/users/hooks/users.hooks.test.tsx",
+      "apps/web/src/features/users/hooks/users.hooks.ts",
+      "apps/web/src/shared/query/query-client.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@template/contracts",
+    "requested": "workspace:*",
+    "installed": "0.1.0",
+    "consumers": [
+      "apps/web/src/components/auth/protected-route.tsx",
+      "apps/web/src/components/auth/route-state.test.ts",
+      "apps/web/src/components/auth/routes.test.tsx",
+      "apps/web/src/features/account/components/password-form.tsx",
+      "apps/web/src/features/auth/api/auth.api.ts",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/reset-password-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.ts",
+      "apps/web/src/features/users/api/users.api.ts",
+      "apps/web/src/features/users/components/profile-form.tsx",
+      "apps/web/src/features/users/hooks/users.hooks.ts",
+      "apps/web/src/services/api/api-client.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "axios",
+    "requested": "1.19.0",
+    "installed": "1.19.0",
+    "consumers": [
+      "apps/web/src/services/api/api-client.test.ts",
+      "apps/web/src/services/api/api-client.ts",
+      "apps/web/src/shared/query/query-client.test.ts",
+      "apps/web/src/shared/query/query-client.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "lucide-react",
+    "requested": "^1.49.0",
+    "installed": "1.49.0",
+    "consumers": [
+      "apps/web/src/features/admin/components/audit/audit-log-screen.tsx",
+      "apps/web/src/features/admin/components/codes/code-create-screen.tsx",
+      "apps/web/src/features/admin/components/codes/code-detail-screen.tsx",
+      "apps/web/src/features/admin/components/codes/codes-list-screen.tsx",
+      "apps/web/src/features/admin/components/common/admin-breadcrumbs.tsx",
+      "apps/web/src/features/admin/components/common/admin-confirm-dialog.tsx",
+      "apps/web/src/features/admin/components/common/admin-empty-state.tsx",
+      "apps/web/src/features/admin/components/common/admin-image-upload.tsx",
+      "apps/web/src/features/admin/components/common/admin-pagination.tsx",
+      "apps/web/src/features/admin/components/common/admin-select.tsx",
+      "apps/web/src/features/admin/components/common/admin-sidebar.tsx",
+      "apps/web/src/features/admin/components/common/admin-topbar.tsx",
+      "apps/web/src/features/admin/components/deposits/deposits-screen.tsx",
+      "apps/web/src/features/admin/components/employees/employee-address-dialog.tsx",
+      "apps/web/src/features/admin/components/employees/employee-balance-dialog.tsx",
+      "apps/web/src/features/admin/components/employees/employee-detail-screen.tsx",
+      "apps/web/src/features/admin/components/employees/employee-restriction-controls.tsx",
+      "apps/web/src/features/admin/components/employees/employees-list-screen.tsx",
+      "apps/web/src/features/admin/components/finance/finance-ledger-screen.tsx",
+      "apps/web/src/features/admin/components/overview/overview-screen.tsx",
+      "apps/web/src/features/admin/components/packages/packages-screen.tsx",
+      "apps/web/src/features/admin/components/referrals/referral-level.tsx",
+      "apps/web/src/features/admin/components/referrals/referrals-screen.tsx",
+      "apps/web/src/features/admin/components/settings/add-admin-dialog.tsx",
+      "apps/web/src/features/admin/components/settings/admins-list-screen.tsx",
+      "apps/web/src/features/admin/components/settings/edit-admin-dialog.tsx",
+      "apps/web/src/features/admin/components/settings/settings-screen.tsx",
+      "apps/web/src/features/admin/components/submissions/submissions-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-detail-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-form-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/tasks-list-screen.tsx",
+      "apps/web/src/features/admin/components/withdrawals/extend-schedule-dialog.tsx",
+      "apps/web/src/features/admin/components/withdrawals/withdrawal-row.tsx",
+      "apps/web/src/features/admin/components/withdrawals/withdrawals-screen.tsx",
+      "apps/web/src/features/employee/components/account/account-navigation-row.test.tsx",
+      "apps/web/src/features/employee/components/account/account-navigation-row.tsx",
+      "apps/web/src/features/employee/components/account/account-screen.tsx",
+      "apps/web/src/features/employee/components/account/change-password-modal.tsx",
+      "apps/web/src/features/employee/components/auth/forgot-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/login-screen.tsx",
+      "apps/web/src/features/employee/components/auth/register-screen.tsx",
+      "apps/web/src/features/employee/components/auth/reset-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/verify-email-screen.tsx",
+      "apps/web/src/features/employee/components/common/button.tsx",
+      "apps/web/src/features/employee/components/common/confirmation-sheet.tsx",
+      "apps/web/src/features/employee/components/common/copy-action.tsx",
+      "apps/web/src/features/employee/components/common/empty-state.tsx",
+      "apps/web/src/features/employee/components/common/password-visibility-toggle.tsx",
+      "apps/web/src/features/employee/components/common/status-badge.tsx",
+      "apps/web/src/features/employee/components/deposit/deposit-card.tsx",
+      "apps/web/src/features/employee/components/home/home-screen.tsx",
+      "apps/web/src/features/employee/components/legal/privacy-screen.tsx",
+      "apps/web/src/features/employee/components/legal/terms-screen.tsx",
+      "apps/web/src/features/employee/components/navigation/bottom-navigation.tsx",
+      "apps/web/src/features/employee/components/navigation/page-header.tsx",
+      "apps/web/src/features/employee/components/packages/package-card.tsx",
+      "apps/web/src/features/employee/components/packages/package-upgrade-modal.tsx",
+      "apps/web/src/features/employee/components/support/faq-screen.tsx",
+      "apps/web/src/features/employee/components/support/support-screen.tsx",
+      "apps/web/src/features/employee/components/tasks/screenshot-upload.tsx",
+      "apps/web/src/features/employee/components/tasks/task-availability-card.tsx",
+      "apps/web/src/features/employee/components/tasks/task-card.tsx",
+      "apps/web/src/features/employee/components/tasks/task-code-gate.tsx",
+      "apps/web/src/features/employee/components/tasks/task-history-list.tsx",
+      "apps/web/src/features/employee/components/team/team-commission-history.tsx",
+      "apps/web/src/features/employee/components/team/team-stats.tsx",
+      "apps/web/src/features/employee/components/wallet/balance-summary.tsx",
+      "apps/web/src/features/employee/components/wallet/transaction-row.tsx",
+      "apps/web/src/features/employee/components/wallet/wallet-screen.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-address-card.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-form.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-status-card.tsx"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "next",
+    "requested": "16.2.12",
+    "installed": "16.2.12",
+    "consumers": [
+      "apps/web/next.config.ts",
+      "apps/web/src/app/admin/layout.tsx",
+      "apps/web/src/app/employee/(auth)/layout.tsx",
+      "apps/web/src/app/employee/layout.tsx",
+      "apps/web/src/app/layout.tsx",
+      "apps/web/src/app/not-found.tsx",
+      "apps/web/src/app/page.tsx",
+      "apps/web/src/components/auth/guest-only-route.tsx",
+      "apps/web/src/components/auth/protected-route.tsx",
+      "apps/web/src/components/brand/brand-mark.tsx",
+      "apps/web/src/components/workspace/workspace-shell.tsx",
+      "apps/web/src/features/admin/components/codes/code-create-screen.tsx",
+      "apps/web/src/features/admin/components/codes/code-detail-screen.tsx",
+      "apps/web/src/features/admin/components/codes/codes-list-screen.tsx",
+      "apps/web/src/features/admin/components/common/admin-breadcrumbs.tsx",
+      "apps/web/src/features/admin/components/common/admin-button.tsx",
+      "apps/web/src/features/admin/components/common/admin-sidebar.tsx",
+      "apps/web/src/features/admin/components/common/admin-topbar.tsx",
+      "apps/web/src/features/admin/components/deposits/deposits-screen.tsx",
+      "apps/web/src/features/admin/components/employees/employee-codes-tab.tsx",
+      "apps/web/src/features/admin/components/employees/employee-team-tab.tsx",
+      "apps/web/src/features/admin/components/employees/employees-list-screen.tsx",
+      "apps/web/src/features/admin/components/finance/finance-ledger-screen.tsx",
+      "apps/web/src/features/admin/components/overview/overview-screen.tsx",
+      "apps/web/src/features/admin/components/referrals/referral-commission-details.tsx",
+      "apps/web/src/features/admin/components/referrals/referrals-screen.tsx",
+      "apps/web/src/features/admin/components/submissions/submissions-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-detail-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-form-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/tasks-list-screen.tsx",
+      "apps/web/src/features/admin/components/withdrawals/withdrawal-row.tsx",
+      "apps/web/src/features/admin/constants/admin.constants.ts",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/reset-password-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/auth/utils/safe-return-path.ts",
+      "apps/web/src/features/employee/components/account/account-navigation-row.tsx",
+      "apps/web/src/features/employee/components/account/account-screen.tsx",
+      "apps/web/src/features/employee/components/auth/forgot-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/login-screen.tsx",
+      "apps/web/src/features/employee/components/auth/register-screen.tsx",
+      "apps/web/src/features/employee/components/auth/reset-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/verify-email-screen.tsx",
+      "apps/web/src/features/employee/components/common/button.tsx",
+      "apps/web/src/features/employee/components/home/home-screen.tsx",
+      "apps/web/src/features/employee/components/navigation/bottom-navigation.tsx",
+      "apps/web/src/features/employee/components/navigation/page-header.tsx",
+      "apps/web/src/features/employee/components/support/support-screen.tsx",
+      "apps/web/src/features/employee/components/tasks/tasks-screen.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-address-card.tsx",
+      "apps/web/src/features/workspace/components/dashboard-overview.tsx"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "qrcode.react",
+    "requested": "^4.2.0",
+    "installed": "4.2.0",
+    "consumers": [
+      "apps/web/src/features/employee/components/deposit/address-qr.tsx"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "react",
+    "requested": "19.2.8",
+    "installed": "19.2.8",
+    "consumers": [
+      "apps/web/src/app/(workspace)/layout.tsx",
+      "apps/web/src/app/admin/codes/new/page.tsx",
+      "apps/web/src/app/admin/layout.tsx",
+      "apps/web/src/app/auth/layout.tsx",
+      "apps/web/src/app/auth/login/page.tsx",
+      "apps/web/src/app/auth/reset-password/page.tsx",
+      "apps/web/src/app/auth/verify-email/page.tsx",
+      "apps/web/src/app/employee/(app)/layout.tsx",
+      "apps/web/src/app/employee/(app)/tasks/page.tsx",
+      "apps/web/src/app/employee/(app)/withdraw/page.tsx",
+      "apps/web/src/app/employee/(auth)/auth/reset-password/page.tsx",
+      "apps/web/src/app/employee/(auth)/auth/verify-email/page.tsx",
+      "apps/web/src/app/employee/(auth)/layout.tsx",
+      "apps/web/src/app/employee/layout.tsx",
+      "apps/web/src/app/layout.tsx",
+      "apps/web/src/app/providers.tsx",
+      "apps/web/src/components/auth/auth-shell.tsx",
+      "apps/web/src/components/auth/guest-only-route.tsx",
+      "apps/web/src/components/auth/protected-route.tsx",
+      "apps/web/src/components/forms/form-field.tsx",
+      "apps/web/src/components/workspace/workspace-shell.test.tsx",
+      "apps/web/src/components/workspace/workspace-shell.tsx",
+      "apps/web/src/features/account/components/password-form.tsx",
+      "apps/web/src/features/account/components/session-controls.tsx",
+      "apps/web/src/features/admin/components/audit/audit-log-screen.tsx",
+      "apps/web/src/features/admin/components/codes/code-create-screen.tsx",
+      "apps/web/src/features/admin/components/codes/code-detail-screen.tsx",
+      "apps/web/src/features/admin/components/codes/codes-list-screen.tsx",
+      "apps/web/src/features/admin/components/common/admin-badge.tsx",
+      "apps/web/src/features/admin/components/common/admin-button.tsx",
+      "apps/web/src/features/admin/components/common/admin-confirm-dialog.test.tsx",
+      "apps/web/src/features/admin/components/common/admin-confirm-dialog.tsx",
+      "apps/web/src/features/admin/components/common/admin-empty-state.tsx",
+      "apps/web/src/features/admin/components/common/admin-image-upload.tsx",
+      "apps/web/src/features/admin/components/common/admin-input.tsx",
+      "apps/web/src/features/admin/components/common/admin-page-header.tsx",
+      "apps/web/src/features/admin/components/common/admin-select.tsx",
+      "apps/web/src/features/admin/components/common/admin-shell.tsx",
+      "apps/web/src/features/admin/components/common/admin-sidebar.tsx",
+      "apps/web/src/features/admin/components/common/admin-table.tsx",
+      "apps/web/src/features/admin/components/deposits/deposits-screen.tsx",
+      "apps/web/src/features/admin/components/employees/employee-address-dialog.tsx",
+      "apps/web/src/features/admin/components/employees/employee-balance-dialog.tsx",
+      "apps/web/src/features/admin/components/employees/employee-detail-screen.tsx",
+      "apps/web/src/features/admin/components/employees/employee-restriction-controls.tsx",
+      "apps/web/src/features/admin/components/employees/employees-list-screen.tsx",
+      "apps/web/src/features/admin/components/finance/finance-ledger-screen.tsx",
+      "apps/web/src/features/admin/components/packages/packages-screen.tsx",
+      "apps/web/src/features/admin/components/referrals/referrals-screen.tsx",
+      "apps/web/src/features/admin/components/settings/add-admin-dialog.tsx",
+      "apps/web/src/features/admin/components/settings/admins-list-screen.tsx",
+      "apps/web/src/features/admin/components/settings/edit-admin-dialog.tsx",
+      "apps/web/src/features/admin/components/settings/settings-screen.tsx",
+      "apps/web/src/features/admin/components/submissions/submissions-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-detail-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/task-form-screen.tsx",
+      "apps/web/src/features/admin/components/tasks/tasks-list-screen.tsx",
+      "apps/web/src/features/admin/components/withdrawals/extend-schedule-dialog.tsx",
+      "apps/web/src/features/admin/components/withdrawals/withdrawals-screen.tsx",
+      "apps/web/src/features/admin/context/actions/use-deposit-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-employee-account-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-employee-restriction-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-package-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-settings-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-submission-review-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-task-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-task-code-actions.ts",
+      "apps/web/src/features/admin/context/actions/use-withdrawal-actions.ts",
+      "apps/web/src/features/admin/context/admin-financial-actions.test.tsx",
+      "apps/web/src/features/admin/context/admin-state.context.test.tsx",
+      "apps/web/src/features/admin/context/admin-state.context.tsx",
+      "apps/web/src/features/admin/context/admin-state.types.ts",
+      "apps/web/src/features/admin/hooks/use-task-code-gate.ts",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/reset-password-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.test.tsx",
+      "apps/web/src/features/employee/components/account/account-screen.tsx",
+      "apps/web/src/features/employee/components/account/change-password-modal.tsx",
+      "apps/web/src/features/employee/components/app-shell/employee-shell.tsx",
+      "apps/web/src/features/employee/components/auth/forgot-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/login-screen.tsx",
+      "apps/web/src/features/employee/components/auth/register-screen.tsx",
+      "apps/web/src/features/employee/components/auth/reset-password-screen.tsx",
+      "apps/web/src/features/employee/components/auth/verify-email-screen.tsx",
+      "apps/web/src/features/employee/components/common/button.tsx",
+      "apps/web/src/features/employee/components/common/confirmation-sheet.test.tsx",
+      "apps/web/src/features/employee/components/common/confirmation-sheet.tsx",
+      "apps/web/src/features/employee/components/common/copy-action.tsx",
+      "apps/web/src/features/employee/components/common/empty-state.tsx",
+      "apps/web/src/features/employee/components/deposit/deposit-card.tsx",
+      "apps/web/src/features/employee/components/home/home-screen.tsx",
+      "apps/web/src/features/employee/components/navigation/page-header.tsx",
+      "apps/web/src/features/employee/components/packages/package-upgrade-modal.tsx",
+      "apps/web/src/features/employee/components/packages/packages-screen.tsx",
+      "apps/web/src/features/employee/components/support/faq-screen.tsx",
+      "apps/web/src/features/employee/components/tasks/screenshot-upload.tsx",
+      "apps/web/src/features/employee/components/tasks/task-card.test.tsx",
+      "apps/web/src/features/employee/components/tasks/task-card.tsx",
+      "apps/web/src/features/employee/components/tasks/task-code-gate.tsx",
+      "apps/web/src/features/employee/components/tasks/tasks-screen.tsx",
+      "apps/web/src/features/employee/components/team/member-row.tsx",
+      "apps/web/src/features/employee/components/team/team-screen.tsx",
+      "apps/web/src/features/employee/components/team/team-stats.tsx",
+      "apps/web/src/features/employee/components/wallet/wallet-screen.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-address-card.tsx",
+      "apps/web/src/features/employee/components/withdraw/withdrawal-form.tsx",
+      "apps/web/src/features/employee/context/actions/use-employee-package-actions.ts",
+      "apps/web/src/features/employee/context/actions/use-employee-task-actions.ts",
+      "apps/web/src/features/employee/context/actions/use-employee-wallet-actions.ts",
+      "apps/web/src/features/employee/context/employee-state.context.test.tsx",
+      "apps/web/src/features/employee/context/employee-state.context.tsx",
+      "apps/web/src/features/employee/context/employee-state.types.ts",
+      "apps/web/src/features/employee/hooks/use-task-submission.ts",
+      "apps/web/src/features/users/components/profile-form.tsx",
+      "apps/web/src/features/users/hooks/users.hooks.test.tsx",
+      "apps/web/src/shared/hooks/use-managed-timeout.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "react-dom",
+    "requested": "19.2.8",
+    "installed": "19.2.8",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "react-hook-form",
+    "requested": "7.84.0",
+    "installed": "7.84.0",
+    "consumers": [
+      "apps/web/src/features/account/components/password-form.tsx",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/users/components/profile-form.tsx",
+      "apps/web/src/shared/forms/form.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "zod",
+    "requested": "4.4.3",
+    "installed": "4.4.3",
+    "consumers": [
+      "apps/web/src/config/public-environment.ts",
+      "apps/web/src/features/account/components/password-form.tsx",
+      "apps/web/src/features/auth/components/forgot-password-form.tsx",
+      "apps/web/src/features/auth/components/login-form.tsx",
+      "apps/web/src/features/auth/components/register-form.tsx",
+      "apps/web/src/features/auth/components/reset-password-form.tsx",
+      "apps/web/src/features/auth/components/verify-email-panel.tsx",
+      "apps/web/src/features/users/components/profile-form.tsx",
+      "apps/web/src/shared/forms/form.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@tailwindcss/postcss",
+    "requested": "4.3.3",
+    "installed": "4.3.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@template/eslint-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": [
+      "apps/web/eslint.config.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@template/typescript-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@testing-library/jest-dom",
+    "requested": "6.9.1",
+    "installed": "6.9.1",
+    "consumers": [
+      "apps/web/src/test/setup.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@testing-library/react",
+    "requested": "16.3.2",
+    "installed": "16.3.2",
+    "consumers": [
+      "apps/web/src/components/auth/routes.test.tsx",
+      "apps/web/src/components/workspace/workspace-shell.test.tsx",
+      "apps/web/src/features/account/components/session-controls.test.tsx",
+      "apps/web/src/features/admin/components/common/admin-confirm-dialog.test.tsx",
+      "apps/web/src/features/admin/context/admin-financial-actions.test.tsx",
+      "apps/web/src/features/admin/context/admin-state.context.test.tsx",
+      "apps/web/src/features/auth/components/login-form.test.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.test.tsx",
+      "apps/web/src/features/employee/components/account/account-navigation-row.test.tsx",
+      "apps/web/src/features/employee/components/common/button.test.tsx",
+      "apps/web/src/features/employee/components/common/confirmation-sheet.test.tsx",
+      "apps/web/src/features/employee/components/tasks/screenshot-upload.test.tsx",
+      "apps/web/src/features/employee/components/tasks/task-card.test.tsx",
+      "apps/web/src/features/employee/context/employee-state.context.test.tsx",
+      "apps/web/src/features/users/hooks/users.hooks.test.tsx",
+      "apps/web/src/shared/hooks/use-managed-timeout.test.tsx",
+      "apps/web/src/test/setup.ts"
+    ]
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@types/node",
+    "requested": "24.13.3",
+    "installed": "24.13.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@types/react",
+    "requested": "19.2.18",
+    "installed": "19.2.18",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "@types/react-dom",
+    "requested": "19.2.4",
+    "installed": "19.2.4",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "babel-plugin-react-compiler",
+    "requested": "1.0.0",
+    "installed": "1.0.0",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "eslint",
+    "requested": "9.39.1",
+    "installed": "9.39.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "jsdom",
+    "requested": "30.0.1",
+    "installed": "30.0.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "tailwindcss",
+    "requested": "4.3.3",
+    "installed": "4.3.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "typescript",
+    "requested": "5.9.3",
+    "installed": "5.9.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/web",
+    "name": "vitest",
+    "requested": "4.1.10",
+    "installed": "4.1.10",
+    "consumers": [
+      "apps/web/src/components/auth/route-state.test.ts",
+      "apps/web/src/components/auth/routes.test.tsx",
+      "apps/web/src/components/workspace/workspace-shell.test.tsx",
+      "apps/web/src/features/account/components/session-controls.test.tsx",
+      "apps/web/src/features/admin/components/common/admin-confirm-dialog.test.tsx",
+      "apps/web/src/features/admin/context/admin-financial-actions.test.tsx",
+      "apps/web/src/features/admin/context/admin-state.context.test.tsx",
+      "apps/web/src/features/admin/utils/referral.utils.test.ts",
+      "apps/web/src/features/admin/utils/time.utils.test.ts",
+      "apps/web/src/features/auth/components/login-form.test.tsx",
+      "apps/web/src/features/auth/hooks/auth.hooks.test.tsx",
+      "apps/web/src/features/auth/utils/safe-return-path.test.ts",
+      "apps/web/src/features/employee/components/account/account-navigation-row.test.tsx",
+      "apps/web/src/features/employee/components/common/button.test.tsx",
+      "apps/web/src/features/employee/components/common/confirmation-sheet.test.tsx",
+      "apps/web/src/features/employee/components/tasks/screenshot-upload.test.tsx",
+      "apps/web/src/features/employee/components/tasks/task-card.test.tsx",
+      "apps/web/src/features/employee/context/employee-state.context.test.tsx",
+      "apps/web/src/features/employee/employee-arithmetic.test.ts",
+      "apps/web/src/features/users/hooks/users.hooks.test.tsx",
+      "apps/web/src/services/api/api-client.test.ts",
+      "apps/web/src/shared/forms/form.test.ts",
+      "apps/web/src/shared/hooks/use-managed-timeout.test.tsx",
+      "apps/web/src/shared/query/query-client.test.ts",
+      "apps/web/src/test/setup.ts",
+      "apps/web/vitest.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@template/contracts",
+    "requested": "workspace:*",
+    "installed": "0.1.0",
+    "consumers": [
+      "apps/api/src/core/pagination/pagination.ts",
+      "apps/api/src/core/responses/api-response.ts",
+      "apps/api/src/core/types/request-context.types.ts",
+      "apps/api/src/infrastructure/openapi/openapi.ts",
+      "apps/api/src/middlewares/error-handler.middleware.ts",
+      "apps/api/src/modules/auth/dto/change-password.dto.ts",
+      "apps/api/src/modules/auth/dto/email-request.dto.ts",
+      "apps/api/src/modules/auth/dto/login.dto.ts",
+      "apps/api/src/modules/auth/dto/register.dto.ts",
+      "apps/api/src/modules/auth/dto/reset-password.dto.ts",
+      "apps/api/src/modules/auth/dto/token-query.dto.ts",
+      "apps/api/src/modules/auth/types/auth.types.ts",
+      "apps/api/src/modules/users/dto/update-profile.dto.ts",
+      "apps/api/src/modules/users/users.mapper.ts",
+      "apps/api/src/modules/users/users.service.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@template/database",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": [
+      "apps/api/src/app.integration.test.ts",
+      "apps/api/src/app.ts",
+      "apps/api/src/infrastructure/security/jwt.service.test.ts",
+      "apps/api/src/infrastructure/security/jwt.service.ts",
+      "apps/api/src/middlewares/auth.middleware.ts",
+      "apps/api/src/middlewares/authorization.middleware.test.ts",
+      "apps/api/src/middlewares/authorization.middleware.ts",
+      "apps/api/src/modules/auth/auth.service.integration.test.ts",
+      "apps/api/src/modules/auth/auth.service.test.ts",
+      "apps/api/src/modules/auth/auth.service.ts",
+      "apps/api/src/modules/auth/types/auth.types.ts",
+      "apps/api/src/modules/health/health.service.ts",
+      "apps/api/src/modules/users/users.mapper.ts",
+      "apps/api/src/modules/users/users.service.ts",
+      "apps/api/src/router.ts",
+      "apps/api/src/server.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "argon2",
+    "requested": "0.45.1",
+    "installed": "0.45.1",
+    "consumers": [
+      "apps/api/src/infrastructure/security/password-hasher.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "compression",
+    "requested": "1.8.1",
+    "installed": "1.8.1",
+    "consumers": [
+      "apps/api/src/app.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "cookie-parser",
+    "requested": "1.4.7",
+    "installed": "1.4.7",
+    "consumers": [
+      "apps/api/src/app.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "cors",
+    "requested": "2.8.6",
+    "installed": "2.8.6",
+    "consumers": [
+      "apps/api/src/app.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "dotenv",
+    "requested": "17.4.2",
+    "installed": "17.4.2",
+    "consumers": [
+      "apps/api/src/core/config/env.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "express",
+    "requested": "5.2.1",
+    "installed": "5.2.1",
+    "consumers": [
+      "apps/api/src/app.ts",
+      "apps/api/src/core/responses/api-response.ts",
+      "apps/api/src/infrastructure/openapi/openapi.routes.ts",
+      "apps/api/src/middlewares/auth.middleware.ts",
+      "apps/api/src/middlewares/authorization.middleware.ts",
+      "apps/api/src/middlewares/csrf.middleware.test.ts",
+      "apps/api/src/middlewares/csrf.middleware.ts",
+      "apps/api/src/middlewares/error-handler.middleware.test.ts",
+      "apps/api/src/middlewares/error-handler.middleware.ts",
+      "apps/api/src/middlewares/not-found.middleware.ts",
+      "apps/api/src/middlewares/rate-limit.middleware.ts",
+      "apps/api/src/middlewares/request-id.middleware.ts",
+      "apps/api/src/middlewares/request-logger.middleware.ts",
+      "apps/api/src/middlewares/validation.middleware.test.ts",
+      "apps/api/src/middlewares/validation.middleware.ts",
+      "apps/api/src/modules/auth/auth.controller.test.ts",
+      "apps/api/src/modules/auth/auth.controller.ts",
+      "apps/api/src/modules/auth/auth.rate-limiters.ts",
+      "apps/api/src/modules/auth/auth.routes.ts",
+      "apps/api/src/modules/health/health.controller.ts",
+      "apps/api/src/modules/health/health.routes.ts",
+      "apps/api/src/modules/users/users.controller.ts",
+      "apps/api/src/modules/users/users.routes.ts",
+      "apps/api/src/router.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "express-rate-limit",
+    "requested": "8.6.1",
+    "installed": "8.6.1",
+    "consumers": [
+      "apps/api/src/middlewares/rate-limit.middleware.ts",
+      "apps/api/src/modules/auth/auth.rate-limiters.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "helmet",
+    "requested": "8.3.0",
+    "installed": "8.3.0",
+    "consumers": [
+      "apps/api/src/app.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "jsonwebtoken",
+    "requested": "9.0.3",
+    "installed": "9.0.3",
+    "consumers": [
+      "apps/api/src/infrastructure/security/jwt.service.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "nodemailer",
+    "requested": "9.0.4",
+    "installed": "9.0.4",
+    "consumers": [
+      "apps/api/src/core/config/mailer.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "pino",
+    "requested": "10.3.1",
+    "installed": "10.3.1",
+    "consumers": [
+      "apps/api/src/app.integration.test.ts",
+      "apps/api/src/app.ts",
+      "apps/api/src/infrastructure/logger/logger.ts",
+      "apps/api/src/middlewares/request-logger.middleware.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "pino-http",
+    "requested": "11.0.0",
+    "installed": "11.0.0",
+    "consumers": [
+      "apps/api/src/middlewares/request-logger.middleware.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "resend",
+    "requested": "6.20.0",
+    "installed": "6.20.0",
+    "consumers": [
+      "apps/api/src/core/config/resend.config.ts",
+      "apps/api/src/infrastructure/email/email-delivery.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "zod",
+    "requested": "4.4.3",
+    "installed": "4.4.3",
+    "consumers": [
+      "apps/api/src/core/pagination/pagination.dto.ts",
+      "apps/api/src/infrastructure/openapi/openapi.ts",
+      "apps/api/src/middlewares/error-handler.middleware.test.ts",
+      "apps/api/src/middlewares/validation.middleware.test.ts",
+      "apps/api/src/middlewares/validation.middleware.ts",
+      "apps/api/src/modules/auth/dto/change-password.dto.ts",
+      "apps/api/src/modules/auth/dto/email-request.dto.ts",
+      "apps/api/src/modules/auth/dto/login.dto.ts",
+      "apps/api/src/modules/auth/dto/register.dto.ts",
+      "apps/api/src/modules/auth/dto/reset-password.dto.ts",
+      "apps/api/src/modules/auth/dto/token-query.dto.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "zod-openapi",
+    "requested": "6.0.0",
+    "installed": "6.0.0",
+    "consumers": [
+      "apps/api/src/infrastructure/openapi/openapi.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@template/eslint-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": [
+      "apps/api/eslint.config.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@template/typescript-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@testcontainers/postgresql",
+    "requested": "12.1.0",
+    "installed": "12.1.0",
+    "consumers": [
+      "apps/api/tests/integration/global-setup.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/compression",
+    "requested": "1.8.1",
+    "installed": "1.8.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/cookie-parser",
+    "requested": "1.4.10",
+    "installed": "1.4.10",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/cors",
+    "requested": "2.8.19",
+    "installed": "2.8.19",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/express",
+    "requested": "5.0.6",
+    "installed": "5.0.6",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/jsonwebtoken",
+    "requested": "9.0.10",
+    "installed": "9.0.10",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/node",
+    "requested": "24.13.3",
+    "installed": "24.13.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/nodemailer",
+    "requested": "8.0.1",
+    "installed": "8.0.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "@types/supertest",
+    "requested": "6.0.3",
+    "installed": "6.0.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "eslint",
+    "requested": "9.39.1",
+    "installed": "9.39.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "pino-pretty",
+    "requested": "13.1.3",
+    "installed": "13.1.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "rimraf",
+    "requested": "6.1.3",
+    "installed": "6.1.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "supertest",
+    "requested": "7.1.4",
+    "installed": "7.1.4",
+    "consumers": [
+      "apps/api/src/app.integration.test.ts"
+    ]
+  },
+  {
+    "workspace": "@template/api",
+    "name": "tsx",
+    "requested": "4.23.1",
+    "installed": "4.23.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "typescript",
+    "requested": "5.9.3",
+    "installed": "5.9.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/api",
+    "name": "vitest",
+    "requested": "4.1.10",
+    "installed": "4.1.10",
+    "consumers": [
+      "apps/api/src/app.integration.test.ts",
+      "apps/api/src/core/date-only.test.ts",
+      "apps/api/src/core/pagination/pagination.test.ts",
+      "apps/api/src/core/serialization/decimal.test.ts",
+      "apps/api/src/infrastructure/database/prisma-error.mapper.test.ts",
+      "apps/api/src/infrastructure/email/email-delivery.test.ts",
+      "apps/api/src/infrastructure/email/email.service.test.ts",
+      "apps/api/src/infrastructure/logger/logger.test.ts",
+      "apps/api/src/infrastructure/logger/request-sanitizer.test.ts",
+      "apps/api/src/infrastructure/openapi/openapi.test.ts",
+      "apps/api/src/infrastructure/security/jwt.service.test.ts",
+      "apps/api/src/infrastructure/security/password-hasher.test.ts",
+      "apps/api/src/infrastructure/security/token-hasher.test.ts",
+      "apps/api/src/middlewares/authorization.middleware.test.ts",
+      "apps/api/src/middlewares/csrf.middleware.test.ts",
+      "apps/api/src/middlewares/error-handler.middleware.test.ts",
+      "apps/api/src/middlewares/validation.middleware.test.ts",
+      "apps/api/src/modules/auth/auth.controller.test.ts",
+      "apps/api/src/modules/auth/auth.service.integration.test.ts",
+      "apps/api/src/modules/auth/auth.service.test.ts",
+      "apps/api/vitest.config.ts",
+      "apps/api/vitest.integration.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "zod",
+    "requested": "4.4.3",
+    "installed": "4.4.3",
+    "consumers": [
+      "packages/contracts/src/account/account.schema.ts",
+      "packages/contracts/src/auth/auth.schema.ts",
+      "packages/contracts/src/http/http.schema.ts"
+    ]
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "@template/eslint-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": [
+      "packages/contracts/eslint.config.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "@template/typescript-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": []
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "@types/node",
+    "requested": "24.13.3",
+    "installed": "24.13.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "eslint",
+    "requested": "9.39.1",
+    "installed": "9.39.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "rimraf",
+    "requested": "6.1.3",
+    "installed": "6.1.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "typescript",
+    "requested": "5.9.3",
+    "installed": "5.9.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/contracts",
+    "name": "vitest",
+    "requested": "4.1.10",
+    "installed": "4.1.10",
+    "consumers": [
+      "packages/contracts/src/account/account.schema.test.ts",
+      "packages/contracts/src/auth/auth.schema.test.ts",
+      "packages/contracts/src/http/http.schema.test.ts",
+      "packages/contracts/vitest.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@prisma/adapter-pg",
+    "requested": "7.9.1",
+    "installed": "7.9.1",
+    "consumers": [
+      "packages/database/src/client.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@prisma/client",
+    "requested": "7.9.1",
+    "installed": "7.9.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@template/contracts",
+    "requested": "workspace:*",
+    "installed": "0.1.0",
+    "consumers": [
+      "packages/database/src/seed-config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "argon2",
+    "requested": "0.45.1",
+    "installed": "0.45.1",
+    "consumers": [
+      "packages/database/src/seed-config.ts",
+      "packages/database/tests/seed-config.test.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "pg",
+    "requested": "8.22.0",
+    "installed": "8.22.0",
+    "consumers": [
+      "packages/database/tests/integration/migration.integration.test.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@template/eslint-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": [
+      "packages/database/eslint.config.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@template/typescript-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@testcontainers/postgresql",
+    "requested": "12.1.0",
+    "installed": "12.1.0",
+    "consumers": [
+      "packages/database/tests/integration/global-setup.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@types/node",
+    "requested": "24.13.3",
+    "installed": "24.13.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "@types/pg",
+    "requested": "8.20.3",
+    "installed": "8.20.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "dotenv",
+    "requested": "17.4.2",
+    "installed": "17.4.2",
+    "consumers": [
+      "packages/database/prisma.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "eslint",
+    "requested": "9.39.1",
+    "installed": "9.39.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "prisma",
+    "requested": "7.9.1",
+    "installed": "7.9.1",
+    "consumers": [
+      "packages/database/prisma.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/database",
+    "name": "rimraf",
+    "requested": "6.1.3",
+    "installed": "6.1.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "tsx",
+    "requested": "4.23.1",
+    "installed": "4.23.1",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "typescript",
+    "requested": "5.9.3",
+    "installed": "5.9.3",
+    "consumers": []
+  },
+  {
+    "workspace": "@template/database",
+    "name": "vitest",
+    "requested": "4.1.10",
+    "installed": "4.1.10",
+    "consumers": [
+      "packages/database/tests/integration/migration.integration.test.ts",
+      "packages/database/tests/schema-contract.test.ts",
+      "packages/database/tests/seed-config.test.ts",
+      "packages/database/vitest.config.ts",
+      "packages/database/vitest.integration.config.ts"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "@eslint/js",
+    "requested": "9.39.1",
+    "installed": "9.39.1",
+    "consumers": [
+      "packages/eslint-config/base.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "eslint-config-next",
+    "requested": "16.2.12",
+    "installed": "16.2.12",
+    "consumers": [
+      "packages/eslint-config/next.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "eslint-config-prettier",
+    "requested": "10.1.8",
+    "installed": "10.1.8",
+    "consumers": [
+      "packages/eslint-config/base.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "eslint-plugin-import-x",
+    "requested": "4.17.1",
+    "installed": "4.17.1",
+    "consumers": [
+      "packages/eslint-config/base.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "eslint-plugin-unused-imports",
+    "requested": "4.4.1",
+    "installed": "4.4.1",
+    "consumers": [
+      "packages/eslint-config/base.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "globals",
+    "requested": "16.5.0",
+    "installed": "16.5.0",
+    "consumers": [
+      "packages/eslint-config/next.mjs",
+      "packages/eslint-config/node.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/eslint-config",
+    "name": "typescript-eslint",
+    "requested": "8.65.0",
+    "installed": "8.65.0",
+    "consumers": [
+      "packages/eslint-config/base.mjs"
+    ]
+  },
+  {
+    "workspace": "@template/prettier-config",
+    "name": "prettier-plugin-tailwindcss",
+    "requested": "0.8.1",
+    "installed": "0.8.1",
+    "consumers": [
+      "packages/prettier-config/index.mjs"
+    ]
+  },
+  {
+    "workspace": "full-stack-boilerplate",
+    "name": "@template/prettier-config",
+    "requested": "workspace:*",
+    "installed": null,
+    "consumers": []
+  },
+  {
+    "workspace": "full-stack-boilerplate",
+    "name": "prettier",
+    "requested": "3.9.6",
+    "installed": "3.9.6",
+    "consumers": []
+  },
+  {
+    "workspace": "full-stack-boilerplate",
+    "name": "turbo",
+    "requested": "2.10.8",
+    "installed": "2.10.8",
+    "consumers": []
+  }
+]

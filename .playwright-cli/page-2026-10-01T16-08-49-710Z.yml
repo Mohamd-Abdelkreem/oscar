@@ -1,0 +1,9 @@
+- generic [active] [ref=f219e1]:
+  - status [ref=f219e2]:
+    - generic [ref=f219e3]:
+      - generic [ref=f219e4]: أ
+      - generic [ref=f219e7]:
+        - heading "جارٍ تحميل أوسكار..." [level=1] [ref=f219e8]
+        - paragraph [ref=f219e9]: يرجى الانتظار قليلاً ريثما تكتمل تهيئة الواجهة
+  - button "Open Next.js Dev Tools" [ref=f219e15] [cursor=pointer]
+  - alert [ref=f219e19]

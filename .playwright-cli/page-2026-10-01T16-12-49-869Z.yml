@@ -1,0 +1,242 @@
+- generic [ref=f219e1]:
+  - generic [ref=f219e21]:
+    - complementary [ref=f219e22]:
+      - generic [ref=f219e23]:
+        - generic [ref=f219e24]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=f219e25] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=f219e26]: أ
+            - generic [ref=f219e27]:
+              - generic [ref=f219e28]: أوسكار | الإدارة
+              - generic [ref=f219e29]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=f219e30] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=f219e34]:
+          - generic [ref=f219e35]:
+            - heading "الرئيسية" [level=2] [ref=f219e36]
+            - list [ref=f219e37]:
+              - listitem [ref=f219e38]:
+                - link "نظرة عامة" [ref=f219e39] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=f219e46]:
+            - heading "الموظفون والمناصب" [level=2] [ref=f219e47]
+            - list [ref=f219e48]:
+              - listitem [ref=f219e49]:
+                - link "إدارة الموظفين" [ref=f219e50] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=f219e57]:
+                - link "الباقات والمناصب" [ref=f219e58] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=f219e64]:
+            - heading "المهام والرموز" [level=2] [ref=f219e65]
+            - list [ref=f219e66]:
+              - listitem [ref=f219e67]:
+                - link "إدارة المهام" [ref=f219e68] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=f219e73]:
+                - link "رموز فتح المهام" [ref=f219e74] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=f219e79]:
+                - link "مراجعة التنفيذ" [ref=f219e80] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=f219e86]:
+            - heading "العمليات المالية" [level=2] [ref=f219e87]
+            - list [ref=f219e88]:
+              - listitem [ref=f219e89]:
+                - link "الإيداعات" [ref=f219e90] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=f219e94]:
+                - link "طلبات السحب" [ref=f219e95] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=f219e99]:
+                - link "السجل المالي" [ref=f219e100] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=f219e105]:
+            - heading "الشبكة والعمولات" [level=2] [ref=f219e106]
+            - list [ref=f219e107]:
+              - listitem [ref=f219e108]:
+                - link "شبكة الإحالات" [ref=f219e109] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=f219e116]:
+            - heading "النظام والرقابة" [level=2] [ref=f219e117]
+            - list [ref=f219e118]:
+              - listitem [ref=f219e119]:
+                - link "سجل التدقيق والرقابة" [ref=f219e120] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=f219e125]:
+                - link "إعدادات المنصة" [ref=f219e126] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=f219e131]:
+                - link "مدراء النظام" [ref=f219e132] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=f219e138] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=f219e143]:
+      - banner [ref=f219e144]:
+        - generic [ref=f219e145]:
+          - button "فتح القائمة الجانبية" [ref=f219e146] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=f219e148] [cursor=pointer]
+          - generic [ref=f219e152]: منظومة العمليات التشغيلية والرقابة الفورية
+        - generic [ref=f219e155]:
+          - link "واجهة الموظف التجريبية" [ref=f219e156] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=f219e162]:
+            - generic [ref=f219e163]: م
+            - generic [ref=f219e164]:
+              - generic [ref=f219e165]: محمد عبد الكريم
+              - generic [ref=f219e166]: مسؤول النظام (ADMIN)
+      - main [ref=f219e170]:
+        - generic [ref=f219e172]:
+          - generic [ref=f219e173]:
+            - navigation "مسار التنقل" [ref=f219e174]:
+              - list [ref=f219e175]:
+                - listitem [ref=f219e176]:
+                  - link "لوحة الإدارة" [ref=f219e177] [cursor=pointer]:
+                    - /url: /admin
+                - listitem [ref=f219e182]:
+                  - generic [ref=f219e185]: طلبات السحب
+            - generic [ref=f219e187]:
+              - heading "إدارة طلبات السحب المالي" [level=1] [ref=f219e188]
+              - paragraph [ref=f219e189]: متابعة طلبات سحب الأرباح (الحد الأدنى 16 USDT، الأقصى 500 USDT، الرسوم 21%)، زيادة الجدولة، والاعتماد النهائي
+          - alert [ref=f219e462]:
+            - generic [ref=f219e463]: تم تمديد جدولة طلب السحب wth_8095 بمقدار 12 ساعة بنجاح.
+            - button "إغلاق" [ref=f219e464] [cursor=pointer]
+          - generic [ref=f219e191]:
+            - textbox "بحث في طلبات السحب" [ref=f219e194]:
+              - /placeholder: بحث بالموظف، البريد، أو عنوان المحفظة...
+            - combobox "تصفية حسب حالة السحب" [ref=f219e197] [cursor=pointer]:
+              - generic [ref=f219e198]: كل حالات السحب (6)
+          - table [ref=f219e203]:
+            - rowgroup [ref=f219e204]:
+              - row [ref=f219e205]:
+                - columnheader "الموظف" [ref=f219e206]
+                - columnheader "المبلغ المطلوب" [ref=f219e207]
+                - columnheader "الرسوم (21%)" [ref=f219e208]
+                - columnheader "الصافي المحول" [ref=f219e209]
+                - columnheader "عنوان المحفظة" [ref=f219e210]
+                - columnheader "الطلب / الاستحقاق" [ref=f219e211]
+                - columnheader "الوقت المتبقي" [ref=f219e212]
+                - columnheader "الحالة" [ref=f219e213]
+                - columnheader "الإجراءات" [ref=f219e214]
+            - rowgroup [ref=f219e215]:
+              - row [ref=f219e465]:
+                - cell "محمود حسن mahmoud.hassan@example.com" [ref=f219e217]:
+                  - generic [ref=f219e218]:
+                    - link "محمود حسن" [ref=f219e219] [cursor=pointer]:
+                      - /url: /admin/employees/usr_1003
+                    - generic [ref=f219e220]: mahmoud.hassan@example.com
+                - cell "100.00 USDT" [ref=f219e221]
+                - cell "21.00 USDT" [ref=f219e222]
+                - cell "79.00 USDT" [ref=f219e223]
+                - cell "TM1n2O3p4Q5r6S7t8U9v0W1x2Y3z4A5b6C" [ref=f219e224]
+                - 'cell "طلب: 2026-09-30 11:38 استحقاق: 2026-10-03 11:38" [ref=f219e225]':
+                  - generic [ref=f219e226]:
+                    - generic [ref=f219e227]: "طلب: 2026-09-30 11:38"
+                    - generic [ref=f219e228]: "استحقاق: 2026-10-03 11:38"
+                - cell "40 ساعة و26 دقيقة" [ref=f219e466]
+                - cell "مجدول (72 ساعة)" [ref=f219e231]
+                - cell [ref=f219e235]:
+                  - generic [ref=f219e236]:
+                    - button "زيادة الجدولة" [ref=f219e237] [cursor=pointer]
+                    - button "إتمام" [ref=f219e242] [cursor=pointer]
+                    - button "رفض" [ref=f219e248] [cursor=pointer]
+              - row [ref=f219e467]:
+                - cell "أحمد مروان ahmed.marwan@example.com" [ref=f219e256]:
+                  - generic [ref=f219e257]:
+                    - link "أحمد مروان" [ref=f219e258] [cursor=pointer]:
+                      - /url: /admin/employees/usr_9981
+                    - generic [ref=f219e259]: ahmed.marwan@example.com
+                - cell "60.00 USDT" [ref=f219e260]
+                - cell "12.60 USDT" [ref=f219e261]
+                - cell "47.40 USDT" [ref=f219e262]
+                - cell "TQj1xP8mB9k8Z7Y6X5W4V3U2T1S0R9Q8P7" [ref=f219e263]
+                - 'cell "طلب: 2026-09-28 17:08 استحقاق: 2026-10-02 05:08" [ref=f219e468]':
+                  - generic [ref=f219e265]:
+                    - generic [ref=f219e266]: "طلب: 2026-09-28 17:08"
+                    - generic [ref=f219e267]: "استحقاق: 2026-10-02 05:08"
+                - cell "9 ساعة و56 دقيقة" [ref=f219e469]
+                - cell "مجدول (84 ساعة) تم تمديده (+12 س)" [ref=f219e470]:
+                  - generic [ref=f219e271]: مجدول (84 ساعة)
+                  - paragraph [ref=f219e471]: تم تمديده (+12 س)
+                - cell [ref=f219e274]:
+                  - generic [ref=f219e275]:
+                    - button "زيادة الجدولة" [active] [ref=f219e276] [cursor=pointer]
+                    - button "إتمام" [ref=f219e281] [cursor=pointer]
+                    - button "رفض" [ref=f219e287] [cursor=pointer]
+              - row [ref=f219e294]:
+                - cell "فاطمة علي fatima.ali@example.com" [ref=f219e295]:
+                  - generic [ref=f219e296]:
+                    - link "فاطمة علي" [ref=f219e297] [cursor=pointer]:
+                      - /url: /admin/employees/usr_1004
+                    - generic [ref=f219e298]: fatima.ali@example.com
+                - cell "50.00 USDT" [ref=f219e299]
+                - cell "10.50 USDT" [ref=f219e300]
+                - cell "39.50 USDT" [ref=f219e301]
+                - cell "TF9g8H7i6J5k4L3m2N1o0P9q8R7s6T5u4V" [ref=f219e302]
+                - 'cell "طلب: 2026-09-29 19:08 استحقاق: 2026-10-02 19:08" [ref=f219e303]':
+                  - generic [ref=f219e304]:
+                    - generic [ref=f219e305]: "طلب: 2026-09-29 19:08"
+                    - generic [ref=f219e306]: "استحقاق: 2026-10-02 19:08"
+                - cell "—" [ref=f219e307]
+                - cell "معلق بقرار إداري معلق بقرار إداري للتحقق من عنوان السحب غير المطابق للبيانات" [ref=f219e308]:
+                  - generic [ref=f219e309]: معلق بقرار إداري
+                  - paragraph [ref=f219e312]: معلق بقرار إداري للتحقق من عنوان السحب غير المطابق للبيانات
+                - cell [ref=f219e313]:
+                  - generic [ref=f219e314]:
+                    - button "فك التعليق" [ref=f219e315] [cursor=pointer]
+                    - button "رفض" [ref=f219e320] [cursor=pointer]
+              - row [ref=f219e327]:
+                - cell "سارة كريم sara.kareem@example.com" [ref=f219e328]:
+                  - generic [ref=f219e329]:
+                    - link "سارة كريم" [ref=f219e330] [cursor=pointer]:
+                      - /url: /admin/employees/usr_1002
+                    - generic [ref=f219e331]: sara.kareem@example.com
+                - cell "80.00 USDT" [ref=f219e332]
+                - cell "16.80 USDT" [ref=f219e333]
+                - cell "63.20 USDT" [ref=f219e334]
+                - cell "TV7b8C9d0E1F2G3H4I5J6K7L8M9N0P1Q2R" [ref=f219e335]
+                - 'cell "طلب: 2026-09-28 18:08 استحقاق: 2026-10-01 18:08" [ref=f219e336]':
+                  - generic [ref=f219e337]:
+                    - generic [ref=f219e338]: "طلب: 2026-09-28 18:08"
+                    - generic [ref=f219e339]: "استحقاق: 2026-10-01 18:08"
+                - cell "—" [ref=f219e340]
+                - cell "قيد التحويل والتنفيذ" [ref=f219e341]
+                - cell [ref=f219e345]:
+                  - generic [ref=f219e346]:
+                    - button "إتمام" [ref=f219e347] [cursor=pointer]
+                    - button "رفض" [ref=f219e353] [cursor=pointer]
+              - row [ref=f219e360]:
+                - cell "أحمد مروان ahmed.marwan@example.com" [ref=f219e361]:
+                  - generic [ref=f219e362]:
+                    - link "أحمد مروان" [ref=f219e363] [cursor=pointer]:
+                      - /url: /admin/employees/usr_9981
+                    - generic [ref=f219e364]: ahmed.marwan@example.com
+                - cell "100.00 USDT" [ref=f219e365]
+                - cell "21.00 USDT" [ref=f219e366]
+                - cell "79.00 USDT" [ref=f219e367]
+                - cell "TQj1xP8mB9k8Z7Y6X5W4V3U2T1S0R9Q8P7" [ref=f219e368]
+                - 'cell "طلب: 2026-09-26 19:08 استحقاق: 2026-09-29 19:08" [ref=f219e369]':
+                  - generic [ref=f219e370]:
+                    - generic [ref=f219e371]: "طلب: 2026-09-26 19:08"
+                    - generic [ref=f219e372]: "استحقاق: 2026-09-29 19:08"
+                - cell "—" [ref=f219e373]
+                - cell "مكتمل ومسوى" [ref=f219e374]
+                - cell [ref=f219e378]
+              - row [ref=f219e379]:
+                - cell "ياسمين نور yasmin.nour@example.com" [ref=f219e380]:
+                  - generic [ref=f219e381]:
+                    - link "ياسمين نور" [ref=f219e382] [cursor=pointer]:
+                      - /url: /admin/employees/usr_1006
+                    - generic [ref=f219e383]: yasmin.nour@example.com
+                - cell "30.00 USDT" [ref=f219e384]
+                - cell "6.30 USDT" [ref=f219e385]
+                - cell "23.70 USDT" [ref=f219e386]
+                - cell "TY5u6V7w8X9y0Z1a2B3c4D5e6F7g8H9i0J" [ref=f219e387]
+                - 'cell "طلب: 2026-09-29 07:08 استحقاق: 2026-10-02 07:08" [ref=f219e388]':
+                  - generic [ref=f219e389]:
+                    - generic [ref=f219e390]: "طلب: 2026-09-29 07:08"
+                    - generic [ref=f219e391]: "استحقاق: 2026-10-02 07:08"
+                - cell "—" [ref=f219e392]
+                - cell "مرفوض ومحرر" [ref=f219e393]
+                - cell [ref=f219e397]
+  - button "Open Next.js Dev Tools" [ref=f219e15] [cursor=pointer]
+  - alert [ref=f219e19]

@@ -1,0 +1,197 @@
+- generic [ref=f112e1]:
+  - button "Open Next.js Dev Tools" [ref=f112e221] [cursor=pointer]
+  - alert [ref=f112e238]: أوسكار | لوحة التحكم الإدارية | Relay
+  - generic [ref=f112e557]:
+    - complementary [ref=f112e558]:
+      - generic [ref=f112e559]:
+        - generic [ref=f112e560]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=f112e561] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=f112e562]: أ
+            - generic [ref=f112e563]:
+              - generic [ref=f112e564]: أوسكار | الإدارة
+              - generic [ref=f112e565]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=f112e566] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=f112e570]:
+          - generic [ref=f112e571]:
+            - heading "الرئيسية" [level=2] [ref=f112e572]
+            - list [ref=f112e573]:
+              - listitem [ref=f112e574]:
+                - link "نظرة عامة" [ref=f112e575] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=f112e582]:
+            - heading "الموظفون والمناصب" [level=2] [ref=f112e583]
+            - list [ref=f112e584]:
+              - listitem [ref=f112e585]:
+                - link "إدارة الموظفين" [ref=f112e586] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=f112e593]:
+                - link "الباقات والمناصب" [ref=f112e594] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=f112e600]:
+            - heading "المهام والرموز" [level=2] [ref=f112e601]
+            - list [ref=f112e602]:
+              - listitem [ref=f112e603]:
+                - link "إدارة المهام" [ref=f112e604] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=f112e609]:
+                - link "رموز فتح المهام" [ref=f112e610] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=f112e615]:
+                - link "مراجعة التنفيذ" [ref=f112e616] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=f112e622]:
+            - heading "العمليات المالية" [level=2] [ref=f112e623]
+            - list [ref=f112e624]:
+              - listitem [ref=f112e625]:
+                - link "الإيداعات" [ref=f112e626] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=f112e630]:
+                - link "طلبات السحب" [ref=f112e631] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=f112e635]:
+                - link "السجل المالي" [ref=f112e636] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=f112e641]:
+            - heading "الشبكة والعمولات" [level=2] [ref=f112e642]
+            - list [ref=f112e643]:
+              - listitem [ref=f112e644]:
+                - link "شبكة الإحالات" [ref=f112e645] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=f112e652]:
+            - heading "النظام والرقابة" [level=2] [ref=f112e653]
+            - list [ref=f112e654]:
+              - listitem [ref=f112e655]:
+                - link "سجل التدقيق والرقابة" [ref=f112e656] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=f112e661]:
+                - link "إعدادات المنصة" [ref=f112e662] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=f112e667]:
+                - link "مدراء النظام" [ref=f112e668] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=f112e674] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=f112e679]:
+      - banner [ref=f112e680]:
+        - generic [ref=f112e681]:
+          - button "فتح القائمة الجانبية" [ref=f112e682] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=f112e684] [cursor=pointer]
+          - generic [ref=f112e688]: منظومة العمليات التشغيلية والرقابة الفورية
+        - generic [ref=f112e691]:
+          - link "واجهة الموظف التجريبية" [ref=f112e692] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=f112e698]:
+            - generic [ref=f112e699]: م
+            - generic [ref=f112e700]:
+              - generic [ref=f112e701]: محمد عبد الكريم
+              - generic [ref=f112e702]: مسؤول النظام (ADMIN)
+      - main [ref=f112e706]:
+        - generic [ref=f112e708]:
+          - generic [ref=f112e709]:
+            - navigation "مسار التنقل" [ref=f112e710]:
+              - list [ref=f112e711]:
+                - listitem [ref=f112e712]:
+                  - link "لوحة الإدارة" [ref=f112e713] [cursor=pointer]:
+                    - /url: /admin
+                - listitem [ref=f112e718]:
+                  - link "رموز المهام" [ref=f112e721] [cursor=pointer]:
+                    - /url: /admin/codes
+                - listitem [ref=f112e722]:
+                  - generic [ref=f112e725]: AUDIT-CODE-2026
+            - generic [ref=f112e726]:
+              - generic [ref=f112e727]:
+                - 'heading "تفاصيل رمز فتح المهمة: AUDIT-CODE-2026" [level=1] [ref=f112e728]'
+                - paragraph [ref=f112e729]: "تاريخ الإنشاء: 2026-10-01 18:53:55 — المنشئ: محمد عبد الكريم (ADMIN)"
+              - generic [ref=f112e731]:
+                - button "نسخ الرمز" [ref=f112e732] [cursor=pointer]
+                - button "إيقاف الرمز مؤقتاً" [ref=f112e738] [cursor=pointer]
+          - generic [ref=f112e744]:
+            - generic [ref=f112e745]:
+              - generic [ref=f112e746]:
+                - generic [ref=f112e747]:
+                  - generic [ref=f112e748]: "حالة الرمز:"
+                  - generic [ref=f112e749]: نشط (يقبل الفتح)
+                - generic [ref=f112e752]: "المعرف: cod_1790870035507_094z"
+              - generic [ref=f112e753]:
+                - generic [ref=f112e754]:
+                  - generic [ref=f112e755]: "رمز الفتح المعتمد:"
+                  - text: AUDIT-CODE-2026
+                - button "نسخ الرمز" [ref=f112e756] [cursor=pointer]
+              - generic [ref=f112e761]:
+                - generic [ref=f112e762]: "المهمة المرتبطة:"
+                - generic [ref=f112e763]:
+                  - generic [ref=f112e764]:
+                    - link "مراجعة جودة محتوى وتقييم تطبيق الشريك" [ref=f112e765] [cursor=pointer]:
+                      - /url: /admin/tasks/tsk_today_1001
+                    - generic [ref=f112e766]:
+                      - text: "المنصة: منصة التقييم المعتمدة أوسكار • النافذة:"
+                      - generic [ref=f112e767]: 12:00 - 18:00
+                  - link "استعراض المهمة" [ref=f112e768] [cursor=pointer]:
+                    - /url: /admin/tasks/tsk_today_1001
+            - generic [ref=f112e774]:
+              - heading "إحصائيات استخدام الرمز" [level=2] [ref=f112e775]
+              - generic [ref=f112e776]:
+                - text: عدد الموظفين الفريدين الذين فتحوا المهمة بهذا الرمز
+                - generic [ref=f112e777]: "1"
+                - generic [ref=f112e778]: (يتم احتساب كل موظف مرة واحدة فقط لمنع التكرار)
+              - generic [ref=f112e779]:
+                - generic [ref=f112e780]:
+                  - generic [ref=f112e781]: "تاريخ وساعة الإنشاء:"
+                  - generic [ref=f112e782]: 2026-10-01 18:53:55
+                - generic [ref=f112e783]:
+                  - generic [ref=f112e784]: "تم الإنشاء بواسطة:"
+                  - generic [ref=f112e785]: محمد عبد الكريم (ADMIN)
+          - generic [ref=f112e786]:
+            - generic [ref=f112e787]:
+              - heading "سجل الموظفين الذين استخدموا هذا الرمز بنجاح (1)" [level=2] [ref=f112e794]
+              - textbox "بحث في سجل الاستخدام..." [ref=f112e799]
+            - table [ref=f112e802]:
+              - rowgroup [ref=f112e803]:
+                - row [ref=f112e804]:
+                  - columnheader "الموظف" [ref=f112e805]
+                  - columnheader "البريد الإلكتروني" [ref=f112e806]
+                  - columnheader "معرف الموظف" [ref=f112e807]
+                  - columnheader "توقيت الفتح الناجح" [ref=f112e808]
+                  - columnheader "حالة التسليم اللاحقة" [ref=f112e809]
+                  - columnheader "الملف" [ref=f112e810]
+              - rowgroup [ref=f112e811]:
+                - row [ref=f112e812]:
+                  - cell [ref=f112e813]:
+                    - link "أحمد مروان" [ref=f112e814] [cursor=pointer]:
+                      - /url: /admin/employees/usr_9981
+                  - cell "ahmed.marwan@example.com" [ref=f112e815]
+                  - cell "usr_9981" [ref=f112e816]
+                  - cell "2026-10-01 18:57:44" [ref=f112e817]
+                  - cell "لم يتم الإرسال بعد" [ref=f112e818]
+                  - cell [ref=f112e821]:
+                    - link "عرض الحساب ←" [ref=f112e822] [cursor=pointer]:
+                      - /url: /admin/employees/usr_9981
+          - generic [ref=f112e823]:
+            - heading "سجل العمليات والتدقيق المرتبط بهذا الرمز" [level=2] [ref=f112e827]
+            - generic [ref=f112e828]:
+              - generic [ref=f112e829]:
+                - generic [ref=f112e830]:
+                  - generic [ref=f112e831]: فتح مهمة بواسطة رمز
+                  - generic [ref=f112e832]: 2026-10-01 18:57:44
+                - generic [ref=f112e833]:
+                  - text: AUDIT-CODE-2026
+                  - generic [ref=f112e834]: — استخدام ناجح لرمز فتح المهمة
+                - generic [ref=f112e835]: "المسؤول: محمد عبد الكريم"
+              - generic [ref=f112e836]:
+                - generic [ref=f112e837]:
+                  - generic [ref=f112e838]: إنشاء رمز فتح مهمة
+                  - generic [ref=f112e839]: 2026-10-01 18:53:55
+                - generic [ref=f112e840]:
+                  - text: AUDIT-CODE-2026
+                  - generic [ref=f112e841]: — إنشاء رمز مهمة جديد
+                - generic [ref=f112e842]: "المسؤول: محمد عبد الكريم"
+          - dialog [ref=f112e843]:
+            - generic [active] [ref=f112e844]:
+              - generic [ref=f112e845]:
+                - 'heading "إيقاف رمز فتح المهمة: AUDIT-CODE-2026" [level=2] [ref=f112e850]'
+                - button "إغلاق النافذة" [ref=f112e851] [cursor=pointer]
+              - generic [ref=f112e855]: سيؤدي إيقاف الرمز إلى منع الموظفين من استخدامه لفتح المهمة اليومية المرتبطة فوراً.
+              - generic [ref=f112e857]:
+                - button "إلغاء" [ref=f112e858] [cursor=pointer]
+                - button "تأكيد إيقاف الرمز" [ref=f112e861] [cursor=pointer]

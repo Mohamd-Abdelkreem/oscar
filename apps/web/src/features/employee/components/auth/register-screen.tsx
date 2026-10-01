@@ -1,6 +1,6 @@
 "use client";
 
-import { useManagedTimeout } from "@/features/employee/hooks/use-managed-timeout";
+import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 import { AlertCircle, UserPlus } from "lucide-react";
 import Link from "next/link";

@@ -1,0 +1,54 @@
+[
+  {
+    "name": "SEED_PACKAGES",
+    "equal": true
+  },
+  {
+    "name": "SEED_EMPLOYEES",
+    "equal": true
+  },
+  {
+    "name": "SEED_TASKS",
+    "equal": true
+  },
+  {
+    "name": "SEED_CODES",
+    "equal": true
+  },
+  {
+    "name": "SEED_CODE_USAGES",
+    "equal": true
+  },
+  {
+    "name": "SEED_SUBMISSIONS",
+    "equal": true
+  },
+  {
+    "name": "SEED_DEPOSITS",
+    "equal": true
+  },
+  {
+    "name": "SEED_WITHDRAWALS",
+    "equal": true
+  },
+  {
+    "name": "SEED_FINANCE_TRANSACTIONS",
+    "equal": true
+  },
+  {
+    "name": "SEED_REFERRAL_MEMBERS",
+    "equal": true
+  },
+  {
+    "name": "SEED_COMMISSIONS",
+    "equal": true
+  },
+  {
+    "name": "SEED_ADMINS",
+    "equal": true
+  },
+  {
+    "name": "SEED_AUDIT_LOGS",
+    "equal": true
+  }
+]

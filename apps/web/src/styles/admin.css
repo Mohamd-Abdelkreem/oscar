@@ -1,0 +1,199 @@
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/500.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+
+/* Scope admin typography & reset */
+.admin-scope,
+.admin-portal {
+  --font-cairo: "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.admin-scope {
+  color: #0f172a;
+  background-color: #f8fafc;
+}
+
+.admin-scope *,
+.admin-scope *::before,
+.admin-scope *::after,
+.admin-portal *,
+.admin-portal *::before,
+.admin-portal *::after {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  box-sizing: border-box;
+}
+
+/* Ensure strictly NO gradients anywhere in the admin dashboard */
+.admin-scope [style*="gradient"],
+.admin-scope .bg-gradient-to-r,
+.admin-scope .bg-gradient-to-l,
+.admin-scope .bg-gradient-to-t,
+.admin-scope .bg-gradient-to-b,
+.admin-portal [style*="gradient"] {
+  background-image: none !important;
+}
+
+/* Heading reset inside admin */
+.admin-scope h1,
+.admin-scope h2,
+.admin-scope h3,
+.admin-scope h4,
+.admin-scope h5,
+.admin-scope h6 {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Form inputs & buttons reset inside admin */
+.admin-scope input,
+.admin-scope select,
+.admin-scope textarea,
+.admin-scope button,
+.admin-portal input,
+.admin-portal select,
+.admin-portal textarea,
+.admin-portal button {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Directional isolation for codes, numbers, addresses, emails, dates, hashes */
+.admin-scope [dir="ltr"],
+.admin-scope bdi,
+.admin-portal [dir="ltr"],
+.admin-portal bdi {
+  font-family: var(--font-cairo) !important;
+  direction: ltr !important;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Accessibility focus styles */
+.admin-scope button:focus-visible,
+.admin-scope a:focus-visible,
+.admin-scope input:focus-visible,
+.admin-scope select:focus-visible,
+.admin-scope textarea:focus-visible,
+.admin-portal [role="option"]:focus-visible,
+.admin-portal [role="menuitem"]:focus-visible {
+  outline: 2px solid #15803d !important;
+  outline-offset: 2px !important;
+}
+
+/* Cursor rules */
+.admin-scope button:not(:disabled):not([aria-disabled="true"]),
+.admin-scope a:not([aria-disabled="true"]):not([disabled]),
+.admin-scope [role="button"]:not([aria-disabled="true"]),
+.admin-scope [role="tab"],
+.admin-scope summary,
+.admin-scope label[for],
+.admin-scope input[type="checkbox"]:not(:disabled),
+.admin-scope input[type="radio"]:not(:disabled),
+.admin-scope select:not(:disabled),
+.admin-portal [role="option"]:not([data-disabled]),
+.admin-portal [role="menuitem"]:not([data-disabled]) {
+  cursor: pointer;
+}
+
+.admin-scope button:disabled,
+.admin-scope button[aria-disabled="true"],
+.admin-scope a[aria-disabled="true"],
+.admin-scope [role="button"][aria-disabled="true"],
+.admin-scope [aria-disabled="true"],
+.admin-portal [data-disabled] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.admin-scope input[type="text"],
+.admin-scope input[type="email"],
+.admin-scope input[type="password"],
+.admin-scope input[type="number"],
+.admin-scope textarea {
+  cursor: text;
+}
+
+/* Requirement 13: Guarantee icon and label sit beside each other in RTL flex row */
+.admin-scope .admin-button,
+.admin-scope button,
+.admin-scope [role="menuitem"],
+.admin-scope [role="option"],
+.admin-portal [role="option"],
+.admin-portal [role="menuitem"] {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.admin-scope .admin-button svg,
+.admin-scope button svg,
+.admin-scope a svg {
+  flex-shrink: 0;
+}
+
+/* Requirement 8: Polished neutral scrollbars (~8px width) for all admin regions */
+.admin-scope,
+.admin-scope *,
+.admin-portal,
+.admin-portal * {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+.admin-scope ::-webkit-scrollbar,
+.admin-portal ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.admin-scope ::-webkit-scrollbar-track,
+.admin-portal ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.admin-scope ::-webkit-scrollbar-thumb,
+.admin-portal ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+  border: 2px solid #f1f5f9;
+}
+
+.admin-scope ::-webkit-scrollbar-thumb:hover,
+.admin-portal ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* High contrast preservation */
+@media (forced-colors: active) {
+  .admin-scope,
+  .admin-scope *,
+  .admin-portal,
+  .admin-portal * {
+    scrollbar-color: auto;
+  }
+}
+
+/* Smooth table horizontal scrolling */
+.admin-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .admin-scope *,
+  .admin-portal * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

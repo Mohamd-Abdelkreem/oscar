@@ -1,0 +1,474 @@
+- generic [ref=f220e1]:
+  - generic [ref=f220e3]:
+    - dialog "القائمة الجانبية" [ref=f220e4]:
+      - generic [ref=f220e5]:
+        - generic [ref=f220e6]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=f220e7] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=f220e8]: أ
+            - generic [ref=f220e9]:
+              - generic [ref=f220e10]: أوسكار | الإدارة
+              - generic [ref=f220e11]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=f220e12] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=f220e16]:
+          - generic [ref=f220e17]:
+            - heading "الرئيسية" [level=2] [ref=f220e18]
+            - list [ref=f220e19]:
+              - listitem [ref=f220e20]:
+                - link "نظرة عامة" [ref=f220e21] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=f220e28]:
+            - heading "الموظفون والمناصب" [level=2] [ref=f220e29]
+            - list [ref=f220e30]:
+              - listitem [ref=f220e31]:
+                - link "إدارة الموظفين" [ref=f220e32] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=f220e39]:
+                - link "الباقات والمناصب" [ref=f220e40] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=f220e46]:
+            - heading "المهام والرموز" [level=2] [ref=f220e47]
+            - list [ref=f220e48]:
+              - listitem [ref=f220e49]:
+                - link "إدارة المهام" [ref=f220e50] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=f220e55]:
+                - link "رموز فتح المهام" [ref=f220e56] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=f220e61]:
+                - link "مراجعة التنفيذ" [ref=f220e62] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=f220e68]:
+            - heading "العمليات المالية" [level=2] [ref=f220e69]
+            - list [ref=f220e70]:
+              - listitem [ref=f220e71]:
+                - link "الإيداعات" [ref=f220e72] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=f220e76]:
+                - link "طلبات السحب" [ref=f220e77] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=f220e81]:
+                - link "السجل المالي" [ref=f220e82] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=f220e87]:
+            - heading "الشبكة والعمولات" [level=2] [ref=f220e88]
+            - list [ref=f220e89]:
+              - listitem [ref=f220e90]:
+                - link "شبكة الإحالات" [ref=f220e91] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=f220e98]:
+            - heading "النظام والرقابة" [level=2] [ref=f220e99]
+            - list [ref=f220e100]:
+              - listitem [ref=f220e101]:
+                - link "سجل التدقيق والرقابة" [ref=f220e102] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=f220e107]:
+                - link "إعدادات المنصة" [ref=f220e108] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=f220e113]:
+                - link "مدراء النظام" [ref=f220e114] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=f220e120] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=f220e125]:
+      - banner [ref=f220e126]:
+        - generic [ref=f220e127]:
+          - button "فتح القائمة الجانبية" [active] [ref=f220e128] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=f220e130] [cursor=pointer]
+        - generic [ref=f220e134]:
+          - link "الموظف" [ref=f220e135] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=f220e141]: م
+      - main [ref=f220e143]:
+        - generic [ref=f220e145]:
+          - generic [ref=f220e146]:
+            - navigation "مسار التنقل" [ref=f220e147]:
+              - list [ref=f220e148]:
+                - listitem [ref=f220e149]:
+                  - link "لوحة الإدارة" [ref=f220e150] [cursor=pointer]:
+                    - /url: /admin
+                - listitem [ref=f220e155]:
+                  - generic [ref=f220e158]: الإحالات والشبكة
+            - generic [ref=f220e160]:
+              - heading "شبكة الإحالات والعمولات التراكمية" [level=1] [ref=f220e161]
+              - paragraph [ref=f220e162]: "استعراض هيكل الفرق والمستويات النسبية الخمسة (L1: 12%, L2: 6%, L3: 4%, L4: 2%, L5: 2%)، ومتابعة سجلات احتساب العمولات"
+          - generic [ref=f220e163]:
+            - generic [ref=f220e164]:
+              - 'heading "نسب توزيع العمولات المعتمدة (أساس الاحتساب: شراء وترقية الباقات فقط)" [level=2] [ref=f220e170]'
+              - generic [ref=f220e171]: لا تحتسب أي عمولات على الإيداعات النقدية
+            - generic [ref=f220e172]:
+              - generic [ref=f220e173]:
+                - generic [ref=f220e174]: المستوى L1
+                - generic [ref=f220e175]: 12%
+              - generic [ref=f220e176]:
+                - generic [ref=f220e177]: المستوى L2
+                - generic [ref=f220e178]: 6%
+              - generic [ref=f220e179]:
+                - generic [ref=f220e180]: المستوى L3
+                - generic [ref=f220e181]: 4%
+              - generic [ref=f220e182]:
+                - generic [ref=f220e183]: المستوى L4
+                - generic [ref=f220e184]: 2%
+              - generic [ref=f220e185]:
+                - generic [ref=f220e186]: المستوى L5
+                - generic [ref=f220e187]: 2%
+          - generic [ref=f220e188]:
+            - generic [ref=f220e189]:
+              - generic [ref=f220e190]:
+                - generic [ref=f220e191] [cursor=pointer]: "تحديد قائد الفريق / الحساب الجذر لاحتساب المستويات النسبية:"
+                - combobox "اختر عضو لحساب فريقه" [ref=f220e193] [cursor=pointer]:
+                  - generic [ref=f220e194]: محمد عبد الله (usr_1001) — A1
+              - generic [ref=f220e198]:
+                - generic [ref=f220e199]: "أمثلة سريعة:"
+                - button "محمد عبد الله (الجذر 1)" [ref=f220e200] [cursor=pointer]
+                - button "أحمد مروان" [ref=f220e203] [cursor=pointer]
+                - button "ياسمين نور" [ref=f220e206] [cursor=pointer]
+                - button "عمر خالد (الجذر 2)" [ref=f220e209] [cursor=pointer]
+            - generic [ref=f220e212]:
+              - generic [ref=f220e219]:
+                - generic [ref=f220e220]:
+                  - generic [ref=f220e221]: "الحساب المختار: فريق محمد عبد الله"
+                  - generic [ref=f220e222]: باقة A1
+                - generic [ref=f220e223]: "المعرف: usr_1001 • البريد: mohamed.abdallah@example.com"
+              - generic [ref=f220e224]:
+                - generic [ref=f220e225]:
+                  - generic [ref=f220e226]: إجمالي أعضاء الفريق النسبي
+                  - generic [ref=f220e227]: 13 عضو
+                - link "ملف الحساب ←" [ref=f220e228] [cursor=pointer]:
+                  - /url: /admin/employees/usr_1001
+          - generic [ref=f220e229]:
+            - generic [ref=f220e230]:
+              - generic [ref=f220e231]:
+                - generic [ref=f220e232]:
+                  - heading "هيكل الفريق النسبي (L1 - L5)" [level=2] [ref=f220e233]
+                  - paragraph [ref=f220e234]: المستويات مشتقة ديناميكياً بالنسبة للحساب المختار (13 عضو)
+                - textbox "تصفية أعضاء فريق الحساب المختار" [ref=f220e237]:
+                  - /placeholder: تصفية أعضاء الفريق...
+              - generic [ref=f220e238]:
+                - generic [ref=f220e239]:
+                  - 'button "L1 المستوى 1 (نسبة العمولة: 12%) 2 أعضاء" [expanded] [ref=f220e240] [cursor=pointer]':
+                    - generic [ref=f220e241]:
+                      - generic [ref=f220e242]: L1
+                      - generic [ref=f220e243]: "المستوى 1 (نسبة العمولة: 12%)"
+                    - generic [ref=f220e244]: 2 أعضاء
+                  - generic [ref=f220e248]:
+                    - generic [ref=f220e670] [cursor=pointer]:
+                      - generic [ref=f220e671]:
+                        - generic [ref=f220e672]:
+                          - generic [ref=f220e673]: أحمد مروان
+                          - generic [ref=f220e674]: S1
+                        - generic [ref=f220e675]:
+                          - generic [ref=f220e681]: "المسار:"
+                          - generic [ref=f220e682]:
+                            - generic [ref=f220e683]: محمد عبد الله
+                            - generic [ref=f220e684]: ←
+                          - generic [ref=f220e685]: أحمد مروان
+                        - generic [ref=f220e687]: "المعرف: usr_9981 • ahmed.marwan@example.com"
+                      - generic [ref=f220e688]:
+                        - generic [ref=f220e689]: 110.00 USDT
+                        - generic [ref=f220e690]: 3 إحالات مباشرة
+                    - generic [ref=f220e691] [cursor=pointer]:
+                      - generic [ref=f220e692]:
+                        - generic [ref=f220e693]:
+                          - generic [ref=f220e694]: سارة كريم
+                          - generic [ref=f220e695]: O1
+                        - generic [ref=f220e696]:
+                          - generic [ref=f220e702]: "المسار:"
+                          - generic [ref=f220e703]:
+                            - generic [ref=f220e704]: محمد عبد الله
+                            - generic [ref=f220e705]: ←
+                          - generic [ref=f220e706]: سارة كريم
+                        - generic [ref=f220e708]: "المعرف: usr_1002 • sara.kareem@example.com"
+                      - generic [ref=f220e709]:
+                        - generic [ref=f220e710]: 240.00 USDT
+                        - generic [ref=f220e711]: 1 إحالات مباشرة
+                - generic [ref=f220e291]:
+                  - 'button "L2 المستوى 2 (نسبة العمولة: 6%) 4 أعضاء" [expanded] [ref=f220e292] [cursor=pointer]':
+                    - generic [ref=f220e293]:
+                      - generic [ref=f220e294]: L2
+                      - generic [ref=f220e295]: "المستوى 2 (نسبة العمولة: 6%)"
+                    - generic [ref=f220e296]: 4 أعضاء
+                  - generic [ref=f220e300]:
+                    - generic [ref=f220e712] [cursor=pointer]:
+                      - generic [ref=f220e713]:
+                        - generic [ref=f220e714]:
+                          - generic [ref=f220e715]: ياسمين نور
+                          - generic [ref=f220e716]: S2
+                        - generic [ref=f220e717]:
+                          - generic [ref=f220e723]: "المسار:"
+                          - generic [ref=f220e724]:
+                            - generic [ref=f220e725]: محمد عبد الله
+                            - generic [ref=f220e726]: ←
+                          - generic [ref=f220e727]:
+                            - generic [ref=f220e728]: أحمد مروان
+                            - generic [ref=f220e729]: ←
+                          - generic [ref=f220e730]: ياسمين نور
+                        - generic [ref=f220e732]: "المعرف: usr_1006 • yasmin.nour@example.com"
+                      - generic [ref=f220e733]:
+                        - generic [ref=f220e734]: 45.00 USDT
+                        - generic [ref=f220e735]: 1 إحالات مباشرة
+                    - generic [ref=f220e736] [cursor=pointer]:
+                      - generic [ref=f220e737]:
+                        - generic [ref=f220e738]:
+                          - generic [ref=f220e739]: فاطمة علي
+                          - generic [ref=f220e740]: S2
+                          - generic [ref=f220e741]: معلق
+                        - generic [ref=f220e742]:
+                          - generic [ref=f220e748]: "المسار:"
+                          - generic [ref=f220e749]:
+                            - generic [ref=f220e750]: محمد عبد الله
+                            - generic [ref=f220e751]: ←
+                          - generic [ref=f220e752]:
+                            - generic [ref=f220e753]: أحمد مروان
+                            - generic [ref=f220e754]: ←
+                          - generic [ref=f220e755]: فاطمة علي
+                        - generic [ref=f220e757]: "المعرف: usr_1004 • fatima.ali@example.com"
+                      - generic [ref=f220e758]:
+                        - generic [ref=f220e759]: 18.00 USDT
+                        - generic [ref=f220e760]: 0 إحالات مباشرة
+                    - generic [ref=f220e761] [cursor=pointer]:
+                      - generic [ref=f220e762]:
+                        - generic [ref=f220e763]:
+                          - generic [ref=f220e764]: كريم سامي
+                          - generic [ref=f220e765]: S1
+                        - generic [ref=f220e766]:
+                          - generic [ref=f220e772]: "المسار:"
+                          - generic [ref=f220e773]:
+                            - generic [ref=f220e774]: محمد عبد الله
+                            - generic [ref=f220e775]: ←
+                          - generic [ref=f220e776]:
+                            - generic [ref=f220e777]: أحمد مروان
+                            - generic [ref=f220e778]: ←
+                          - generic [ref=f220e779]: كريم سامي
+                        - generic [ref=f220e781]: "المعرف: usr_1014 • kareem.sami@example.com"
+                      - generic [ref=f220e782]:
+                        - generic [ref=f220e783]: 0.00 USDT
+                        - generic [ref=f220e784]: 0 إحالات مباشرة
+                    - generic [ref=f220e785] [cursor=pointer]:
+                      - generic [ref=f220e786]:
+                        - generic [ref=f220e787]:
+                          - generic [ref=f220e788]: محمود حسن
+                          - generic [ref=f220e789]: O2
+                        - generic [ref=f220e790]:
+                          - generic [ref=f220e796]: "المسار:"
+                          - generic [ref=f220e797]:
+                            - generic [ref=f220e798]: محمد عبد الله
+                            - generic [ref=f220e799]: ←
+                          - generic [ref=f220e800]:
+                            - generic [ref=f220e801]: سارة كريم
+                            - generic [ref=f220e802]: ←
+                          - generic [ref=f220e803]: محمود حسن
+                        - generic [ref=f220e805]: "المعرف: usr_1003 • mahmoud.hassan@example.com"
+                      - generic [ref=f220e806]:
+                        - generic [ref=f220e807]: 180.00 USDT
+                        - generic [ref=f220e808]: 2 إحالات مباشرة
+                - generic [ref=f220e398]:
+                  - 'button "L3 المستوى 3 (نسبة العمولة: 4%) 3 أعضاء" [expanded] [ref=f220e399] [cursor=pointer]':
+                    - generic [ref=f220e400]:
+                      - generic [ref=f220e401]: L3
+                      - generic [ref=f220e402]: "المستوى 3 (نسبة العمولة: 4%)"
+                    - generic [ref=f220e403]: 3 أعضاء
+                  - generic [ref=f220e407]:
+                    - generic [ref=f220e809] [cursor=pointer]:
+                      - generic [ref=f220e810]:
+                        - generic [ref=f220e811]:
+                          - generic [ref=f220e812]: خالد محمود
+                          - generic [ref=f220e813]: S1
+                        - generic [ref=f220e814]:
+                          - generic [ref=f220e820]: "المسار:"
+                          - generic [ref=f220e821]:
+                            - generic [ref=f220e822]: محمد عبد الله
+                            - generic [ref=f220e823]: ←
+                          - generic [ref=f220e824]:
+                            - generic [ref=f220e825]: أحمد مروان
+                            - generic [ref=f220e826]: ←
+                          - generic [ref=f220e827]:
+                            - generic [ref=f220e828]: ياسمين نور
+                            - generic [ref=f220e829]: ←
+                          - generic [ref=f220e830]: خالد محمود
+                        - generic [ref=f220e832]: "المعرف: usr_1010 • khaled.mahmoud@example.com"
+                      - generic [ref=f220e833]:
+                        - generic [ref=f220e834]: 20.00 USDT
+                        - generic [ref=f220e835]: 1 إحالات مباشرة
+                    - generic [ref=f220e836] [cursor=pointer]:
+                      - generic [ref=f220e837]:
+                        - generic [ref=f220e838]:
+                          - generic [ref=f220e839]: رنا يوسف
+                          - generic [ref=f220e840]: S1
+                        - generic [ref=f220e841]:
+                          - generic [ref=f220e847]: "المسار:"
+                          - generic [ref=f220e848]:
+                            - generic [ref=f220e849]: محمد عبد الله
+                            - generic [ref=f220e850]: ←
+                          - generic [ref=f220e851]:
+                            - generic [ref=f220e852]: سارة كريم
+                            - generic [ref=f220e853]: ←
+                          - generic [ref=f220e854]:
+                            - generic [ref=f220e855]: محمود حسن
+                            - generic [ref=f220e856]: ←
+                          - generic [ref=f220e857]: رنا يوسف
+                        - generic [ref=f220e859]: "المعرف: usr_1015 • rana.youssef@example.com"
+                      - generic [ref=f220e860]:
+                        - generic [ref=f220e861]: 25.00 USDT
+                        - generic [ref=f220e862]: 2 إحالات مباشرة
+                    - generic [ref=f220e863] [cursor=pointer]:
+                      - generic [ref=f220e864]:
+                        - generic [ref=f220e865]:
+                          - generic [ref=f220e866]: حسام عادل
+                          - generic [ref=f220e867]: S2
+                        - generic [ref=f220e868]:
+                          - generic [ref=f220e874]: "المسار:"
+                          - generic [ref=f220e875]:
+                            - generic [ref=f220e876]: محمد عبد الله
+                            - generic [ref=f220e877]: ←
+                          - generic [ref=f220e878]:
+                            - generic [ref=f220e879]: سارة كريم
+                            - generic [ref=f220e880]: ←
+                          - generic [ref=f220e881]:
+                            - generic [ref=f220e882]: محمود حسن
+                            - generic [ref=f220e883]: ←
+                          - generic [ref=f220e884]: حسام عادل
+                        - generic [ref=f220e886]: "المعرف: usr_1016 • hossam.adel@example.com"
+                      - generic [ref=f220e887]:
+                        - generic [ref=f220e888]: 0.00 USDT
+                        - generic [ref=f220e889]: 0 إحالات مباشرة
+                - generic [ref=f220e489]:
+                  - 'button "L4 المستوى 4 (نسبة العمولة: 2%) 3 أعضاء" [expanded] [ref=f220e490] [cursor=pointer]':
+                    - generic [ref=f220e491]:
+                      - generic [ref=f220e492]: L4
+                      - generic [ref=f220e493]: "المستوى 4 (نسبة العمولة: 2%)"
+                    - generic [ref=f220e494]: 3 أعضاء
+                  - generic [ref=f220e498]:
+                    - generic [ref=f220e890] [cursor=pointer]:
+                      - generic [ref=f220e891]:
+                        - generic [ref=f220e892]:
+                          - generic [ref=f220e893]: سلمى فهد
+                          - generic [ref=f220e894]: S1
+                        - generic [ref=f220e895]:
+                          - generic [ref=f220e901]: "المسار:"
+                          - generic [ref=f220e902]:
+                            - generic [ref=f220e903]: محمد عبد الله
+                            - generic [ref=f220e904]: ←
+                          - generic [ref=f220e905]:
+                            - generic [ref=f220e906]: أحمد مروان
+                            - generic [ref=f220e907]: ←
+                          - generic [ref=f220e908]:
+                            - generic [ref=f220e909]: ياسمين نور
+                            - generic [ref=f220e910]: ←
+                          - generic [ref=f220e911]:
+                            - generic [ref=f220e912]: خالد محمود
+                            - generic [ref=f220e913]: ←
+                          - generic [ref=f220e914]: سلمى فهد
+                        - generic [ref=f220e916]: "المعرف: usr_1011 • salma.fahad@example.com"
+                      - generic [ref=f220e917]:
+                        - generic [ref=f220e918]: 10.00 USDT
+                        - generic [ref=f220e919]: 1 إحالات مباشرة
+                    - generic [ref=f220e920] [cursor=pointer]:
+                      - generic [ref=f220e921]:
+                        - generic [ref=f220e922]:
+                          - generic [ref=f220e923]: منى خليل
+                          - generic [ref=f220e924]: FREE
+                        - generic [ref=f220e925]:
+                          - generic [ref=f220e931]: "المسار:"
+                          - generic [ref=f220e932]:
+                            - generic [ref=f220e933]: محمد عبد الله
+                            - generic [ref=f220e934]: ←
+                          - generic [ref=f220e935]:
+                            - generic [ref=f220e936]: سارة كريم
+                            - generic [ref=f220e937]: ←
+                          - generic [ref=f220e938]:
+                            - generic [ref=f220e939]: محمود حسن
+                            - generic [ref=f220e940]: ←
+                          - generic [ref=f220e941]:
+                            - generic [ref=f220e942]: رنا يوسف
+                            - generic [ref=f220e943]: ←
+                          - generic [ref=f220e944]: منى خليل
+                        - generic [ref=f220e946]: "المعرف: usr_1017 • mona.khalil@example.com"
+                      - generic [ref=f220e947]:
+                        - generic [ref=f220e948]: 0.00 USDT
+                        - generic [ref=f220e949]: 0 إحالات مباشرة
+                    - generic [ref=f220e950] [cursor=pointer]:
+                      - generic [ref=f220e951]:
+                        - generic [ref=f220e952]:
+                          - generic [ref=f220e953]: وليد سمير
+                          - generic [ref=f220e954]: S1
+                        - generic [ref=f220e955]:
+                          - generic [ref=f220e961]: "المسار:"
+                          - generic [ref=f220e962]:
+                            - generic [ref=f220e963]: محمد عبد الله
+                            - generic [ref=f220e964]: ←
+                          - generic [ref=f220e965]:
+                            - generic [ref=f220e966]: سارة كريم
+                            - generic [ref=f220e967]: ←
+                          - generic [ref=f220e968]:
+                            - generic [ref=f220e969]: محمود حسن
+                            - generic [ref=f220e970]: ←
+                          - generic [ref=f220e971]:
+                            - generic [ref=f220e972]: رنا يوسف
+                            - generic [ref=f220e973]: ←
+                          - generic [ref=f220e974]: وليد سمير
+                        - generic [ref=f220e976]: "المعرف: usr_1018 • waleed.samir@example.com"
+                      - generic [ref=f220e977]:
+                        - generic [ref=f220e978]: 0.00 USDT
+                        - generic [ref=f220e979]: 0 إحالات مباشرة
+                - generic [ref=f220e589]:
+                  - 'button "L5 المستوى 5 (نسبة العمولة: 2%) 1 أعضاء" [expanded] [ref=f220e590] [cursor=pointer]':
+                    - generic [ref=f220e591]:
+                      - generic [ref=f220e592]: L5
+                      - generic [ref=f220e593]: "المستوى 5 (نسبة العمولة: 2%)"
+                    - generic [ref=f220e594]: 1 أعضاء
+                  - generic [ref=f220e980] [cursor=pointer]:
+                    - generic [ref=f220e981]:
+                      - generic [ref=f220e982]:
+                        - generic [ref=f220e983]: طارق زياد
+                        - generic [ref=f220e984]: FREE
+                      - generic [ref=f220e985]:
+                        - generic [ref=f220e991]: "المسار:"
+                        - generic [ref=f220e992]:
+                          - generic [ref=f220e993]: محمد عبد الله
+                          - generic [ref=f220e994]: ←
+                        - generic [ref=f220e995]:
+                          - generic [ref=f220e996]: أحمد مروان
+                          - generic [ref=f220e997]: ←
+                        - generic [ref=f220e998]:
+                          - generic [ref=f220e999]: ياسمين نور
+                          - generic [ref=f220e1000]: ←
+                        - generic [ref=f220e1001]:
+                          - generic [ref=f220e1002]: خالد محمود
+                          - generic [ref=f220e1003]: ←
+                        - generic [ref=f220e1004]:
+                          - generic [ref=f220e1005]: سلمى فهد
+                          - generic [ref=f220e1006]: ←
+                        - generic [ref=f220e1007]: طارق زياد
+                      - generic [ref=f220e1009]: "المعرف: usr_1012 • tariq.ziad@example.com"
+                    - generic [ref=f220e1010]:
+                      - generic [ref=f220e1011]: 0.00 USDT
+                      - generic [ref=f220e1012]: 1 إحالات مباشرة
+            - generic [ref=f220e632]:
+              - generic [ref=f220e633]:
+                - generic [ref=f220e634]:
+                  - generic [ref=f220e635]:
+                    - heading "عمولات قائد الفريق (محمد عبد الله)" [level=3] [ref=f220e636]
+                    - paragraph [ref=f220e637]: العمولات المكتسبة ككفيل مستفيد من ترقيات أعضاء فريقه
+                  - link "عرض ملف الحساب ←" [ref=f220e638] [cursor=pointer]:
+                    - /url: /admin/employees/usr_1001
+                - generic [ref=f220e1013]:
+                  - generic [ref=f220e1014]:
+                    - generic [ref=f220e1015]:
+                      - generic [ref=f220e1016]: شراء باقة S1
+                      - generic [ref=f220e1017]: +7.20 USDT
+                    - generic [ref=f220e1018]:
+                      - generic [ref=f220e1019]: "بواسطة: أحمد مروان • الأساس: 60 USDT (12%)"
+                      - generic [ref=f220e1020]: 2026-08-15 11:45
+                  - generic [ref=f220e1021]:
+                    - generic [ref=f220e1022]:
+                      - generic [ref=f220e1023]: شراء باقة O1
+                      - generic [ref=f220e1024]: +72.00 USDT
+                    - generic [ref=f220e1025]:
+                      - generic [ref=f220e1026]: "بواسطة: سارة كريم • الأساس: 600 USDT (12%)"
+                      - generic [ref=f220e1027]: 2026-07-20 09:30
+              - generic [ref=f220e655]:
+                - generic [ref=f220e656]: الرتب القيادية (مسودة غير مفعلة)
+                - paragraph [ref=f220e657]: شروط وأسماء الرتب القيادية قيد الدراسة والتحديد من قبل الإدارة. لا توجد قواعد ترقية أو مكافآت تلقائية مفعلة حالياً في النظام.
+  - button "Open Next.js Dev Tools" [ref=f220e663] [cursor=pointer]
+  - alert [ref=f220e667]

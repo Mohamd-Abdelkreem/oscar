@@ -1,0 +1,31 @@
+async (page) => {
+  const evidence = [];
+  await page.setViewportSize({width:1440,height:844});
+  await page.goto('http://localhost:3000/admin/submissions');
+  const row = page.getByRole('row').filter({has:page.getByText('ahmed.marwan@example.com',{exact:true})});
+  await row.getByRole('button',{name:'معاينة',exact:true}).click();
+  let dialog = page.getByRole('dialog').filter({has:page.getByRole('heading',{name:/تدقيق تسليم المهمة:/})});
+  await dialog.getByRole('button',{name:'رفض وعكس المكافأة',exact:true}).click();
+  dialog = page.getByRole('dialog').filter({has:page.getByText('رفض تسليم المهمة وعكس المكافأة',{exact:true})});
+  await dialog.getByRole('button',{name:'إلغاء',exact:true}).click();
+  await page.getByRole('dialog').filter({has:page.getByRole('heading',{name:/تدقيق تسليم المهمة:/})}).getByRole('button',{name:'رفض وعكس المكافأة',exact:true}).click();
+  await dialog.getByRole('textbox').fill('Browser audit rejection characterization');
+  await dialog.getByRole('button',{name:'تأكيد الرفض وعكس المكافأة',exact:true}).click();
+  const text = await row.innerText();
+  if (!text.includes('مرفوض وتم عكس المكافأة')) throw new Error('Rejection state missing');
+  evidence.push({flow:'submission preview, cancel, rejection',passed:true,row:text});
+  await page.getByRole('link',{name:'السجل المالي',exact:true}).filter({visible:true}).click();
+  await page.getByRole('textbox',{name:'بحث في السجل المالي'}).fill('ahmed');
+  await page.getByRole('textbox',{name:'بحث في السجل المالي'}).fill('عكس مكافأة');
+  evidence.push({flow:'reversal ledger after client navigation',text:await page.locator('main').innerText()});
+  await page.goto('http://localhost:3000/admin/deposits');
+  await page.getByRole('button',{name:'إيداع يدوي معتمد',exact:true}).click();
+  dialog = page.getByRole('dialog').filter({has:page.getByText('إضافة إيداع يدوي استثنائي معتمد',{exact:true})});
+  await dialog.getByRole('combobox').selectOption('usr_9981');
+  await dialog.getByRole('spinbutton').fill('10');
+  await dialog.locator('input[type="text"]').fill('AUDIT-BROWSER-CREDIT');
+  await dialog.locator('textarea').fill('Local mock credit audit');
+  await dialog.getByRole('button',{name:'تأكيد الإيداع وإضافة الرصيد',exact:true}).click();
+  evidence.push({flow:'native dropdown inside manual-credit modal, confirm',text:await page.locator('main').innerText()});
+  return evidence;
+}

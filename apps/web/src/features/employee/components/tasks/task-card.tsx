@@ -8,21 +8,26 @@ import {
   RefreshCw,
   Send,
 } from "lucide-react";
+import { useState } from "react";
 import { FINANCIAL_RULES } from "../../constants/branding";
 import { useEmployeeState } from "../../context/employee-state.context";
 import { useTaskSubmission } from "../../hooks/use-task-submission";
+import { useTaskCodeGate } from "@/features/admin/hooks/use-task-code-gate";
 import { Button } from "../common/button";
 import { MoneyAmount } from "../common/money-amount";
 import { StatusBadge } from "../common/status-badge";
 import { ScreenshotUpload } from "./screenshot-upload";
 import { TaskAvailabilityCard } from "./task-availability-card";
+import { TaskCodeGate } from "./task-code-gate";
 
 interface TaskCardProps {
   readonly currentScenario?: string | undefined;
 }
 
 export function TaskCard({ currentScenario }: TaskCardProps) {
-  const { task, currentPackage } = useEmployeeState();
+  const { user, task, currentPackage } = useEmployeeState();
+  const { isTaskUnlocked, unlockTaskWithCode } = useTaskCodeGate(task.id, user.id);
+  const [unlockedLocally, setUnlockedLocally] = useState(false);
   const {
     screenshotFile,
     setScreenshotFile,
@@ -40,6 +45,22 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
   }
   if (effectiveStatus === "before_window" || effectiveStatus === "closed") {
     return <TaskAvailabilityCard status={effectiveStatus} task={task} />;
+  }
+
+  // Code Gate: If task requires unlock code and is not yet unlocked
+  const unlocked =
+    !task.isCodeRequired ||
+    unlockedLocally ||
+    isTaskUnlocked;
+
+  if (!unlocked) {
+    return (
+      <TaskCodeGate
+        taskId={task.id}
+        unlockFn={unlockTaskWithCode}
+        onUnlocked={() => { setUnlockedLocally(true); }}
+      />
+    );
   }
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">

@@ -1,0 +1,1367 @@
+﻿[
+    {
+        "file":  "admin-1440.png",
+        "beforeSize":  "1425x915",
+        "afterSize":  "1425x915",
+        "differentPixels":  4965,
+        "differencePercent":  0.3808,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin-390.png",
+        "beforeSize":  "375x1638",
+        "afterSize":  "375x1638",
+        "differentPixels":  4933,
+        "differencePercent":  0.8031,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_audit-log-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_audit-log-390.png",
+        "beforeSize":  "375x1035",
+        "afterSize":  "375x1035",
+        "differentPixels":  4954,
+        "differencePercent":  1.2764,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_codes-1280.png",
+        "beforeSize":  "1280x844",
+        "afterSize":  "1280x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3828,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes-320.png",
+        "beforeSize":  "320x844",
+        "afterSize":  "320x844",
+        "differentPixels":  4136,
+        "differencePercent":  1.5314,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4136,
+        "differencePercent":  1.2565,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes-768.png",
+        "beforeSize":  "768x844",
+        "afterSize":  "768x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.6381,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes_cod_2026_01-1440.png",
+        "beforeSize":  "1425x954",
+        "afterSize":  "1425x954",
+        "differentPixels":  4989,
+        "differencePercent":  0.367,
+        "bounds":  [
+                       0,
+                       455,
+                       877,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_codes_cod_2026_01-390.png",
+        "beforeSize":  "375x1519",
+        "afterSize":  "375x1519",
+        "differentPixels":  4956,
+        "differencePercent":  0.87,
+        "bounds":  [
+                       0,
+                       508,
+                       99,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_codes_new-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_codes_new-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4120,
+        "differencePercent":  1.2517,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_deposits-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_deposits-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4136,
+        "differencePercent":  1.2565,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_employees-1440.png",
+        "beforeSize":  "1425x1123",
+        "afterSize":  "1425x1123",
+        "differentPixels":  4949,
+        "differencePercent":  0.3093,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_employees-390.png",
+        "beforeSize":  "375x1313",
+        "afterSize":  "375x1313",
+        "differentPixels":  4955,
+        "differencePercent":  1.0063,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_employees_usr_9981-1280.png",
+        "beforeSize":  "1280x844",
+        "afterSize":  "1280x844",
+        "differentPixels":  6314,
+        "differencePercent":  0.5845,
+        "bounds":  [
+                       2,
+                       509,
+                       383,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_employees_usr_9981-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  6314,
+        "differencePercent":  0.5195,
+        "bounds":  [
+                       2,
+                       509,
+                       463,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_employees_usr_9981-320.png",
+        "beforeSize":  "320x844",
+        "afterSize":  "320x844",
+        "differentPixels":  129360,
+        "differencePercent":  47.8969,
+        "bounds":  [
+                       0,
+                       94,
+                       319,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_employees_usr_9981-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  173961,
+        "differencePercent":  52.85,
+        "bounds":  [
+                       0,
+                       94,
+                       389,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_employees_usr_9981-768.png",
+        "beforeSize":  "768x844",
+        "afterSize":  "768x844",
+        "differentPixels":  6315,
+        "differencePercent":  0.9742,
+        "bounds":  [
+                       2,
+                       509,
+                       485,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_finance-1280.png",
+        "beforeSize":  "1265x1110",
+        "afterSize":  "1265x1110",
+        "differentPixels":  4936,
+        "differencePercent":  0.3515,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_finance-1440.png",
+        "beforeSize":  "1425x1054",
+        "afterSize":  "1425x1054",
+        "differentPixels":  4953,
+        "differencePercent":  0.3298,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_finance-320.png",
+        "beforeSize":  "320x1595",
+        "afterSize":  "320x1595",
+        "differentPixels":  4976,
+        "differencePercent":  0.9749,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_finance-390.png",
+        "beforeSize":  "375x1578",
+        "afterSize":  "375x1578",
+        "differentPixels":  4976,
+        "differencePercent":  0.8409,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_finance-768.png",
+        "beforeSize":  "753x1229",
+        "afterSize":  "753x1229",
+        "differentPixels":  4957,
+        "differencePercent":  0.5356,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_packages-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_packages-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4136,
+        "differencePercent":  1.2565,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_referrals-1280.png",
+        "beforeSize":  "1265x2189",
+        "afterSize":  "1265x2189",
+        "differentPixels":  4973,
+        "differencePercent":  0.1796,
+        "bounds":  [
+                       0,
+                       764,
+                       247,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_referrals-1440.png",
+        "beforeSize":  "1425x2119",
+        "afterSize":  "1425x2119",
+        "differentPixels":  5024,
+        "differencePercent":  0.1664,
+        "bounds":  [
+                       0,
+                       529,
+                       1151,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_referrals-320.png",
+        "beforeSize":  "320x3602",
+        "afterSize":  "320x3602",
+        "differentPixels":  4959,
+        "differencePercent":  0.4302,
+        "bounds":  [
+                       0,
+                       782,
+                       133,
+                       3337
+                   ]
+    },
+    {
+        "file":  "admin_referrals-390.png",
+        "beforeSize":  "375x3331",
+        "afterSize":  "375x3331",
+        "differentPixels":  4977,
+        "differencePercent":  0.3984,
+        "bounds":  [
+                       0,
+                       782,
+                       203,
+                       3049
+                   ]
+    },
+    {
+        "file":  "admin_referrals-768.png",
+        "beforeSize":  "753x2522",
+        "afterSize":  "753x2522",
+        "differentPixels":  4966,
+        "differencePercent":  0.2615,
+        "bounds":  [
+                       0,
+                       782,
+                       573,
+                       2274
+                   ]
+    },
+    {
+        "file":  "admin_settings-1440.png",
+        "beforeSize":  "1425x900",
+        "afterSize":  "1425x900",
+        "differentPixels":  4976,
+        "differencePercent":  0.388,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_settings-390.png",
+        "beforeSize":  "375x1356",
+        "afterSize":  "375x1356",
+        "differentPixels":  4944,
+        "differencePercent":  0.9723,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_settings_admins-1280.png",
+        "beforeSize":  "1280x844",
+        "afterSize":  "1280x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3828,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_settings_admins-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_settings_admins-320.png",
+        "beforeSize":  "320x1257",
+        "afterSize":  "320x1257",
+        "differentPixels":  4966,
+        "differencePercent":  1.2346,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_settings_admins-390.png",
+        "beforeSize":  "375x1257",
+        "afterSize":  "375x1257",
+        "differentPixels":  8716,
+        "differencePercent":  1.8491,
+        "bounds":  [
+                       0,
+                       782,
+                       374,
+                       1256
+                   ]
+    },
+    {
+        "file":  "admin_settings_admins-768.png",
+        "beforeSize":  "753x894",
+        "afterSize":  "753x894",
+        "differentPixels":  4922,
+        "differencePercent":  0.7312,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_submissions-1280.png",
+        "beforeSize":  "1280x844",
+        "afterSize":  "1280x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3828,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_submissions-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_submissions-320.png",
+        "beforeSize":  "320x911",
+        "afterSize":  "320x911",
+        "differentPixels":  4926,
+        "differencePercent":  1.6898,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_submissions-390.png",
+        "beforeSize":  "375x911",
+        "afterSize":  "375x911",
+        "differentPixels":  4955,
+        "differencePercent":  1.4504,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_submissions-768.png",
+        "beforeSize":  "753x876",
+        "afterSize":  "753x876",
+        "differentPixels":  4962,
+        "differencePercent":  0.7522,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_tasks-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4136,
+        "differencePercent":  1.2565,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "admin_tasks_new-1280.png",
+        "beforeSize":  "1265x1040",
+        "afterSize":  "1265x1040",
+        "differentPixels":  5091,
+        "differencePercent":  0.387,
+        "bounds":  [
+                       0,
+                       376,
+                       909,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks_new-1440.png",
+        "beforeSize":  "1425x1040",
+        "afterSize":  "1425x1040",
+        "differentPixels":  5022,
+        "differencePercent":  0.3389,
+        "bounds":  [
+                       0,
+                       360,
+                       1069,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks_new-320.png",
+        "beforeSize":  "320x1603",
+        "afterSize":  "320x1603",
+        "differentPixels":  5105,
+        "differencePercent":  0.9952,
+        "bounds":  [
+                       0,
+                       300,
+                       205,
+                       1055
+                   ]
+    },
+    {
+        "file":  "admin_tasks_new-390.png",
+        "beforeSize":  "375x1607",
+        "afterSize":  "375x1607",
+        "differentPixels":  5105,
+        "differencePercent":  0.8471,
+        "bounds":  [
+                       0,
+                       284,
+                       275,
+                       1050
+                   ]
+    },
+    {
+        "file":  "admin_tasks_new-768.png",
+        "beforeSize":  "753x1565",
+        "afterSize":  "753x1565",
+        "differentPixels":  5081,
+        "differencePercent":  0.4312,
+        "bounds":  [
+                       0,
+                       475,
+                       661,
+                       1080
+                   ]
+    },
+    {
+        "file":  "admin_tasks_tsk_today_1001-1440.png",
+        "beforeSize":  "1425x970",
+        "afterSize":  "1425x970",
+        "differentPixels":  5090,
+        "differencePercent":  0.3682,
+        "bounds":  [
+                       0,
+                       234,
+                       1006,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks_tsk_today_1001-390.png",
+        "beforeSize":  "375x1540",
+        "afterSize":  "375x1540",
+        "differentPixels":  4908,
+        "differencePercent":  0.8499,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks_tsk_today_1001_edit-1440.png",
+        "beforeSize":  "1425x1040",
+        "afterSize":  "1425x1040",
+        "differentPixels":  5022,
+        "differencePercent":  0.3389,
+        "bounds":  [
+                       0,
+                       360,
+                       1069,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_tasks_tsk_today_1001_edit-390.png",
+        "beforeSize":  "375x1635",
+        "afterSize":  "375x1635",
+        "differentPixels":  5105,
+        "differencePercent":  0.8326,
+        "bounds":  [
+                       0,
+                       312,
+                       275,
+                       1078
+                   ]
+    },
+    {
+        "file":  "admin_withdrawals-1280.png",
+        "beforeSize":  "1265x1060",
+        "afterSize":  "1265x1060",
+        "differentPixels":  7851,
+        "differencePercent":  0.5855,
+        "bounds":  [
+                       2,
+                       432,
+                       313,
+                       1001
+                   ]
+    },
+    {
+        "file":  "admin_withdrawals-1440.png",
+        "beforeSize":  "1425x1060",
+        "afterSize":  "1425x1060",
+        "differentPixels":  6626,
+        "differencePercent":  0.4387,
+        "bounds":  [
+                       0,
+                       432,
+                       473,
+                       1001
+                   ]
+    },
+    {
+        "file":  "admin_withdrawals-320.png",
+        "beforeSize":  "320x1089",
+        "afterSize":  "320x1089",
+        "differentPixels":  6181,
+        "differencePercent":  1.7737,
+        "bounds":  [
+                       2,
+                       775,
+                       160,
+                       868
+                   ]
+    },
+    {
+        "file":  "admin_withdrawals-390.png",
+        "beforeSize":  "375x1089",
+        "afterSize":  "375x1089",
+        "differentPixels":  4955,
+        "differencePercent":  1.2133,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "admin_withdrawals-768.png",
+        "beforeSize":  "753x1041",
+        "afterSize":  "753x1041",
+        "differentPixels":  7693,
+        "differencePercent":  0.9814,
+        "bounds":  [
+                       2,
+                       421,
+                       160,
+                       990
+                   ]
+    },
+    {
+        "file":  "employee-1440.png",
+        "beforeSize":  "1425x1109",
+        "afterSize":  "1425x1109",
+        "differentPixels":  4955,
+        "differencePercent":  0.3135,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee-390.png",
+        "beforeSize":  "375x1180",
+        "afterSize":  "375x1180",
+        "differentPixels":  4957,
+        "differencePercent":  1.1202,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_account-1440.png",
+        "beforeSize":  "1425x1112",
+        "afterSize":  "1425x1112",
+        "differentPixels":  4955,
+        "differencePercent":  0.3127,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_account-390.png",
+        "beforeSize":  "375x1096",
+        "afterSize":  "375x1096",
+        "differentPixels":  4957,
+        "differencePercent":  1.2061,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_auth_forgot-password-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_forgot-password-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4115,
+        "differencePercent":  1.2502,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_login-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_login-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4115,
+        "differencePercent":  1.2502,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_register-1440.png",
+        "beforeSize":  "1425x916",
+        "afterSize":  "1425x916",
+        "differentPixels":  4976,
+        "differencePercent":  0.3812,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_auth_register-390.png",
+        "beforeSize":  "375x860",
+        "afterSize":  "375x860",
+        "differentPixels":  4923,
+        "differencePercent":  1.5265,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       859
+                   ]
+    },
+    {
+        "file":  "employee_auth_reset-password-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4136,
+        "differencePercent":  0.3403,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_reset-password-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4115,
+        "differencePercent":  1.2502,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_auth_verify-email-1440.png",
+        "beforeSize":  "1425x885",
+        "afterSize":  "1425x885",
+        "differentPixels":  4976,
+        "differencePercent":  0.3946,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_auth_verify-email-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4115,
+        "differencePercent":  1.2502,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_deposit-1440.png",
+        "beforeSize":  "1425x1169",
+        "afterSize":  "1425x1169",
+        "differentPixels":  4955,
+        "differencePercent":  0.2975,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_deposit-390.png",
+        "beforeSize":  "375x1214",
+        "afterSize":  "375x1214",
+        "differentPixels":  4957,
+        "differencePercent":  1.0889,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_faq-1440.png",
+        "beforeSize":  "1425x1185",
+        "afterSize":  "1425x1185",
+        "differentPixels":  4955,
+        "differencePercent":  0.2934,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_faq-390.png",
+        "beforeSize":  "375x1306",
+        "afterSize":  "375x1306",
+        "differentPixels":  4957,
+        "differencePercent":  1.0121,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_packages-1280.png",
+        "beforeSize":  "1265x3184",
+        "afterSize":  "1265x3184",
+        "differentPixels":  4955,
+        "differencePercent":  0.123,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_packages-1440.png",
+        "beforeSize":  "1425x3184",
+        "afterSize":  "1425x3184",
+        "differentPixels":  4955,
+        "differencePercent":  0.1092,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_packages-320.png",
+        "beforeSize":  "320x3022",
+        "afterSize":  "320x3022",
+        "differentPixels":  4967,
+        "differencePercent":  0.5136,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_packages-390.png",
+        "beforeSize":  "375x3022",
+        "afterSize":  "375x3022",
+        "differentPixels":  4957,
+        "differencePercent":  0.4374,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_packages-768.png",
+        "beforeSize":  "753x3184",
+        "afterSize":  "753x3184",
+        "differentPixels":  4955,
+        "differencePercent":  0.2067,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_privacy-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4115,
+        "differencePercent":  0.3386,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_privacy-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4117,
+        "differencePercent":  1.2508,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_support-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4115,
+        "differencePercent":  0.3386,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_support-390.png",
+        "beforeSize":  "375x846",
+        "afterSize":  "375x846",
+        "differentPixels":  4247,
+        "differencePercent":  1.3387,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       845
+                   ]
+    },
+    {
+        "file":  "employee_tasks-1280.png",
+        "beforeSize":  "1280x844",
+        "afterSize":  "1280x844",
+        "differentPixels":  4162,
+        "differencePercent":  0.3853,
+        "bounds":  [
+                       0,
+                       473,
+                       642,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_tasks-1440.png",
+        "beforeSize":  "1440x844",
+        "afterSize":  "1440x844",
+        "differentPixels":  4162,
+        "differencePercent":  0.3424,
+        "bounds":  [
+                       0,
+                       473,
+                       722,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_tasks-320.png",
+        "beforeSize":  "320x844",
+        "afterSize":  "320x844",
+        "differentPixels":  4154,
+        "differencePercent":  1.5381,
+        "bounds":  [
+                       0,
+                       464,
+                       219,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_tasks-390.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  4164,
+        "differencePercent":  1.265,
+        "bounds":  [
+                       0,
+                       448,
+                       197,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_tasks-768.png",
+        "beforeSize":  "768x844",
+        "afterSize":  "768x844",
+        "differentPixels":  4162,
+        "differencePercent":  0.6421,
+        "bounds":  [
+                       0,
+                       473,
+                       386,
+                       843
+                   ]
+    },
+    {
+        "file":  "employee_team-1440.png",
+        "beforeSize":  "1425x1026",
+        "afterSize":  "1425x1026",
+        "differentPixels":  4955,
+        "differencePercent":  0.3389,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_team-390.png",
+        "beforeSize":  "375x1105",
+        "afterSize":  "375x1105",
+        "differentPixels":  4957,
+        "differencePercent":  1.1963,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_terms-1440.png",
+        "beforeSize":  "1425x961",
+        "afterSize":  "1425x961",
+        "differentPixels":  4955,
+        "differencePercent":  0.3618,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_terms-390.png",
+        "beforeSize":  "375x1012",
+        "afterSize":  "375x1012",
+        "differentPixels":  4957,
+        "differencePercent":  1.3062,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_wallet-1280.png",
+        "beforeSize":  "1265x1280",
+        "afterSize":  "1265x1280",
+        "differentPixels":  4955,
+        "differencePercent":  0.306,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_wallet-1440.png",
+        "beforeSize":  "1425x1280",
+        "afterSize":  "1425x1280",
+        "differentPixels":  4955,
+        "differencePercent":  0.2717,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_wallet-320.png",
+        "beforeSize":  "320x1342",
+        "afterSize":  "320x1342",
+        "differentPixels":  4967,
+        "differencePercent":  1.1566,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_wallet-390.png",
+        "beforeSize":  "375x1296",
+        "afterSize":  "375x1296",
+        "differentPixels":  4957,
+        "differencePercent":  1.02,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_wallet-768.png",
+        "beforeSize":  "753x1280",
+        "afterSize":  "753x1280",
+        "differentPixels":  4955,
+        "differencePercent":  0.5141,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_withdraw-1440.png",
+        "beforeSize":  "1425x1126",
+        "afterSize":  "1425x1126",
+        "differentPixels":  4967,
+        "differencePercent":  0.3096,
+        "bounds":  [
+                       0,
+                       264,
+                       962,
+                       861
+                   ]
+    },
+    {
+        "file":  "employee_withdraw-390.png",
+        "beforeSize":  "375x1106",
+        "afterSize":  "375x1106",
+        "differentPixels":  4957,
+        "differencePercent":  1.1952,
+        "bounds":  [
+                       0,
+                       782,
+                       77,
+                       861
+                   ]
+    }
+]

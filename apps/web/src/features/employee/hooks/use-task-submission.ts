@@ -3,7 +3,7 @@
 import { useState, type SyntheticEvent } from "react";
 import { useEmployeeState } from "../context/employee-state.context";
 import type { EmployeeActionResult } from "../types/employee.types";
-import { useManagedTimeout } from "./use-managed-timeout";
+import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 function commitScreenshot(
   file: File,

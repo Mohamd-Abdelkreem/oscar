@@ -1,6 +1,6 @@
 "use client";
 
-import { useManagedTimeout } from "@/features/employee/hooks/use-managed-timeout";
+import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 import { AlertTriangle, Calendar, RefreshCw } from "lucide-react";
 import { useState } from "react";

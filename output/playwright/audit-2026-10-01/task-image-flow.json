@@ -1,0 +1,20 @@
+{
+  "flow": "task image owner after form unmount",
+  "url": "http://localhost:3000/admin/tasks/tsk_1790871921265_jzzh",
+  "before": {
+    "src": "blob:http://localhost:3000/205888ce-2e93-4223-a0eb-15fb6d0edfec",
+    "complete": true,
+    "width": 300
+  },
+  "after": [
+    {
+      "src": "blob:http://localhost:3000/205888ce-2e93-4223-a0eb-15fb6d0edfec",
+      "complete": true,
+      "width": 300,
+      "alt": "معاينة المهمة"
+    }
+  ],
+  "blobFetch": {
+    "error": "TypeError: Failed to fetch"
+  }
+}

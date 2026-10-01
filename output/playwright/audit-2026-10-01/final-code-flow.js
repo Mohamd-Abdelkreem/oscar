@@ -1,0 +1,31 @@
+async (page) => {
+  const evidence = [];
+  await page.goto('http://localhost:3000/admin/codes/new?taskId=tsk_today_1001');
+  await page.getByLabel('الرمز (Code)').fill('AUDIT-FINAL-2026');
+  await page.getByRole('button',{name:'حفظ وإنشاء الرمز',exact:true}).click();
+  await page.waitForURL(/\/admin\/codes\/(?!new)[^/]+$/);
+  const detail = page.url();
+  await page.getByRole('button',{name:'إيقاف الرمز مؤقتاً',exact:true}).click();
+  let dialog = page.getByRole('dialog').filter({has:page.getByRole('heading',{name:'إيقاف رمز فتح المهمة: AUDIT-FINAL-2026',exact:true})});
+  await dialog.getByRole('button',{name:'إلغاء',exact:true}).click();
+  if (!(await page.getByText('نشط (يقبل الفتح)',{exact:true}).isVisible())) throw new Error('Cancel changed status');
+  await page.getByRole('button',{name:'إيقاف الرمز مؤقتاً',exact:true}).click();
+  await dialog.getByRole('button',{name:'تأكيد إيقاف الرمز',exact:true}).click();
+  await page.getByRole('button',{name:'تفعيل الرمز',exact:true}).click();
+  await page.getByRole('button',{name:'تأكيد تفعيل الرمز',exact:true}).click();
+  evidence.push({flow:'code creation, cancel, pause, reactivate',passed:true,url:detail});
+  await page.getByRole('link',{name:'الموظف',exact:true}).click();
+  await page.getByLabel('رمز فتح المهمة',{exact:true}).fill('audit-final-2026');
+  await page.getByRole('button',{name:'فتح المهمة',exact:true}).click();
+  await page.getByRole('button',{name:'تأكيد وإرسال المهمة للاعتماد',exact:true}).waitFor({state:'visible'});
+  await page.locator('input[type="file"]').setInputFiles('output/playwright/audit-2026-10-01/before/employee_tasks-390.png');
+  await page.getByRole('checkbox').check();
+  await page.getByRole('button',{name:'تأكيد وإرسال المهمة للاعتماد',exact:true}).click();
+  await page.getByText('تم إرسال مهمة اليوم بنجاح',{exact:false}).waitFor({state:'visible'});
+  evidence.push({flow:'employee unlock and screenshot/declaration submit',passed:true,text:await page.locator('body').innerText()});
+  await page.goBack();
+  await page.waitForURL(detail);
+  evidence.push({flow:'root code state and usage after client navigation',text:await page.locator('main').innerText()});
+  await page.screenshot({path:'output/playwright/audit-2026-10-01/final-code-usage.png',fullPage:true});
+  return evidence;
+}

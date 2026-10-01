@@ -1,0 +1,32 @@
+async (page) => {
+  const steps = [];
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  await page.getByRole('spinbutton', {name:'الساعات الإضافية المراد زيادتها *'}).fill('6');
+  await page.getByRole('textbox', {name:'سبب زيادة الجدولة (إلزامي للرقابة) *'}).fill('audit-second-extension');
+  await page.getByRole('button', {name:'تأكيد زيادة الجدولة',exact:true}).click();
+  await page.getByRole('dialog').filter({has:page.getByText('زيادة جدولة معالجة طلب السحب',{exact:true})}).waitFor({state:'hidden'});
+  const row = page.getByRole('row').filter({has:page.getByText('ahmed.marwan@example.com',{exact:true})}).filter({has:page.getByRole('button',{name:'زيادة الجدولة',exact:true})});
+  const text = await row.innerText();
+  assert(text.includes('90 ساعة') && text.includes('+18 س'), 'Cumulative extension did not reach 72+18');
+  assert(text.includes('60.00 USDT') && text.includes('12.60 USDT') && text.includes('47.40 USDT'), 'Financial snapshot changed');
+  steps.push({flow:'withdrawal extension +12 then +6',passed:true,row:text,overflow:await page.evaluate(()=>document.body.style.overflow)});
+  await row.getByRole('button',{name:'زيادة الجدولة',exact:true}).click();
+  await page.setViewportSize({width:390,height:844});
+  await page.screenshot({path:'output/playwright/audit-2026-10-01/extension-dialog-390.png',fullPage:true});
+  await page.getByRole('button',{name:'إلغاء',exact:true}).click();
+  assert((await row.innerText()).includes('90 ساعة'), 'Cancel changed extension');
+  const held = page.getByRole('row').filter({has:page.getByText('fatima.ali@example.com',{exact:true})});
+  await held.getByRole('button',{name:'فك التعليق',exact:true}).click();
+  const dialog = page.getByRole('dialog',{name:'تأكيد فك تعليق طلب السحب'});
+  await dialog.getByRole('button',{name:'إلغاء',exact:true}).click();
+  assert((await held.innerText()).includes('معلق بقرار إداري'), 'Cancel released held record');
+  await held.getByRole('button',{name:'فك التعليق',exact:true}).click();
+  await dialog.getByRole('button',{name:'تأكيد فك التعليق',exact:true}).click();
+  await dialog.waitFor({state:'hidden'});
+  assert((await held.innerText()).includes('مجدول (72 ساعة)'), 'Release failed');
+  steps.push({flow:'release cancel/confirm',passed:true,row:await held.innerText(),overflow:await page.evaluate(()=>document.body.style.overflow)});
+  await page.getByRole('combobox',{name:'تصفية حسب حالة السحب'}).click();
+  await page.getByRole('option',{name:/مجدولة/}).click();
+  steps.push({flow:'Radix filter RTL portal',passed:true,rows:await page.getByRole('row').count()});
+  return steps;
+}

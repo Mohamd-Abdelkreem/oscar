@@ -1,0 +1,149 @@
+- generic [ref=f112e1]:
+  - generic [ref=f112e3]:
+    - complementary [ref=f112e4]:
+      - generic [ref=f112e5]:
+        - generic [ref=f112e6]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=f112e7] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=f112e8]: أ
+            - generic [ref=f112e9]:
+              - generic [ref=f112e10]: أوسكار | الإدارة
+              - generic [ref=f112e11]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=f112e12] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=f112e16]:
+          - generic [ref=f112e17]:
+            - heading "الرئيسية" [level=2] [ref=f112e18]
+            - list [ref=f112e19]:
+              - listitem [ref=f112e20]:
+                - link "نظرة عامة" [ref=f112e21] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=f112e28]:
+            - heading "الموظفون والمناصب" [level=2] [ref=f112e29]
+            - list [ref=f112e30]:
+              - listitem [ref=f112e31]:
+                - link "إدارة الموظفين" [ref=f112e32] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=f112e39]:
+                - link "الباقات والمناصب" [ref=f112e40] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=f112e46]:
+            - heading "المهام والرموز" [level=2] [ref=f112e47]
+            - list [ref=f112e48]:
+              - listitem [ref=f112e49]:
+                - link "إدارة المهام" [ref=f112e50] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=f112e55]:
+                - link "رموز فتح المهام" [ref=f112e56] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=f112e61]:
+                - link "مراجعة التنفيذ" [ref=f112e62] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=f112e68]:
+            - heading "العمليات المالية" [level=2] [ref=f112e69]
+            - list [ref=f112e70]:
+              - listitem [ref=f112e71]:
+                - link "الإيداعات" [ref=f112e72] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=f112e76]:
+                - link "طلبات السحب" [ref=f112e77] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=f112e81]:
+                - link "السجل المالي" [ref=f112e82] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=f112e87]:
+            - heading "الشبكة والعمولات" [level=2] [ref=f112e88]
+            - list [ref=f112e89]:
+              - listitem [ref=f112e90]:
+                - link "شبكة الإحالات" [ref=f112e91] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=f112e98]:
+            - heading "النظام والرقابة" [level=2] [ref=f112e99]
+            - list [ref=f112e100]:
+              - listitem [ref=f112e101]:
+                - link "سجل التدقيق والرقابة" [ref=f112e102] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=f112e107]:
+                - link "إعدادات المنصة" [ref=f112e108] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=f112e113]:
+                - link "مدراء النظام" [ref=f112e114] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=f112e120] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=f112e125]:
+      - banner [ref=f112e126]:
+        - generic [ref=f112e127]:
+          - button "فتح القائمة الجانبية" [ref=f112e128] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=f112e130] [cursor=pointer]
+          - generic [ref=f112e134]: منظومة العمليات التشغيلية والرقابة الفورية
+        - generic [ref=f112e137]:
+          - link "واجهة الموظف التجريبية" [ref=f112e138] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=f112e144]:
+            - generic [ref=f112e145]: م
+            - generic [ref=f112e146]:
+              - generic [ref=f112e147]: محمد عبد الكريم
+              - generic [ref=f112e148]: مسؤول النظام (ADMIN)
+      - main [ref=f112e152]:
+        - generic [ref=f112e154]:
+          - generic [ref=f112e155]:
+            - navigation "مسار التنقل" [ref=f112e156]:
+              - list [ref=f112e157]:
+                - listitem [ref=f112e158]:
+                  - link "لوحة الإدارة" [ref=f112e159] [cursor=pointer]:
+                    - /url: /admin
+                - listitem [ref=f112e164]:
+                  - link "رموز المهام" [ref=f112e167] [cursor=pointer]:
+                    - /url: /admin/codes
+                - listitem [ref=f112e168]:
+                  - generic [ref=f112e171]: إنشاء رمز جديد
+            - generic [ref=f112e173]:
+              - heading "إنشاء رمز فتح مهمة جديد" [level=1] [ref=f112e174]
+              - paragraph [ref=f112e175]: ربط الرمز بمهمة محددة وتحديد حالته الأولية ليتمكن الموظفون من فتح المهمة وتنفيذها
+          - alert [ref=f112e225]:
+            - generic [ref=f112e229]: تم إنشاء رمز فتح المهمة بنجاح.
+          - generic [ref=f112e176]:
+            - generic [ref=f112e177]:
+              - generic [ref=f112e178]:
+                - generic [ref=f112e179] [cursor=pointer]: المهمة المرتبطة بالرمز *
+                - combobox "المهمة المرتبطة بالرمز *" [ref=f112e180] [cursor=pointer]:
+                  - option "مراجعة جودة محتوى وتقييم تطبيق الشريك (منصة التقييم المعتمدة أوسكار)" [selected]
+                  - option "اختبار تجربة التفاعل وإبداء الرأي الترويجي (تطبيق الشريك المعتمد)"
+                - paragraph [ref=f112e181]: يرتبط الرمز حصرياً بمهمة واحدة، ولا يمكن استخدامه لفتح مهمة أخرى.
+              - generic [ref=f112e182]:
+                - generic [ref=f112e183]:
+                  - generic [ref=f112e184] [cursor=pointer]: الرمز (Code) *
+                  - button "توليد رمز تلقائي" [ref=f112e185] [cursor=pointer]
+                - textbox "الرمز (Code) *" [ref=f112e190]:
+                  - /placeholder: "مثال: OSCAR-TASK-2026"
+                  - text: AUDIT-CODE-2026
+                - paragraph [ref=f112e191]: "قاعدة التوحيد القياسي: يتم تحويل كافة الرموز تلقائياً إلى حروف كبيرة مع حذف المسافات الزائدة (Trim & Uppercase)."
+              - generic [ref=f112e192]:
+                - generic [ref=f112e193]: "الحالة التشغيلية الأولية:"
+                - generic [ref=f112e194]:
+                  - generic [ref=f112e195] [cursor=pointer]:
+                    - radio "نشط (متاح للاستخدام فوراً) يسمح للموظفين بفتح المهمة بنجاح" [checked] [ref=f112e196]
+                    - generic [ref=f112e197]:
+                      - generic [ref=f112e198]: نشط (متاح للاستخدام فوراً)
+                      - text: يسمح للموظفين بفتح المهمة بنجاح
+                  - generic [ref=f112e199] [cursor=pointer]:
+                    - radio "متوقف مؤقتاً محظور الفتح لحين التفعيل لاحقاً" [ref=f112e200]
+                    - generic [ref=f112e201]:
+                      - generic [ref=f112e202]: متوقف مؤقتاً
+                      - text: محظور الفتح لحين التفعيل لاحقاً
+              - generic [ref=f112e203]:
+                - generic [ref=f112e204] [cursor=pointer]: وصف أو ملاحظة إدارية (اختياري)
+                - textbox "وصف أو ملاحظة إدارية (اختياري)" [ref=f112e205]:
+                  - /placeholder: "مثال: رمز موجه لموظفي باقات O1 و O2..."
+            - generic [ref=f112e206]:
+              - link "إلغاء" [ref=f112e207] [cursor=pointer]:
+                - /url: /admin/codes
+              - button "حفظ وإنشاء الرمز" [active] [ref=f112e210] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=f112e230] [cursor=pointer]:
+    - generic [ref=f112e233]:
+      - text: Rendering
+      - generic [ref=f112e234]:
+        - generic [ref=f112e235]: .
+        - generic [ref=f112e236]: .
+        - generic [ref=f112e237]: .
+  - alert [ref=f112e238]
