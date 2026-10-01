@@ -14,7 +14,7 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   // 5 destinations in RTL order (Right to Left):
-  // 1. الرئيسية, 2. المهام, 3. الباقات, 4. الفريق, 5. حسابي
+  // 1. الرئيسية, 2. المهام, 3. المناصب, 4. الفريق, 5. حسابي
   const navItems = [
     {
       href: "/employee" as const,
@@ -30,7 +30,7 @@ export function BottomNavigation() {
     },
     {
       href: "/employee/packages" as const,
-      label: "الباقات",
+      label: "المناصب",
       icon: Layers,
       isActive: pathname.startsWith("/employee/packages"),
     },

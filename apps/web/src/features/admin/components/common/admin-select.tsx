@@ -50,7 +50,7 @@ export function AdminSelect({
           aria-label={ariaLabel ?? placeholder}
           className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 shadow-xs transition-colors hover:border-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60 sm:text-sm ${triggerClassName}`}
         >
-          <div className="flex items-center gap-2 truncate">
+          <div className="flex min-w-0 items-center gap-2 truncate text-start">
             {icon && <span className="shrink-0 text-slate-400">{icon}</span>}
             <Select.Value placeholder={placeholder}>
               {selectedOption ? selectedOption.label : placeholder}
@@ -70,22 +70,24 @@ export function AdminSelect({
             position="popper"
             sideOffset={4}
             dir="rtl"
-            className="admin-scope admin-portal animate-in fade-in-80 z-50 max-h-64 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
+            className="admin-scope admin-portal animate-in fade-in-80 z-50 max-h-[min(20rem,var(--radix-select-content-available-height))] w-[var(--radix-select-trigger-width)] max-w-[calc(100vw-2rem)] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl"
           >
             <Select.ScrollUpButton className="flex h-6 items-center justify-center bg-slate-50 text-slate-500">
               <ChevronUp size={14} />
             </Select.ScrollUpButton>
 
-            <Select.Viewport className="p-1">
+            <Select.Viewport className="flex min-h-0 flex-col p-1">
               {options.map((opt) => (
                 <Select.Item
                   key={opt.value}
                   value={opt.value}
                   disabled={opt.disabled ?? false}
-                  className="relative flex cursor-pointer items-center justify-between rounded-md px-3 py-2 text-xs text-slate-700 outline-none select-none hover:bg-emerald-50 hover:text-emerald-900 focus:bg-emerald-50 focus:text-emerald-900 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[state=checked]:bg-emerald-50 data-[state=checked]:font-bold data-[state=checked]:text-emerald-800 sm:text-sm"
+                  className="relative flex min-h-11 w-full shrink-0 cursor-pointer items-center rounded-md py-2 pr-3 pl-9 text-xs text-slate-700 outline-none select-none hover:bg-emerald-50 hover:text-emerald-900 focus:bg-emerald-50 focus:text-emerald-900 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 data-[state=checked]:bg-emerald-50 data-[state=checked]:font-bold data-[state=checked]:text-emerald-800 sm:text-sm"
                 >
-                  <Select.ItemText>{opt.label}</Select.ItemText>
-                  <Select.ItemIndicator>
+                  <Select.ItemText className="min-w-0 text-start wrap-break-word">
+                    {opt.label}
+                  </Select.ItemText>
+                  <Select.ItemIndicator className="absolute left-3 flex items-center">
                     <Check
                       size={14}
                       className="text-emerald-700"
