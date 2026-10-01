@@ -1,0 +1,678 @@
+﻿[
+    {
+        "file":  "account-1440x900.png",
+        "beforeSize":  "1440x1112",
+        "afterSize":  "1440x1112",
+        "differentPixels":  8,
+        "differencePercent":  0.0005,
+        "bounds":  [
+                       918,
+                       112,
+                       965,
+                       159
+                   ]
+    },
+    {
+        "file":  "account-320x568.png",
+        "beforeSize":  "320x1128",
+        "afterSize":  "320x1128",
+        "differentPixels":  8,
+        "differencePercent":  0.0022,
+        "bounds":  [
+                       238,
+                       104,
+                       285,
+                       151
+                   ]
+    },
+    {
+        "file":  "account-360x800.png",
+        "beforeSize":  "360x1096",
+        "afterSize":  "360x1096",
+        "differentPixels":  8,
+        "differencePercent":  0.002,
+        "bounds":  [
+                       278,
+                       104,
+                       325,
+                       151
+                   ]
+    },
+    {
+        "file":  "account-390x844.png",
+        "beforeSize":  "390x1096",
+        "afterSize":  "390x1096",
+        "differentPixels":  7,
+        "differencePercent":  0.0016,
+        "bounds":  [
+                       308,
+                       104,
+                       352,
+                       151
+                   ]
+    },
+    {
+        "file":  "account-430x932.png",
+        "beforeSize":  "430x1096",
+        "afterSize":  "430x1096",
+        "differentPixels":  7,
+        "differencePercent":  0.0015,
+        "bounds":  [
+                       348,
+                       104,
+                       392,
+                       151
+                   ]
+    },
+    {
+        "file":  "account-768x1024.png",
+        "beforeSize":  "768x1112",
+        "afterSize":  "768x1112",
+        "differentPixels":  8,
+        "differencePercent":  0.0009,
+        "bounds":  [
+                       582,
+                       112,
+                       629,
+                       159
+                   ]
+    },
+    {
+        "file":  "deposit-390x844.png",
+        "beforeSize":  "390x1214",
+        "afterSize":  "390x1214",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       1214,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "faq-390x844.png",
+        "beforeSize":  "390x1267",
+        "afterSize":  "390x1267",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       1267,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "forgot-password-390x844.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       844,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "home-1440x900.png",
+        "beforeSize":  "1440x1109",
+        "afterSize":  "1440x1109",
+        "differentPixels":  15,
+        "differencePercent":  0.0009,
+        "bounds":  [
+                       493,
+                       786,
+                       968,
+                       989
+                   ]
+    },
+    {
+        "file":  "home-320x568.png",
+        "beforeSize":  "320x1198",
+        "afterSize":  "320x1198",
+        "differentPixels":  12,
+        "differencePercent":  0.0031,
+        "bounds":  [
+                       247,
+                       879,
+                       284,
+                       1082
+                   ]
+    },
+    {
+        "file":  "home-360x800.png",
+        "beforeSize":  "360x1198",
+        "afterSize":  "360x1198",
+        "differentPixels":  13,
+        "differencePercent":  0.003,
+        "bounds":  [
+                       287,
+                       879,
+                       324,
+                       1082
+                   ]
+    },
+    {
+        "file":  "home-390x844.png",
+        "beforeSize":  "390x1180",
+        "afterSize":  "390x1180",
+        "differentPixels":  17,
+        "differencePercent":  0.0037,
+        "bounds":  [
+                       317,
+                       861,
+                       354,
+                       1064
+                   ]
+    },
+    {
+        "file":  "home-430x932.png",
+        "beforeSize":  "430x1180",
+        "afterSize":  "430x1180",
+        "differentPixels":  6,
+        "differencePercent":  0.0012,
+        "bounds":  [
+                       357,
+                       861,
+                       394,
+                       1064
+                   ]
+    },
+    {
+        "file":  "home-768x1024.png",
+        "beforeSize":  "768x1109",
+        "afterSize":  "768x1109",
+        "differentPixels":  10,
+        "differencePercent":  0.0012,
+        "bounds":  [
+                       157,
+                       786,
+                       632,
+                       983
+                   ]
+    },
+    {
+        "file":  "login-1440x900.png",
+        "beforeSize":  "1440x900",
+        "afterSize":  "1440x900",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       1440,
+                       900,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "login-320x568.png",
+        "beforeSize":  "320x650",
+        "afterSize":  "320x650",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       320,
+                       650,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "login-360x800.png",
+        "beforeSize":  "360x800",
+        "afterSize":  "360x800",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       360,
+                       800,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "login-390x844.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       844,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "login-430x932.png",
+        "beforeSize":  "430x932",
+        "afterSize":  "430x932",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       430,
+                       932,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "login-768x1024.png",
+        "beforeSize":  "768x1024",
+        "afterSize":  "768x1024",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       768,
+                       1024,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "packages-1440x900.png",
+        "beforeSize":  "1440x3184",
+        "afterSize":  "1440x3184",
+        "differentPixels":  1,
+        "differencePercent":  0,
+        "bounds":  [
+                       493,
+                       859,
+                       493,
+                       859
+                   ]
+    },
+    {
+        "file":  "packages-320x568.png",
+        "beforeSize":  "320x3022",
+        "afterSize":  "320x3022",
+        "differentPixels":  44,
+        "differencePercent":  0.0045,
+        "bounds":  [
+                       34,
+                       258,
+                       285,
+                       620
+                   ]
+    },
+    {
+        "file":  "packages-360x800.png",
+        "beforeSize":  "360x3022",
+        "afterSize":  "360x3022",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       360,
+                       3022,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "packages-390x844.png",
+        "beforeSize":  "390x3022",
+        "afterSize":  "390x3022",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       3022,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "packages-430x932.png",
+        "beforeSize":  "430x2983",
+        "afterSize":  "430x2983",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       430,
+                       2983,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "packages-768x1024.png",
+        "beforeSize":  "768x3184",
+        "afterSize":  "768x3184",
+        "differentPixels":  1,
+        "differencePercent":  0,
+        "bounds":  [
+                       157,
+                       983,
+                       157,
+                       983
+                   ]
+    },
+    {
+        "file":  "privacy-390x844.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       844,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "register-390x844.png",
+        "beforeSize":  "390x860",
+        "afterSize":  "390x860",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       860,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "reset-password-390x844.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       844,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "support-390x844.png",
+        "beforeSize":  "390x846",
+        "afterSize":  "390x846",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       846,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "tasks-1440x900.png",
+        "beforeSize":  "1440x1322",
+        "afterSize":  "1440x1322",
+        "differentPixels":  1,
+        "differencePercent":  0.0001,
+        "bounds":  [
+                       493,
+                       859,
+                       493,
+                       859
+                   ]
+    },
+    {
+        "file":  "tasks-320x568.png",
+        "beforeSize":  "320x1399",
+        "afterSize":  "320x1399",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       320,
+                       1399,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "tasks-360x800.png",
+        "beforeSize":  "360x1399",
+        "afterSize":  "360x1399",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       360,
+                       1399,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "tasks-390x844.png",
+        "beforeSize":  "390x1368",
+        "afterSize":  "390x1368",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       1368,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "tasks-430x932.png",
+        "beforeSize":  "430x1313",
+        "afterSize":  "430x1313",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       430,
+                       1313,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "tasks-768x1024.png",
+        "beforeSize":  "768x1322",
+        "afterSize":  "768x1322",
+        "differentPixels":  1,
+        "differencePercent":  0.0001,
+        "bounds":  [
+                       157,
+                       983,
+                       157,
+                       983
+                   ]
+    },
+    {
+        "file":  "team-390x844.png",
+        "beforeSize":  "390x1077",
+        "afterSize":  "390x1077",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       1077,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "terms-390x844.png",
+        "beforeSize":  "390x973",
+        "afterSize":  "390x973",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       973,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "verify-email-390x844.png",
+        "beforeSize":  "390x844",
+        "afterSize":  "390x844",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       844,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "wallet-1440x900.png",
+        "beforeSize":  "1440x1280",
+        "afterSize":  "1440x1280",
+        "differentPixels":  34,
+        "differencePercent":  0.0018,
+        "bounds":  [
+                       910,
+                       687,
+                       947,
+                       1139
+                   ]
+    },
+    {
+        "file":  "wallet-320x568.png",
+        "beforeSize":  "320x1342",
+        "afterSize":  "320x1342",
+        "differentPixels":  72,
+        "differencePercent":  0.0168,
+        "bounds":  [
+                       229,
+                       711,
+                       268,
+                       1209
+                   ]
+    },
+    {
+        "file":  "wallet-360x800.png",
+        "beforeSize":  "360x1296",
+        "afterSize":  "360x1296",
+        "differentPixels":  27,
+        "differencePercent":  0.0058,
+        "bounds":  [
+                       270,
+                       804,
+                       307,
+                       1163
+                   ]
+    },
+    {
+        "file":  "wallet-390x844.png",
+        "beforeSize":  "390x1296",
+        "afterSize":  "390x1296",
+        "differentPixels":  17,
+        "differencePercent":  0.0034,
+        "bounds":  [
+                       300,
+                       877,
+                       337,
+                       1163
+                   ]
+    },
+    {
+        "file":  "wallet-430x932.png",
+        "beforeSize":  "430x1296",
+        "afterSize":  "430x1296",
+        "differentPixels":  22,
+        "differencePercent":  0.0039,
+        "bounds":  [
+                       340,
+                       794,
+                       377,
+                       1163
+                   ]
+    },
+    {
+        "file":  "wallet-768x1024.png",
+        "beforeSize":  "768x1280",
+        "afterSize":  "768x1280",
+        "differentPixels":  36,
+        "differencePercent":  0.0037,
+        "bounds":  [
+                       574,
+                       687,
+                       611,
+                       1139
+                   ]
+    },
+    {
+        "file":  "withdraw-1440x900.png",
+        "beforeSize":  "1440x1126",
+        "afterSize":  "1440x1126",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       1440,
+                       1126,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "withdraw-320x568.png",
+        "beforeSize":  "320x1188",
+        "afterSize":  "320x1188",
+        "differentPixels":  2,
+        "differencePercent":  0.0005,
+        "bounds":  [
+                       283,
+                       272,
+                       283,
+                       273
+                   ]
+    },
+    {
+        "file":  "withdraw-360x800.png",
+        "beforeSize":  "360x1106",
+        "afterSize":  "360x1106",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       360,
+                       1106,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "withdraw-390x844.png",
+        "beforeSize":  "390x1106",
+        "afterSize":  "390x1106",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       390,
+                       1106,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "withdraw-430x932.png",
+        "beforeSize":  "430x1087",
+        "afterSize":  "430x1087",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       430,
+                       1087,
+                       0,
+                       0
+                   ]
+    },
+    {
+        "file":  "withdraw-768x1024.png",
+        "beforeSize":  "768x1126",
+        "afterSize":  "768x1126",
+        "differentPixels":  0,
+        "differencePercent":  0,
+        "bounds":  [
+                       768,
+                       1126,
+                       0,
+                       0
+                   ]
+    }
+]

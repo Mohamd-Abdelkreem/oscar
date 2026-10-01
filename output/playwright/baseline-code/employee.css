@@ -1,0 +1,257 @@
+@import "@fontsource/cairo/400.css";
+@import "@fontsource/cairo/500.css";
+@import "@fontsource/cairo/600.css";
+@import "@fontsource/cairo/700.css";
+
+/* Scope employee typography & reset */
+.employee-scope {
+  --font-cairo: "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  color: #0f172a;
+  background-color: #f8fafc;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.employee-scope *,
+.employee-scope *::before,
+.employee-scope *::after {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Ensure strictly NO gradients inside employee experience */
+.employee-scope [style*="gradient"],
+.employee-scope .bg-gradient-to-r,
+.employee-scope .bg-gradient-to-l,
+.employee-scope .bg-gradient-to-t,
+.employee-scope .bg-gradient-to-b {
+  background-image: none !important;
+}
+
+/* Heading reset inside employee */
+.employee-scope h1,
+.employee-scope h2,
+.employee-scope h3,
+.employee-scope h4,
+.employee-scope h5,
+.employee-scope h6 {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Input, button, select reset inside employee */
+.employee-scope input,
+.employee-scope select,
+.employee-scope textarea {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+  font-size: 16px;
+}
+
+.employee-scope button {
+  font-family: var(--font-cairo) !important;
+  letter-spacing: 0 !important;
+}
+
+/* Directional isolation */
+.employee-scope [dir="ltr"],
+.employee-scope bdi {
+  font-family: var(--font-cairo) !important;
+  direction: ltr !important;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Touch targets and outline */
+.employee-scope button:focus-visible,
+.employee-scope a:focus-visible,
+.employee-scope input:focus-visible,
+.employee-scope textarea:focus-visible {
+  outline: 2px solid #047857 !important;
+  outline-offset: 2px !important;
+}
+
+/* Cursor rules: every interactive element has pointer; inputs have text; disabled have not-allowed */
+.employee-scope button:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a:not([aria-disabled="true"]):not([disabled]),
+.employee-scope [role="button"]:not([aria-disabled="true"]),
+.employee-scope [role="tab"],
+.employee-scope summary,
+.employee-scope label[for],
+.employee-scope input[type="checkbox"]:not(:disabled),
+.employee-scope input[type="radio"]:not(:disabled),
+.employee-scope select:not(:disabled) {
+  cursor: pointer;
+}
+
+.employee-scope button:disabled,
+.employee-scope button[aria-disabled="true"],
+.employee-scope a[aria-disabled="true"],
+.employee-scope [role="button"][aria-disabled="true"],
+.employee-scope [aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.employee-scope input[type="text"],
+.employee-scope input[type="email"],
+.employee-scope input[type="password"],
+.employee-scope input[type="number"],
+.employee-scope textarea {
+  cursor: text;
+}
+
+/* Safe area padding helpers */
+.safe-bottom-area {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-bottom-pad {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+/* =========================================================================
+   Employee Button Design System (Accessible contrast, robust cascade)
+   ========================================================================= */
+
+.employee-scope .emp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-cairo) !important;
+  font-weight: 700;
+  text-decoration: none !important;
+  border-radius: 0.5rem;
+  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease, transform 100ms ease;
+  user-select: none;
+  white-space: normal;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.35;
+  box-sizing: border-box;
+}
+
+.employee-scope .emp-btn:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: translateY(1px);
+}
+
+/* Sizing */
+.employee-scope .emp-btn--default {
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+  font-size: 15px;
+}
+
+.employee-scope .emp-btn--compact {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 14px;
+}
+
+.employee-scope .emp-btn--full {
+  width: 100%;
+}
+
+/* Variants with guaranteed 4.5:1+ contrast */
+
+/* Primary Action: Solid confident emerald green with crisp white text */
+.employee-scope .emp-btn--primary,
+.employee-scope a.emp-btn--primary {
+  background-color: #047857;
+  color: #ffffff !important;
+  border: 1px solid #047857;
+}
+.employee-scope .emp-btn--primary:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--primary:hover:not([aria-disabled="true"]) {
+  background-color: #065f46;
+  color: #ffffff !important;
+  border-color: #065f46;
+}
+
+/* Dark Action: Deep slate with crisp white text */
+.employee-scope .emp-btn--dark,
+.employee-scope a.emp-btn--dark {
+  background-color: #0f172a;
+  color: #ffffff !important;
+  border: 1px solid #0f172a;
+}
+.employee-scope .emp-btn--dark:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--dark:hover:not([aria-disabled="true"]) {
+  background-color: #1e293b;
+  color: #ffffff !important;
+  border-color: #1e293b;
+}
+
+/* Outline Action: Crisp white surface, dark charcoal text, clear slate border */
+.employee-scope .emp-btn--outline,
+.employee-scope a.emp-btn--outline {
+  background-color: #ffffff;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1;
+}
+.employee-scope .emp-btn--outline:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--outline:hover:not([aria-disabled="true"]) {
+  background-color: #f8fafc;
+  color: #0f172a !important;
+  border-color: #94a3b8;
+}
+
+/* Ghost Action: Transparent background with clear dark charcoal text */
+.employee-scope .emp-btn--ghost,
+.employee-scope a.emp-btn--ghost {
+  background-color: transparent;
+  color: #334155 !important;
+  border: 1px solid transparent;
+}
+.employee-scope .emp-btn--ghost:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--ghost:hover:not([aria-disabled="true"]) {
+  background-color: #f1f5f9;
+  color: #0f172a !important;
+}
+
+/* Destructive Action: Solid red with crisp white text */
+.employee-scope .emp-btn--destructive,
+.employee-scope a.emp-btn--destructive {
+  background-color: #dc2626;
+  color: #ffffff !important;
+  border: 1px solid #dc2626;
+}
+.employee-scope .emp-btn--destructive:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--destructive:hover:not([aria-disabled="true"]) {
+  background-color: #b91c1c;
+  color: #ffffff !important;
+  border-color: #b91c1c;
+}
+
+/* White Action (e.g. inside dark banner): White surface with deep emerald text */
+.employee-scope .emp-btn--white,
+.employee-scope a.emp-btn--white {
+  background-color: #ffffff;
+  color: #064e3b !important;
+  border: 1px solid #ffffff;
+}
+.employee-scope .emp-btn--white:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope a.emp-btn--white:hover:not([aria-disabled="true"]) {
+  background-color: #ecfdf5;
+  color: #022c22 !important;
+}
+
+/* Nested icons inherit button foreground */
+.employee-scope .emp-btn svg {
+  color: inherit;
+  flex-shrink: 0;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .employee-scope * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

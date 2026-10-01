@@ -1,3 +1,5 @@
+import type { Route } from "next";
+
 import { DEFAULT_RETURN_PATH } from "../constants/auth.constants";
 
 const ALLOWED_ROOTS = ["/dashboard", "/settings"] as const;
@@ -48,4 +50,4 @@ export const sanitizeReturnPath = (
 
 export const resolvePostLoginPath = (
   value: string | null | undefined,
-): string => sanitizeReturnPath(value) ?? DEFAULT_RETURN_PATH;
+): Route => (sanitizeReturnPath(value) ?? DEFAULT_RETURN_PATH) as Route;

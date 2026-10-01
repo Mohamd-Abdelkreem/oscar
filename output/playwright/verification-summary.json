@@ -1,0 +1,50 @@
+{
+  "preview": "http://localhost:3100/employee",
+  "baseline": { "testFiles": 12, "testsPassed": 95, "typeCheck": "passed" },
+  "finalCommands": {
+    "pnpm --filter @template/web lint": "passed, zero warnings",
+    "pnpm --filter @template/web check-types": "passed",
+    "pnpm --filter @template/web test": "passed, 19 files and 111 tests",
+    "pnpm --filter @template/web build": "passed, Next.js 16.2.12 Turbopack",
+    "pnpm --filter @template/web build --webpack": "passed",
+    "node node_modules/prettier/bin/prettier.cjs --check (Get-Content output/playwright/changed-files.txt)": "passed, only refactor files",
+    "git diff --check": "passed"
+  },
+  "resourceLimit": "Earlier checks and build attempts failed because Windows exhausted committed memory. Checks were rerun successfully after memory became available. A one-worker test run also passed all 111 tests. No configuration, dependencies, strictness, or gates were changed.",
+  "visualCoverage": {
+    "allRoutesAt": "390x844",
+    "mainScreens": ["home", "tasks", "packages", "wallet", "withdraw", "account", "login"],
+    "mainScreenViewports": ["320x568", "360x800", "390x844", "430x932", "768x1024", "1440x900"],
+    "packageSheet": "390x844, pixel-identical to the initial baseline",
+    "initialScreenshots": "before/",
+    "originalSourceReplay": "before-replayed/",
+    "finalScreenshots": "after/",
+    "initialComparison": "screenshot-comparison.json",
+    "replayedComparison": "replayed-screenshot-comparison.json",
+    "replayedComparisonExcludingDevelopmentBadge": "replayed-comparison-without-dev-badge.json",
+    "replayNote": "Four initial images captured loading states. The saved original source was replayed in an isolated app to compare fully rendered screens at every requested size. Unmasked comparisons include the development badge; the separate comparison excludes its 80x91 pixel rectangle. Remaining differences are at most 72 pixels per screenshot, with identical page dimensions and no material layout changes.",
+    "horizontalOverflow": false,
+    "pageErrors": [],
+    "backendRequests": [],
+    "consoleNote": "Existing favicon.ico 404 and browser autocomplete suggestions remain. No new hydration or application errors were observed."
+  },
+  "browserInteractions": ["task submit, navigation and image replacement", "all eight task query scenarios including unknown", "package sheet financial example and Escape focus return", "withdrawal fee/net, reservation and state across navigation", "deposit status update", "expired verification and reset URLs", "simulated link verification", "password visibility", "login push and browser Back"],
+  "characterizationTests": ["real provider submission and replacement effects", "upgrade funding and historical rewards", "withdrawal reservation, rejection and completion", "deposit status without additional credit", "production financial calculations", "Button and ButtonLink semantics", "account navigation row", "timer cleanup", "sheet focus and scroll-lock cleanup", "upload and committed image lifetimes"],
+  "reviews": ["clean-code-guard", "vercel-react-best-practices", "test-guard"],
+  "reviewFixes": {
+    "employee-state.context.tsx": "removed an unsafe package fallback assertion and corrected callback dependencies",
+    "tasks-screen.tsx and verify-email-screen.tsx": "removed query casts while retaining unknown-query behavior",
+    "confirmation-sheet.tsx": "stabilized the Escape listener and restored original focus and scroll state",
+    "use-managed-timeout.ts": "cancelled mock timers when their owning component unmounts",
+    "use-task-submission.ts and employee-state.context.tsx": "separated temporary and committed screenshot URL ownership"
+  },
+  "unchanged": ["all ten fixture exports", "employee.css", "Arabic text and Cairo/RTL", "approved amounts and snapshots", "five-item navigation and control sizes", "Next.js App Router and navigation history", "backend, API, contracts, dependency versions and real auth/session infrastructure", "prior unrelated uncommitted changes"],
+  "preExistingDiscrepanciesPreserved": [
+    "Rejected-task copy claims a reward reversal, but the mock scenario setter only updates status.",
+    "Completing a withdrawal updates balances and its request; the reservation ledger entry stays pending.",
+    "The displayed 24-hour withdrawal cooldown is not enforced by the mock provider.",
+    "Resending from an expired verification view leaves that view visible in the existing mock flow."
+  ],
+  "resourceDefectFixed": "Submitted screenshot previews previously broke after navigating away because the upload control revoked the provider's URL. Committed URLs now survive child-route unmounts and are revoked when replaced or when the provider unmounts.",
+  "temporaryReplayApp": "Stopped and moved outside the workspace to C:/Users/moham/AppData/Local/Temp/oscar-original-review-497f55ee; its dependency junction was removed."
+}

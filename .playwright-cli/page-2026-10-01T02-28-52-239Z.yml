@@ -1,0 +1,276 @@
+- generic [ref=f15e1]:
+  - generic [ref=f15e4]:
+    - generic [ref=f15e6]:
+      - banner [ref=f15e7]:
+        - generic [ref=f15e9]:
+          - heading "المناصب والباقات" [level=1] [ref=f15e10]
+          - paragraph [ref=f15e11]: اختر المنصب المناسب لتفعيل المهام اليومية ومضاعفة العوائد
+      - generic [ref=f15e12]:
+        - generic [ref=f15e13]:
+          - generic [ref=f15e14]:
+            - generic [ref=f15e15]:
+              - generic [ref=f15e16]:
+                - heading "منصب S1" [level=2] [ref=f15e17]
+                - generic [ref=f15e23]: المنصب الحالي
+              - paragraph [ref=f15e28]: المنصب الأساسي للموظفين لبدء أداء المهام اليومية المنتظمة وتحقيق دخل مستقر.
+              - generic [ref=f15e29]:
+                - generic [ref=f15e30]:
+                  - generic [ref=f15e31]: السعر
+                  - generic [ref=f15e32]:
+                    - generic [ref=f15e33]: "60.00"
+                    - generic [ref=f15e34]: USDT
+                - generic [ref=f15e35]:
+                  - generic [ref=f15e36]: الربح اليومي
+                  - generic [ref=f15e37]:
+                    - generic [ref=f15e38]: "+2.00"
+                    - generic [ref=f15e39]: USDT
+                - generic [ref=f15e40]:
+                  - generic [ref=f15e41]: أيام العمل المطلوبة
+                  - generic [ref=f15e42]: 365 يوم
+                - generic [ref=f15e43]:
+                  - generic [ref=f15e44]: الدورة
+                  - text: يومي
+              - generic [ref=f15e45]:
+                - generic [ref=f15e46]: إجمالي الدخل المتوقع
+                - generic [ref=f15e47]:
+                  - generic [ref=f15e48]: "730.00"
+                  - generic [ref=f15e49]: USDT
+            - generic [ref=f15e50]:
+              - heading "المواصفات والشروط:" [level=3] [ref=f15e51]
+              - list [ref=f15e52]:
+                - listitem [ref=f15e53]:
+                  - generic [ref=f15e56]: مهمة يومية مخصصة ومضمونة
+                - listitem [ref=f15e57]:
+                  - generic [ref=f15e60]: ربح يومي 2.00 USDT
+                - listitem [ref=f15e61]:
+                  - generic [ref=f15e64]: "أيام العمل المطلوبة: 365 يوم"
+                - listitem [ref=f15e65]:
+                  - generic [ref=f15e68]: "إجمالي الدخل المتوقع: 730.00 USDT"
+                - listitem [ref=f15e69]:
+                  - generic [ref=f15e72]: "الدورة: يومي"
+          - generic [ref=f15e74]:
+            - generic [ref=f15e75]: المنصب نشط ومفعل
+            - generic [ref=f15e80]: متبقي 22 يوماً
+        - generic [ref=f15e85]:
+          - generic [ref=f15e86]:
+            - generic [ref=f15e87]:
+              - heading "منصب S2" [level=2] [ref=f15e89]
+              - paragraph [ref=f15e95]: منصب المستوى الثاني بعائد يومي مضاعف للموظفين ذوي الالتزام المستمر.
+              - generic [ref=f15e96]:
+                - generic [ref=f15e97]:
+                  - generic [ref=f15e98]: السعر
+                  - generic [ref=f15e99]:
+                    - generic [ref=f15e100]: "120.00"
+                    - generic [ref=f15e101]: USDT
+                - generic [ref=f15e102]:
+                  - generic [ref=f15e103]: الربح اليومي
+                  - generic [ref=f15e104]:
+                    - generic [ref=f15e105]: "+4.00"
+                    - generic [ref=f15e106]: USDT
+                - generic [ref=f15e107]:
+                  - generic [ref=f15e108]: أيام العمل المطلوبة
+                  - generic [ref=f15e109]: 365 يوم
+                - generic [ref=f15e110]:
+                  - generic [ref=f15e111]: الدورة
+                  - text: يومي
+              - generic [ref=f15e112]:
+                - generic [ref=f15e113]: إجمالي الدخل المتوقع
+                - generic [ref=f15e114]:
+                  - generic [ref=f15e115]: 1,460.00
+                  - generic [ref=f15e116]: USDT
+            - generic [ref=f15e117]:
+              - heading "المواصفات والشروط:" [level=3] [ref=f15e118]
+              - list [ref=f15e119]:
+                - listitem [ref=f15e120]:
+                  - generic [ref=f15e123]: مهمة يومية مخصصة ومضمونة
+                - listitem [ref=f15e124]:
+                  - generic [ref=f15e127]: ربح يومي 4.00 USDT
+                - listitem [ref=f15e128]:
+                  - generic [ref=f15e131]: "أيام العمل المطلوبة: 365 يوم"
+                - listitem [ref=f15e132]:
+                  - generic [ref=f15e135]: "إجمالي الدخل المتوقع: 1460.00 USDT"
+                - listitem [ref=f15e136]:
+                  - generic [ref=f15e139]: "الدورة: يومي"
+          - button "تفعيل المنصب الآن" [ref=f15e141] [cursor=pointer]
+        - generic [ref=f15e145]:
+          - generic [ref=f15e146]:
+            - generic [ref=f15e147]:
+              - heading "منصب O1" [level=2] [ref=f15e149]
+              - paragraph [ref=f15e155]: المنصب الإشرافي المتقدم لفرق العمل المتميزة مع عوائد يومية عالية.
+              - generic [ref=f15e156]:
+                - generic [ref=f15e157]:
+                  - generic [ref=f15e158]: السعر
+                  - generic [ref=f15e159]:
+                    - generic [ref=f15e160]: "600.00"
+                    - generic [ref=f15e161]: USDT
+                - generic [ref=f15e162]:
+                  - generic [ref=f15e163]: الربح اليومي
+                  - generic [ref=f15e164]:
+                    - generic [ref=f15e165]: "+16.00"
+                    - generic [ref=f15e166]: USDT
+                - generic [ref=f15e167]:
+                  - generic [ref=f15e168]: أيام العمل المطلوبة
+                  - generic [ref=f15e169]: 365 يوم
+                - generic [ref=f15e170]:
+                  - generic [ref=f15e171]: الدورة
+                  - text: يومي
+              - generic [ref=f15e172]:
+                - generic [ref=f15e173]: إجمالي الدخل المتوقع
+                - generic [ref=f15e174]:
+                  - generic [ref=f15e175]: 5,840.00
+                  - generic [ref=f15e176]: USDT
+            - generic [ref=f15e177]:
+              - heading "المواصفات والشروط:" [level=3] [ref=f15e178]
+              - list [ref=f15e179]:
+                - listitem [ref=f15e180]:
+                  - generic [ref=f15e183]: مهمة يومية إشرافية متقدمة
+                - listitem [ref=f15e184]:
+                  - generic [ref=f15e187]: ربح يومي 16.00 USDT
+                - listitem [ref=f15e188]:
+                  - generic [ref=f15e191]: "أيام العمل المطلوبة: 365 يوم"
+                - listitem [ref=f15e192]:
+                  - generic [ref=f15e195]: "إجمالي الدخل المتوقع: 5840.00 USDT"
+                - listitem [ref=f15e196]:
+                  - generic [ref=f15e199]: "الدورة: يومي"
+          - button "تفعيل المنصب الآن" [ref=f15e201] [cursor=pointer]
+        - generic [ref=f15e205]:
+          - generic [ref=f15e206]:
+            - generic [ref=f15e207]:
+              - heading "منصب O2" [level=2] [ref=f15e209]
+              - paragraph [ref=f15e215]: المنصب التنفيذي المتميز ذو القدرة العالية على توليد عوائد يومية كبرى.
+              - generic [ref=f15e216]:
+                - generic [ref=f15e217]:
+                  - generic [ref=f15e218]: السعر
+                  - generic [ref=f15e219]:
+                    - generic [ref=f15e220]: 1,200.00
+                    - generic [ref=f15e221]: USDT
+                - generic [ref=f15e222]:
+                  - generic [ref=f15e223]: الربح اليومي
+                  - generic [ref=f15e224]:
+                    - generic [ref=f15e225]: "+38.00"
+                    - generic [ref=f15e226]: USDT
+                - generic [ref=f15e227]:
+                  - generic [ref=f15e228]: أيام العمل المطلوبة
+                  - generic [ref=f15e229]: 365 يوم
+                - generic [ref=f15e230]:
+                  - generic [ref=f15e231]: الدورة
+                  - text: يومي
+              - generic [ref=f15e232]:
+                - generic [ref=f15e233]: إجمالي الدخل المتوقع
+                - generic [ref=f15e234]:
+                  - generic [ref=f15e235]: 13,870.00
+                  - generic [ref=f15e236]: USDT
+            - generic [ref=f15e237]:
+              - heading "المواصفات والشروط:" [level=3] [ref=f15e238]
+              - list [ref=f15e239]:
+                - listitem [ref=f15e240]:
+                  - generic [ref=f15e243]: مهمة يومية تنفيذية متميزة
+                - listitem [ref=f15e244]:
+                  - generic [ref=f15e247]: ربح يومي 38.00 USDT
+                - listitem [ref=f15e248]:
+                  - generic [ref=f15e251]: "أيام العمل المطلوبة: 365 يوم"
+                - listitem [ref=f15e252]:
+                  - generic [ref=f15e255]: "إجمالي الدخل المتوقع: 13870.00 USDT"
+                - listitem [ref=f15e256]:
+                  - generic [ref=f15e259]: "الدورة: يومي"
+          - button "تفعيل المنصب الآن" [ref=f15e261] [cursor=pointer]
+        - generic [ref=f15e265]:
+          - generic [ref=f15e266]:
+            - generic [ref=f15e267]:
+              - heading "منصب A1" [level=2] [ref=f15e269]
+              - paragraph [ref=f15e275]: أعلى منصب قيادي في المنصة بعوائد يومية استثنائية وأولويات تدقيق فورية.
+              - generic [ref=f15e276]:
+                - generic [ref=f15e277]:
+                  - generic [ref=f15e278]: السعر
+                  - generic [ref=f15e279]:
+                    - generic [ref=f15e280]: 2,600.00
+                    - generic [ref=f15e281]: USDT
+                - generic [ref=f15e282]:
+                  - generic [ref=f15e283]: الربح اليومي
+                  - generic [ref=f15e284]:
+                    - generic [ref=f15e285]: "+67.00"
+                    - generic [ref=f15e286]: USDT
+                - generic [ref=f15e287]:
+                  - generic [ref=f15e288]: أيام العمل المطلوبة
+                  - generic [ref=f15e289]: 365 يوم
+                - generic [ref=f15e290]:
+                  - generic [ref=f15e291]: الدورة
+                  - text: يومي
+              - generic [ref=f15e292]:
+                - generic [ref=f15e293]: إجمالي الدخل المتوقع
+                - generic [ref=f15e294]:
+                  - generic [ref=f15e295]: 24,455.00
+                  - generic [ref=f15e296]: USDT
+            - generic [ref=f15e297]:
+              - heading "المواصفات والشروط:" [level=3] [ref=f15e298]
+              - list [ref=f15e299]:
+                - listitem [ref=f15e300]:
+                  - generic [ref=f15e303]: مهمة يومية قيادية استثنائية
+                - listitem [ref=f15e304]:
+                  - generic [ref=f15e307]: ربح يومي 67.00 USDT
+                - listitem [ref=f15e308]:
+                  - generic [ref=f15e311]: "أيام العمل المطلوبة: 365 يوم"
+                - listitem [ref=f15e312]:
+                  - generic [ref=f15e315]: "إجمالي الدخل المتوقع: 24455.00 USDT"
+                - listitem [ref=f15e316]:
+                  - generic [ref=f15e319]: "الدورة: يومي"
+          - button "تفعيل المنصب الآن" [ref=f15e321] [cursor=pointer]
+      - dialog [ref=f15e363]:
+        - generic [active] [ref=f15e364]:
+          - generic [ref=f15e365]:
+            - generic [ref=f15e366]:
+              - heading "تأكيد ترقية المنصب إلى منصب O1" [level=2] [ref=f15e367]
+              - paragraph [ref=f15e368]: تفاصيل احتساب تكلفة الترقية وخصم المنصب الحالي
+            - button "إغلاق النافذة" [ref=f15e369] [cursor=pointer]
+          - generic [ref=f15e374]:
+            - generic [ref=f15e375]:
+              - generic [ref=f15e376]:
+                - generic [ref=f15e377]: "سعر المنصب المستهدف (منصب O1):"
+                - generic [ref=f15e378]:
+                  - generic [ref=f15e379]: "600.00"
+                  - generic [ref=f15e380]: USDT
+              - generic [ref=f15e381]:
+                - generic [ref=f15e382]: "خصم سعر منصبك الحالي (منصب S1):"
+                - generic [ref=f15e383]:
+                  - text: "-"
+                  - generic [ref=f15e384]:
+                    - generic [ref=f15e385]: "60.00"
+                    - generic [ref=f15e386]: USDT
+              - generic [ref=f15e387]:
+                - generic [ref=f15e388]: "صافي تكلفة الترقية الفعلية:"
+                - generic [ref=f15e389]:
+                  - generic [ref=f15e390]: "540.00"
+                  - generic [ref=f15e391]: USDT
+            - generic [ref=f15e392]:
+              - generic [ref=f15e393]:
+                - generic [ref=f15e394]: "الرصيد المتاح حالياً في حسابك:"
+                - generic [ref=f15e398]:
+                  - generic [ref=f15e399]: "40.00"
+                  - generic [ref=f15e400]: USDT
+              - generic [ref=f15e401]:
+                - generic [ref=f15e402]:
+                  - generic [ref=f15e403]: "المبلغ الإضافي المطلوب إيداعه:"
+                  - generic [ref=f15e404]:
+                    - generic [ref=f15e405]: "500.00"
+                    - generic [ref=f15e406]: USDT
+                - paragraph [ref=f15e407]: "ملاحظة: تكلفة الترقية الكاملة هي 540.00 USDT. الرصيد المتاح في حسابك (40.00 USDT) يغطي جزءاً منها، ويتطلب إيداع 500.00 USDT إضافية لتغذية الرصيد قبل إتمام الترقية."
+            - generic [ref=f15e408]:
+              - paragraph [ref=f15e409]: "تنويه إداري حول مدة المنصب:"
+              - paragraph [ref=f15e410]: لا يمكن إلغاء الاشتراك أو التراجع بعد إتمام الترقية. مدة سريان المنصب بعد الترقية وإعادة ضبطها قيد الاعتماد الإداري.
+            - generic [ref=f15e411]:
+              - link "الانتقال للإيداع وإضافة 500.00 USDT" [ref=f15e412] [cursor=pointer]:
+                - /url: /employee/deposit
+              - button "إلغاء" [ref=f15e417] [cursor=pointer]
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f15e325]:
+      - generic [ref=f15e326]:
+        - link "الرئيسية" [ref=f15e327] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=f15e333] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f15e340] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f15e348] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f15e356] [cursor=pointer]:
+          - /url: /employee/account
+  - alert [ref=f15e362]

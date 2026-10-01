@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 40" fill="none">
+  <rect width="40" height="40" rx="8" fill="#15803d"/>
+  <path d="M20 10C14.477 10 10 14.477 10 20C10 25.523 14.477 30 20 30C25.523 30 30 25.523 30 20C30 14.477 25.523 10 20 10ZM20 26C16.686 26 14 23.314 14 20C14 16.686 16.686 14 20 14C23.314 14 26 16.686 26 20C26 23.314 23.314 26 20 26Z" fill="#ffffff"/>
+  <circle cx="20" cy="20" r="3" fill="#86efac"/>
+  <text x="50" y="27" font-family="Cairo, sans-serif" font-size="20" font-weight="700" fill="#0f172a">أوسكار</text>
+</svg>

@@ -1,0 +1,75 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e45]:
+      - banner [ref=f2e46]:
+        - generic [ref=f2e48]:
+          - heading "المهام اليومية" [level=1] [ref=f2e49]
+          - paragraph [ref=f2e50]: "نافذة التنفيذ: 12:00 - 18:00 (توقيت بغداد)"
+      - generic [ref=f2e51]:
+        - generic [ref=f2e52]:
+          - button "مهمة اليوم" [ref=f2e53] [cursor=pointer]
+          - button "سجل المهام" [ref=f2e54] [cursor=pointer]
+        - generic [ref=f2e55]:
+          - generic [ref=f2e56]:
+            - generic [ref=f2e57]:
+              - generic [ref=f2e58]:
+                - generic [ref=f2e59]: منصب S1
+                - generic [ref=f2e60]: "النافذة: 12:00 - 18:00"
+              - generic [ref=f2e61]: قيد التدقيق والمراجعة
+            - heading "مراجعة جودة محتوى وتقييم تطبيق الشريك" [level=2] [ref=f2e67]
+            - paragraph [ref=f2e68]: قم بزيارة رابط الشريك المعتمد أدناه، وإبداء الرأي الموضوعي في واجهة الاستخدام، ثم التقط لقطة شاشة تثبت تفاعلك وارفعها للمراجعة.
+            - generic [ref=f2e69]:
+              - generic [ref=f2e70]: "مكافأة إتمام المهمة:"
+              - generic [ref=f2e71]:
+                - generic [ref=f2e72]: "+2.00"
+                - generic [ref=f2e73]: USDT
+          - generic [ref=f2e74]:
+            - img "نموذج توضيحي لتنفيذ المهمة" [ref=f2e76]
+            - generic [ref=f2e77]:
+              - generic [ref=f2e78]: منصة التقييم المعتمدة أوسكار
+              - link "الانتقال لرابط الشريك" [ref=f2e79] [cursor=pointer]:
+                - /url: "#task-partner-preview"
+          - generic [ref=f2e85]:
+            - heading "خطوات التنفيذ المعتمدة:" [level=3] [ref=f2e86]
+            - list [ref=f2e87]:
+              - listitem [ref=f2e88]:
+                - generic [ref=f2e89]: "1"
+                - generic [ref=f2e90]: اضغط على زر (الانتقال لمنصة الشريك) واستعرض واجهة الاستخدام.
+              - listitem [ref=f2e91]:
+                - generic [ref=f2e92]: "2"
+                - generic [ref=f2e93]: قم بكتابة تقييم موجز لا يقل عن سطرين حول سرعة الاستجابة وسهولة الوصول.
+              - listitem [ref=f2e94]:
+                - generic [ref=f2e95]: "3"
+                - generic [ref=f2e96]: التقط لقطة شاشة شاشة واضحة (Screenshot) تظهر التقييم وحسابك.
+              - listitem [ref=f2e97]:
+                - generic [ref=f2e98]: "4"
+                - generic [ref=f2e99]: ارفع ملف لقطة الشاشة (PNG أو JPG بحد أقصى 5 ميجابايت).
+              - listitem [ref=f2e100]:
+                - generic [ref=f2e101]: "5"
+                - generic [ref=f2e102]: فعّل خيار الإقرار الإلزامي ثم اضغط (تأكيد إرسال المهمة).
+          - generic [ref=f2e143]:
+            - generic [ref=f2e144]:
+              - generic [ref=f2e145]: تم إرسال مهمة اليوم بنجاح (06:48)
+              - paragraph [ref=f2e150]: أضيفت المكافأة (2.00 USDT) إلى رصيدك وهي قيد المراجعة التدقيقية. يمكنك استبدال لقطة الشاشة أدناه في حال رغبت بتعديل التوثيق دون تغيير المكافأة.
+            - generic [ref=f2e151]:
+              - generic [ref=f2e152]: لقطة شاشة إثبات التنفيذ (Screenshot) *
+              - button "Choose File" [ref=f2e153]
+              - generic [ref=f2e154]:
+                - img "معاينة لقطة الشاشة المرفوعة" [ref=f2e155]
+                - generic [ref=f2e156]:
+                  - generic [ref=f2e157]: تم اختيار الصورة بنجاح
+                  - button "إلغاء الصورة" [ref=f2e162] [cursor=pointer]
+            - button "تحديث لقطة الشاشة المرفقة" [ref=f2e167] [cursor=pointer]
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f2e7]:
+      - generic [ref=f2e8]:
+        - link "الرئيسية" [ref=f2e9] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=f2e15] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f2e23] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f2e30] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f2e38] [cursor=pointer]:
+          - /url: /employee/account
+  - alert [ref=f2e44]

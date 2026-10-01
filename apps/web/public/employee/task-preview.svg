@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 300" fill="none">
+  <rect width="600" height="300" rx="8" fill="#f1f5f9"/>
+  <rect x="20" y="20" width="560" height="260" rx="6" fill="#ffffff" stroke="#e2e8f0" stroke-width="1.5"/>
+  <!-- App Mock Header -->
+  <rect x="20" y="20" width="560" height="44" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <circle cx="44" cy="42" r="5" fill="#ef4444"/>
+  <circle cx="62" cy="42" r="5" fill="#f59e0b"/>
+  <circle cx="80" cy="42" r="5" fill="#10b981"/>
+  <rect x="120" y="32" width="220" height="20" rx="4" fill="#e2e8f0"/>
+  <!-- Content Area -->
+  <rect x="50" y="86" width="70" height="70" rx="8" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <path d="M85 106L89.5 117H101L91.8 123.8L95.2 135L85 128.2L74.8 135L78.2 123.8L69 117H80.5L85 106Z" fill="#15803d"/>
+
+  <rect x="140" y="92" width="260" height="18" rx="4" fill="#1e293b"/>
+  <rect x="140" y="120" width="380" height="12" rx="3" fill="#64748b"/>
+  <rect x="140" y="138" width="300" height="12" rx="3" fill="#94a3b8"/>
+
+  <!-- Review Rating Box -->
+  <rect x="50" y="180" width="500" height="76" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="70" y="196" width="140" height="14" rx="3" fill="#0f172a"/>
+  <rect x="70" y="222" width="380" height="12" rx="3" fill="#64748b"/>
+
+  <!-- Status Badge inside preview -->
+  <rect x="440" y="90" width="90" height="26" rx="4" fill="#dcfce7"/>
+  <text x="485" y="107" font-family="Cairo, sans-serif" font-size="12" font-weight="600" fill="#15803d" text-anchor="middle">مهمة معتمدة</text>
+</svg>

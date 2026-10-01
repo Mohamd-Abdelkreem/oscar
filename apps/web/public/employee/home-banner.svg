@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" fill="none">
+  <rect width="800" height="240" rx="8" fill="#14532d"/>
+  <!-- Decorative clean geometric shapes (solid colors, no gradients) -->
+  <circle cx="720" cy="40" r="80" fill="#166534"/>
+  <circle cx="680" cy="180" r="50" fill="#15803d"/>
+
+  <text x="50" y="75" font-family="Cairo, sans-serif" font-size="14" font-weight="600" fill="#86efac">منصة مهام الموظفين الرسمية</text>
+  <text x="50" y="125" font-family="Cairo, sans-serif" font-size="28" font-weight="700" fill="#ffffff">مرحباً بك في أوسكار</text>
+  <text x="50" y="165" font-family="Cairo, sans-serif" font-size="15" font-weight="400" fill="#dcfce7">أكمل مهمتك اليومية بين 12:00 و 18:00 بتوقيت بغداد واحصل على أرباحك فوراً</text>
+
+  <rect x="50" y="190" width="160" height="28" rx="4" fill="#166534"/>
+  <text x="130" y="209" font-family="Cairo, sans-serif" font-size="13" font-weight="600" fill="#bbf7d0" text-anchor="middle">النافذة مفتوحة الآن</text>
+</svg>

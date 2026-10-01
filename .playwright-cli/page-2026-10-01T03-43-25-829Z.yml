@@ -1,0 +1,113 @@
+- generic [ref=e1]:
+  - generic [ref=e4]:
+    - generic [ref=e274]:
+      - banner [ref=e275]:
+        - generic [ref=e276]:
+          - generic [ref=e277]: أ
+          - generic [ref=e278]:
+            - generic [ref=e279]:
+              - heading "أهلاً، أحمد مروان" [level=1] [ref=e280]
+              - generic [ref=e281]: منصب S1
+            - paragraph [ref=e282]: "كود الدعوة: OSCAR-94821"
+        - link "إعدادات الحساب" [ref=e283] [cursor=pointer]:
+          - /url: /employee/account
+      - generic [ref=e284]:
+        - generic [ref=e285]:
+          - generic [ref=e286]: نافذة المهام اليومية مفتوحة
+          - heading "مهمتك اليومية بانتظارك" [level=2] [ref=e287]
+          - paragraph [ref=e288]: أكمل مراجعة التقييم المعتمدة بين 12:00 و 18:00 بتوقيت بغداد لإضافة مكافأة 2.00 USDT لرصيدك.
+          - link "تنفيذ المهمة اليوم" [ref=e289] [cursor=pointer]:
+            - /url: /employee/tasks
+        - generic [ref=e297]:
+          - generic [ref=e298]:
+            - generic [ref=e299]: الرصيد المتاح للسحب
+            - link "تفاصيل المحفظة" [ref=e303] [cursor=pointer]:
+              - /url: /employee/wallet
+          - generic [ref=e307]:
+            - generic [ref=e308]:
+              - generic [ref=e309]: "10.00"
+              - generic [ref=e310]: USDT
+            - generic [ref=e311]:
+              - text: "الإجمالي:"
+              - generic [ref=e312]:
+                - generic [ref=e313]: "40.00"
+                - generic [ref=e314]: USDT
+          - generic [ref=e315]:
+            - link "إيداع رصيد" [ref=e316] [cursor=pointer]:
+              - /url: /employee/deposit
+            - link "طلب سحب" [ref=e321] [cursor=pointer]:
+              - /url: /employee/withdraw
+        - generic [ref=e326]:
+          - generic [ref=e327]:
+            - generic [ref=e328]:
+              - generic [ref=e329]: الباقة الحالية
+              - link "ترقية" [ref=e330] [cursor=pointer]:
+                - /url: /employee/packages
+            - generic [ref=e331]:
+              - generic [ref=e332]: منصب S1
+              - generic [ref=e333]: متبقي 22 يوم
+            - paragraph [ref=e334]: "عائد المهمة اليومية: 2.00 USDT"
+          - generic [ref=e335]:
+            - generic [ref=e336]:
+              - generic [ref=e337]: فريق الإحالة
+              - link "استعراض" [ref=e338] [cursor=pointer]:
+                - /url: /employee/team
+            - generic [ref=e339]:
+              - generic [ref=e340]: 6 أعضاء مسجلين
+              - generic [ref=e341]: +76.80 USDT
+            - paragraph [ref=e342]: عمولات تصل حتى 12% للمستوى الأول
+        - generic [ref=e343]:
+          - generic [ref=e344]:
+            - heading "النشاط المالي الأخير" [level=2] [ref=e345]
+            - link "عرض السجل كاملاً" [ref=e346] [cursor=pointer]:
+              - /url: /employee/wallet
+          - generic [ref=e350]:
+            - 'button "حجز رصيد لطلب سحب (30.00 USDT) الآن • مرجع: WTH-REQ-wth_193693 -30.00 USDT قيد المراجعة" [ref=e351] [cursor=pointer]':
+              - generic [ref=e357]:
+                - heading "حجز رصيد لطلب سحب (30.00 USDT)" [level=3] [ref=e358]
+                - paragraph [ref=e359]: "الآن • مرجع: WTH-REQ-wth_193693"
+              - generic [ref=e360]:
+                - generic [ref=e361]:
+                  - generic [ref=e362]: "-30.00"
+                  - generic [ref=e363]: USDT
+                - generic [ref=e364]: قيد المراجعة
+            - 'button "عمولة إحالة - ترقية باقة O1 (المستوى 1) 2026-09-30 15:20 • مرجع: REF-O1-9982 +64.80 USDT مكتمل" [ref=e370] [cursor=pointer]':
+              - generic [ref=e378]:
+                - heading "عمولة إحالة - ترقية باقة O1 (المستوى 1)" [level=3] [ref=e379]
+                - paragraph [ref=e380]: "2026-09-30 15:20 • مرجع: REF-O1-9982"
+              - generic [ref=e381]:
+                - generic [ref=e382]:
+                  - generic [ref=e383]: "+64.80"
+                  - generic [ref=e384]: USDT
+                - generic [ref=e385]: مكتمل
+            - 'button "مكافأة مهمة يومية - باقة S1 2026-09-30 13:45 • مرجع: TSK-20260930 +2.00 USDT مكتمل" [ref=e391] [cursor=pointer]':
+              - generic [ref=e397]:
+                - heading "مكافأة مهمة يومية - باقة S1" [level=3] [ref=e398]
+                - paragraph [ref=e399]: "2026-09-30 13:45 • مرجع: TSK-20260930"
+              - generic [ref=e400]:
+                - generic [ref=e401]:
+                  - generic [ref=e402]: "+2.00"
+                  - generic [ref=e403]: USDT
+                - generic [ref=e404]: مكتمل
+            - 'button "عمولة إحالة - شراء باقة S1 (المستوى 1) 2026-09-28 10:15 • مرجع: REF-S1-4412 +12.00 USDT مكتمل" [ref=e410] [cursor=pointer]':
+              - generic [ref=e418]:
+                - heading "عمولة إحالة - شراء باقة S1 (المستوى 1)" [level=3] [ref=e419]
+                - paragraph [ref=e420]: "2026-09-28 10:15 • مرجع: REF-S1-4412"
+              - generic [ref=e421]:
+                - generic [ref=e422]:
+                  - generic [ref=e423]: "+12.00"
+                  - generic [ref=e424]: USDT
+                - generic [ref=e425]: مكتمل
+    - navigation "التنقل الرئيسي للتطبيق" [ref=e126]:
+      - generic [ref=e127]:
+        - link "الرئيسية" [active] [ref=e128] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=e134] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=e141] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=e148] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=e156] [cursor=pointer]:
+          - /url: /employee/account
+  - alert [ref=e162]

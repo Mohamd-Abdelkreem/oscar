@@ -20,7 +20,7 @@ type SessionSnapshot = Readonly<{
 export type ProtectedRouteState =
   | { readonly kind: "pending" }
   | { readonly kind: "error" }
-  | { readonly kind: "redirecting"; readonly target: string }
+  | { readonly kind: "redirecting"; readonly target: Route }
   | { readonly kind: "authorized" };
 
 export const resolveProtectedRouteState = (
@@ -35,10 +35,9 @@ export const resolveProtectedRouteState = (
     const safe = sanitizeReturnPath(returnTo);
     return {
       kind: "redirecting",
-      target:
-        safe === null
-          ? "/auth/login"
-          : `/auth/login?returnTo=${encodeURIComponent(safe)}`,
+      target: (safe === null
+        ? "/auth/login"
+        : `/auth/login?returnTo=${encodeURIComponent(safe)}`) as Route,
     };
   }
   if (
@@ -72,7 +71,7 @@ export function ProtectedRoute({
   const redirectTarget = state.kind === "redirecting" ? state.target : null;
 
   useEffect(() => {
-    if (redirectTarget !== null) router.replace(redirectTarget as Route);
+    if (redirectTarget !== null) router.replace(redirectTarget);
   }, [redirectTarget, router]);
 
   if (state.kind === "error") {

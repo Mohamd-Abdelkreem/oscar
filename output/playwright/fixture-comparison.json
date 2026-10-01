@@ -1,0 +1,42 @@
+[
+  {
+    "name": "INITIAL_USER",
+    "identical": true
+  },
+  {
+    "name": "PACKAGES",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_BALANCE",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_TASK",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_TASK_HISTORY",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_WITHDRAWALS",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_DEPOSITS",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_TRANSACTIONS",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_TEAM_MEMBERS",
+    "identical": true
+  },
+  {
+    "name": "INITIAL_TEAM_COMMISSIONS",
+    "identical": true
+  }
+]

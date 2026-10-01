@@ -1,0 +1,16 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e5]: جارٍ تحميل المهام...
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f2e7]:
+      - generic [ref=f2e8]:
+        - link "الرئيسية" [ref=f2e9] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [ref=f2e15] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f2e23] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f2e30] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f2e38] [cursor=pointer]:
+          - /url: /employee/account
+  - alert [ref=f2e44]

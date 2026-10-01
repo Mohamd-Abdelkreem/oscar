@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginBodySchema, type LoginBody } from "@template/contracts";
 import Link from "next/link";
-import type { Route } from "next";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -37,7 +36,7 @@ export function LoginForm() {
     try {
       await login.mutateAsync(values);
       router.replace(
-        resolvePostLoginPath(searchParams.get("returnTo")) as Route,
+        resolvePostLoginPath(searchParams.get("returnTo")),
       );
     } catch (error) {
       setFormError(applyApiFormError(error, { getValues, setError }));

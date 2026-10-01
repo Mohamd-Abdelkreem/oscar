@@ -18,7 +18,7 @@ type SessionSnapshot = Readonly<{
 export type GuestOnlyRouteState =
   | { readonly kind: "pending" }
   | { readonly kind: "error" }
-  | { readonly kind: "redirecting"; readonly target: string }
+  | { readonly kind: "redirecting"; readonly target: Route }
   | { readonly kind: "authorized" };
 
 export const resolveGuestOnlyRouteState = (
@@ -46,7 +46,7 @@ export function GuestOnlyRoute({
   const redirectTarget = state.kind === "redirecting" ? state.target : null;
 
   useEffect(() => {
-    if (redirectTarget !== null) router.replace(redirectTarget as Route);
+    if (redirectTarget !== null) router.replace(redirectTarget);
   }, [redirectTarget, router]);
 
   if (state.kind === "error") {

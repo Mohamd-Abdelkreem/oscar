@@ -1,0 +1,103 @@
+- generic [ref=e4]:
+  - generic [ref=e6]:
+    - banner [ref=e7]:
+      - generic [ref=e8]:
+        - link "الرجوع للصفحة السابقة" [ref=e9] [cursor=pointer]:
+          - /url: /employee/wallet
+        - generic [ref=e12]:
+          - heading "طلب سحب الأرباح" [level=1] [ref=e13]
+          - paragraph [ref=e14]: سحب فوري إلى محفظة TRON (TRC20) المعتمدة
+    - generic [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - generic [ref=e18]:
+            - heading "عنوان محفظة السحب (TRON / TRC20)" [level=2] [ref=e19]
+            - generic [ref=e24]: مثبت ومؤمن
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - generic [ref=e27]: "العنوان المحفوظ المعتمد لاستلام الحوالات:"
+              - generic [ref=e28]:
+                - generic [ref=e29]: TQj1xP8mB9k8Z7Y6X5W4V3U2T1S0R9Q8P7
+                - button "نسخ" [ref=e30] [cursor=pointer]
+            - generic [ref=e34]:
+              - generic [ref=e35]: العنوان مقفل للحماية المالية
+              - link "طلب تعديل العنوان عبر الدعم" [ref=e39] [cursor=pointer]:
+                - /url: /employee/support
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - heading "طلب سحب جديد" [level=2] [ref=e42]
+            - generic [ref=e43]:
+              - generic [ref=e44]: "الرصيد المتاح للسحب حالياً:"
+              - generic [ref=e45]:
+                - generic [ref=e46]: "40.00"
+                - generic [ref=e47]: USDT
+          - generic [ref=e48]:
+            - generic [ref=e49]:
+              - generic [ref=e50]:
+                - generic [ref=e51] [cursor=pointer]: المبلغ المطلوب سحبه (USDT)
+                - generic [ref=e52]: "الحدود: 16 - 500 USDT"
+              - generic [ref=e53]:
+                - spinbutton "المبلغ المطلوب سحبه (USDT)" [ref=e54]: "100"
+                - generic [ref=e55]: USDT
+              - generic [ref=e56]:
+                - button "50" [ref=e57] [cursor=pointer]
+                - button "100" [ref=e58] [cursor=pointer]
+                - button "200" [ref=e59] [cursor=pointer]
+                - button "500" [ref=e60] [cursor=pointer]
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]: "المبلغ المطلوب خصمه من الرصيد:"
+                - generic [ref=e64]:
+                  - generic [ref=e65]: "100.00"
+                  - generic [ref=e66]: USDT
+              - generic [ref=e67]:
+                - generic [ref=e68]: "رسوم المعالجة الإدارية (21%):"
+                - generic [ref=e69]:
+                  - text: "-"
+                  - generic [ref=e70]:
+                    - generic [ref=e71]: "21.00"
+                    - generic [ref=e72]: USDT
+              - generic [ref=e73]:
+                - generic [ref=e74]: "المبلغ الصافي المتوقع استلامه:"
+                - generic [ref=e75]:
+                  - generic [ref=e76]: "79.00"
+                  - generic [ref=e77]: USDT
+            - alert [ref=e78]: المبلغ يتجاوز رصيدك المتاح حالياً.
+            - button "متابعة تأكيد طلب السحب" [disabled] [ref=e81]
+      - generic [ref=e87]:
+        - heading "سجل طلبات السحب" [level=3] [ref=e88]
+        - generic [ref=e89]:
+          - generic [ref=e90]:
+            - generic [ref=e91]:
+              - generic [ref=e92]: 2026-09-20 14:30
+              - generic [ref=e96]: مكتمل
+            - generic [ref=e101]:
+              - generic [ref=e102]: "المبلغ المحول:"
+              - generic [ref=e103]:
+                - generic [ref=e104]:
+                  - generic [ref=e105]: "79.00"
+                  - generic [ref=e106]: USDT
+                - generic [ref=e107]: "(إجمالي الطلب: 100.00 USDT - رسوم 21%)"
+          - generic [ref=e108]:
+            - generic [ref=e109]:
+              - generic [ref=e110]: 2026-09-12 11:15
+              - generic [ref=e114]: مكتمل
+            - generic [ref=e119]:
+              - generic [ref=e120]: "المبلغ المحول:"
+              - generic [ref=e121]:
+                - generic [ref=e122]:
+                  - generic [ref=e123]: "39.50"
+                  - generic [ref=e124]: USDT
+                - generic [ref=e125]: "(إجمالي الطلب: 50.00 USDT - رسوم 21%)"
+  - navigation "التنقل الرئيسي للتطبيق" [ref=e126]:
+    - generic [ref=e127]:
+      - link "الرئيسية" [ref=e128] [cursor=pointer]:
+        - /url: /employee
+      - link "المهام" [ref=e134] [cursor=pointer]:
+        - /url: /employee/tasks
+      - link "الباقات" [ref=e141] [cursor=pointer]:
+        - /url: /employee/packages
+      - link "الفريق" [ref=e148] [cursor=pointer]:
+        - /url: /employee/team
+      - link "حسابي" [ref=e156] [cursor=pointer]:
+        - /url: /employee/account

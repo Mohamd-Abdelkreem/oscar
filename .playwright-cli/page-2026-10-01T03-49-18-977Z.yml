@@ -1,0 +1,75 @@
+- generic [ref=f2e1]:
+  - generic [ref=f2e4]:
+    - generic [ref=f2e332]:
+      - banner [ref=f2e333]:
+        - generic [ref=f2e335]:
+          - heading "المهام اليومية" [level=1] [ref=f2e336]
+          - paragraph [ref=f2e337]: "نافذة التنفيذ: 12:00 - 18:00 (توقيت بغداد)"
+      - generic [ref=f2e338]:
+        - generic [ref=f2e339]:
+          - button "مهمة اليوم" [ref=f2e340] [cursor=pointer]
+          - button "سجل المهام" [ref=f2e341] [cursor=pointer]
+        - generic [ref=f2e342]:
+          - generic [ref=f2e343]:
+            - generic [ref=f2e344]:
+              - generic [ref=f2e345]:
+                - generic [ref=f2e346]: منصب S1
+                - generic [ref=f2e347]: "النافذة: 12:00 - 18:00"
+              - generic [ref=f2e348]: قيد التدقيق والمراجعة
+            - heading "مراجعة جودة محتوى وتقييم تطبيق الشريك" [level=2] [ref=f2e354]
+            - paragraph [ref=f2e355]: قم بزيارة رابط الشريك المعتمد أدناه، وإبداء الرأي الموضوعي في واجهة الاستخدام، ثم التقط لقطة شاشة تثبت تفاعلك وارفعها للمراجعة.
+            - generic [ref=f2e356]:
+              - generic [ref=f2e357]: "مكافأة إتمام المهمة:"
+              - generic [ref=f2e358]:
+                - generic [ref=f2e359]: "+2.00"
+                - generic [ref=f2e360]: USDT
+          - generic [ref=f2e361]:
+            - img "نموذج توضيحي لتنفيذ المهمة" [ref=f2e363]
+            - generic [ref=f2e364]:
+              - generic [ref=f2e365]: منصة التقييم المعتمدة أوسكار
+              - link "الانتقال لرابط الشريك" [ref=f2e366] [cursor=pointer]:
+                - /url: "#task-partner-preview"
+          - generic [ref=f2e372]:
+            - heading "خطوات التنفيذ المعتمدة:" [level=3] [ref=f2e373]
+            - list [ref=f2e374]:
+              - listitem [ref=f2e375]:
+                - generic [ref=f2e376]: "1"
+                - generic [ref=f2e377]: اضغط على زر (الانتقال لمنصة الشريك) واستعرض واجهة الاستخدام.
+              - listitem [ref=f2e378]:
+                - generic [ref=f2e379]: "2"
+                - generic [ref=f2e380]: قم بكتابة تقييم موجز لا يقل عن سطرين حول سرعة الاستجابة وسهولة الوصول.
+              - listitem [ref=f2e381]:
+                - generic [ref=f2e382]: "3"
+                - generic [ref=f2e383]: التقط لقطة شاشة شاشة واضحة (Screenshot) تظهر التقييم وحسابك.
+              - listitem [ref=f2e384]:
+                - generic [ref=f2e385]: "4"
+                - generic [ref=f2e386]: ارفع ملف لقطة الشاشة (PNG أو JPG بحد أقصى 5 ميجابايت).
+              - listitem [ref=f2e387]:
+                - generic [ref=f2e388]: "5"
+                - generic [ref=f2e389]: فعّل خيار الإقرار الإلزامي ثم اضغط (تأكيد إرسال المهمة).
+          - generic [ref=f2e391]:
+            - generic [ref=f2e392]:
+              - generic [ref=f2e393]: تم إرسال مهمة اليوم بنجاح (06:48)
+              - paragraph [ref=f2e398]: أضيفت المكافأة (2.00 USDT) إلى رصيدك وهي قيد المراجعة التدقيقية. يمكنك استبدال لقطة الشاشة أدناه في حال رغبت بتعديل التوثيق دون تغيير المكافأة.
+            - generic [ref=f2e399]:
+              - generic [ref=f2e400]: لقطة شاشة إثبات التنفيذ (Screenshot) *
+              - button "Choose File" [ref=f2e401]
+              - generic [ref=f2e402]:
+                - img "معاينة لقطة الشاشة المرفوعة" [ref=f2e403]
+                - generic [ref=f2e404]:
+                  - generic [ref=f2e405]: تم اختيار الصورة بنجاح
+                  - button "إلغاء الصورة" [ref=f2e410] [cursor=pointer]
+            - button "تحديث لقطة الشاشة المرفقة" [ref=f2e415] [cursor=pointer]
+    - navigation "التنقل الرئيسي للتطبيق" [ref=f2e7]:
+      - generic [ref=f2e8]:
+        - link "الرئيسية" [ref=f2e9] [cursor=pointer]:
+          - /url: /employee
+        - link "المهام" [active] [ref=f2e15] [cursor=pointer]:
+          - /url: /employee/tasks
+        - link "الباقات" [ref=f2e23] [cursor=pointer]:
+          - /url: /employee/packages
+        - link "الفريق" [ref=f2e30] [cursor=pointer]:
+          - /url: /employee/team
+        - link "حسابي" [ref=f2e38] [cursor=pointer]:
+          - /url: /employee/account
+  - alert [ref=f2e44]
