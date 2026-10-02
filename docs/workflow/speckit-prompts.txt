@@ -1,0 +1,629 @@
+OSCAR SPEC KIT PROMPT PACK
+Reusable across roadmap phases P01-P15
+Prepared against the repository and installed Codex skills on 2026-10-02
+
+PURPOSE
+
+This file contains prompts, not authorization to execute the whole workflow.
+Read the operating contract, then execute ONLY the prompt section explicitly
+selected by the owner. Do not run other commands merely because they appear here.
+Do not install Spec Kit, initialize the project, start another roadmap phase,
+deploy, send mainnet transactions, or spend real funds automatically.
+
+Project root:
+D:/MINE/Software Engineering/Projects/Mostaql/oscar
+
+Roadmap: PLAN.md in the project root.
+Engineering rules: docs/engineering/ in the project root.
+Prompt pack: docs/workflow/speckit-prompts.txt in the project root.
+
+HOW THE OWNER USES THIS PACK
+
+1. Run CONSTITUTION once for the project. Amend it only for an explicitly
+   approved project-wide policy change. Do not run it again for each phase.
+2. Select PHASE_ID, for example P01. It refers to the OSCAR roadmap, not to a
+   numbered section inside generated tasks.md.
+3. For that phase, run SPECIFY, CLARIFY, PLAN, CHECKLIST, TASKS, ANALYZE,
+   IMPLEMENT, and CONVERGE in that order.
+4. Review findings and fix the owning specification or design artifact before
+   implementation when required. Do not skip unresolved critical findings.
+5. If CONVERGE appends remediation tasks, run IMPLEMENT for those task IDs only,
+   then CONVERGE again. Never execute the next roadmap phase automatically.
+6. Repeat steps 2-5 for the next roadmap phase after its prerequisites pass.
+
+If IMPLEMENT is scoped to a batch, repeat it for remaining dependency-safe batches
+until this phase's implementation tasks finish before claiming full convergence.
+Incomplete batches are not complete roadmap phases.
+
+PHASE_ID is a natural-language prompt binding, not a Spec Kit CLI flag.
+The Codex integration installed here exposes $speckit-* skills. Other tools may
+use a different command form; verify their registration instead of guessing.
+TASK_SCOPE is required for IMPLEMENT. Supply explicit task IDs, an explicitly
+selected dependency-safe batch, NEXT_DEPENDENCY_SAFE_BATCH, or the consciously
+selected value ALL_ACTIVE_PHASE_TASKS. NEXT_DEPENDENCY_SAFE_BATCH means inspect
+dependencies, identify/report the next exact IDs, then execute only those IDs.
+ALL_ACTIVE_PHASE_TASKS means all current approved tasks in this phase only, using
+small internal batches; it never means the complete roadmap. If TASK_SCOPE is
+missing or ambiguous, ask before implementing rather than assuming all tasks.
+Values supplied in the owner's launcher bind the placeholders below. Do not ask
+the owner to repeat PHASE_ID or TASK_SCOPE when they already supplied them.
+
+OPERATING CONTRACT - APPLIES TO EVERY PROMPT
+
+A. Establish the correct context
+
+- Work in the verified project root. Read applicable AGENTS.md and CLAUDE.md,
+  the installed skill for the selected command, the current constitution, and
+  PLAN.md. Before phase work, read all eight engineering guides:
+  README.md, code-style.md, backend-standard.md, frontend-standard.md,
+  api-contracts.md, data-patterns.md, security.md, and testing.md.
+- For later bounded batches, revisit the relevant guide sections and affected
+  source/callers. Use these same guides during review, not just during generation.
+- Treat the latest explicit owner decisions as requirements. PLAN.md establishes
+  the approved business baseline; engineering guides establish implementation
+  rules; source, manifests, schemas and installed skills establish current facts.
+  Fixtures, old prompts and UI examples are not authoritative financial rules.
+- Use this authority order: explicit current owner decisions; constitution;
+  approved PLAN.md requirements for PHASE_ID; engineering rules for HOW; source
+  and configuration as evidence of current state; generated artifacts; old
+  documents and fixtures. Source does not override approved intended behavior.
+  A policy change needing a constitution amendment must be handled explicitly;
+  a routine phase prompt cannot silently amend or weaken the constitution.
+- Identify the selected phase's deliverables, exclusions, predecessor gates and
+  acceptance tests. Do not expand to all P01-P15. Do not reimplement completed
+  phases. A necessary correction to shared code must be scoped and justified.
+- Read the whole roadmap for cross-cutting rules, dependencies and conflicts,
+  but create/update artifacts only for PHASE_ID. Do not rewrite PLAN.md or produce
+  another summary/specification of the complete roadmap.
+- Check the working tree before edits. Preserve unrelated changes. Never use
+  destructive resets, silently replace the boilerplate, or commit/push unasked.
+- If instructions conflict, report the concrete conflict. Do not silently weaken
+  financial controls, remove requirements, or add forbidden UI work.
+
+B. Bind one phase to the correct feature artifacts
+
+- SPECIFY creates one feature for the selected phase. Include PHASE_ID and the
+  roadmap title in its specification. Record the exact generated feature path.
+- For later commands, inspect .specify/feature.json and the selected feature's
+  spec.md. Verify that they refer to PHASE_ID. Do not assume that P01 means
+  specs/001-..., that a branch name is a feature directory, or that the current
+  feature pointer belongs to the requested phase.
+- If the pointer is wrong, stop and request selection of the existing feature.
+  Do not create duplicate features or overwrite another phase's artifacts.
+  ANALYZE must not write the pointer. CONVERGE must not write it either.
+- A repeat SPECIFY invocation can replace its starting spec. If this phase
+  already has a spec, report its path and reuse it for downstream steps. Do not
+  regenerate or overwrite accepted work without explicit owner authorization.
+- Roadmap phase IDs and Spec Kit internal task-group numbers are different.
+  A generated "Phase N: Convergence" is a remediation task group within PHASE_ID,
+  not a new roadmap phase or permission to start the next phase.
+- A completed, non-placeholder constitution is required before phase execution.
+  Do not silently accept skipped constitution checks or write it during a phase.
+
+C. Freeze the approved frontend
+
+- Existing employee and admin pages are finished designs. Implement the backend
+  and minimally wire the existing UI to real behavior. Do not add, delete, move,
+  rename, rebuild or redesign pages, routes, layouts, navigation or popups.
+- Do not change approved static copy, Cairo typography, RTL, colors, spacing,
+  breakpoints, component sizes, icons, styling or interaction presentation.
+  Runtime values may replace fixtures. Existing controls may receive real event
+  handlers, validation, authorization-aware state, query/mutation state and data.
+- Reuse existing feedback/error/loading/confirmation surfaces. If required
+  behavior needs a surface that does not exist, report it and ask the owner;
+  do not invent a new page, modal, redesign or hidden success behavior.
+- Invisible extraction of duplicated logic is allowed only within authorized
+  integration work, preserving rendered output and behavior. Avoid broad visual
+  refactors and building a new design system.
+- Preserve Next.js App Router. Do not retrofit React Router, use browser reloads
+  for internal routing, or replace established navigation/transport patterns.
+- Known conflict: PLAN.md requires a dedicated admin login screen, but
+  /admin/auth/login is absent from the inspected route inventory. The latest
+  frontend freeze does not authorize creating it. Preserve the requirement and
+  surface the conflict in relevant phases; obtain an owner decision before UI
+  work. Do not claim admin login integration is complete while this is unresolved.
+- Other older roadmap or engineering text that assumes new UI cannot override
+  this freeze. Missing UI does not justify silently dropping security or scope.
+
+D. Keep code maintainable without overengineering
+
+- Preserve apps/packages ownership, package names, installed versions, shared
+  contracts and the existing pnpm/Turborepo workflow. Verify actual dependencies
+  and APIs, not remembered examples or assumptions about a newer version.
+- Follow docs/engineering/README.md for placement. Keep route/page composition
+  thin, domain rules in their owning backend modules, provider SDK calls in
+  protected adapters, wire schemas in packages/contracts, and persistence in
+  packages/database. Use the existing frontend feature API/hooks/transport.
+- Reuse genuinely shared components, schemas and helpers. Split large files by
+  responsibility, independent testing or meaningful reuse, not arbitrary line
+  limits. Avoid both copy/paste and giant configurable universal components.
+- Apply Clean Code, DRY, KISS, YAGNI and SOLID proportionately. Do not add empty
+  layers, mandatory repository/DI frameworks, microservices, generic outboxes,
+  event buses, version registries or speculative modules for this MVP.
+- No duplicate frontend/backend business schemas, no unsafe casts to suppress
+  errors, no broad any types, no disabling checks or weakening tests to pass.
+- Add dependencies only when needed by this phase. Explain the purpose, verify
+  compatibility, and preserve the lockfile except for justified dependency work.
+
+E. Use applicable skills at the right time
+
+- Read and follow the selected installed speckit skill. Do not just name it.
+- Use security-best-practices for security-sensitive TypeScript/JavaScript work.
+- Apply clean-code-guard after nontrivial production edits, before presenting
+  implementation as complete. Use test-guard for changed test code, and
+  docs-guard for changed technical documentation.
+- Use vercel-react-best-practices for React/Next.js implementation or review.
+  Read apps/web/AGENTS.md, CLAUDE.md and applicable installed Next.js guides.
+- Use playwright for applicable existing-UI/browser verification. Compare with
+  the current approved UI; do not use a design skill as a reason to redesign it.
+- Discover other applicable installed skills when useful. Do not load every
+  unrelated skill, install missing skills unasked, or fabricate skill usage.
+- If a required skill is unavailable, report it and apply documented rules;
+  do not claim the skill was loaded. Missing tools are not passed verification.
+
+F. Financial and security invariants
+
+- Treat all clients, uploaded files, provider responses and job messages as
+  untrusted. Enforce current role, status, ownership, entitlement and state
+  transitions on the server. Hiding a control is not authorization.
+- USDT only. Use exact integer micro-USDT arithmetic and validated decimal
+  strings at JSON boundaries. Never accept client-calculated balances, rewards,
+  package entitlement, fees or commission amounts as financial authority.
+- Keep an auditable source-aware append-only ledger and atomic available/reserved
+  balances.
+  Database constraints, transactions, conditional transitions and idempotency
+  prevent duplicate credits, commissions, reservations and settlement.
+- An upgrade debits the full target package price; its commission base is the
+  positive difference from the previous subscription's snapshotted price. These
+  are different calculations. Preserve exact formulas and source allocation.
+- Purchases consume unreserved referral funds first, then other unreserved funds.
+  Withdrawals reserve eligible non-referral funds first, then eligible referral
+  funds. Cancellation/refund releases the identical recorded source allocation.
+  Neither path may spend reserved funds or turn locked commissions into deposits.
+- Task submission does not credit available balance. Only final admin approval
+  posts its snapshotted reward, exactly once. Pending work is not spendable money.
+- Use the server-authoritative Asia/Baghdad business calendar. Subscription work
+  dates and counted withdrawal hours exclude Saturday/Sunday; confirmed deposits
+  still credit every day. Task windows and all boundaries follow PLAN.md.
+- Deposits credit once after verified successful confirmed token transfers,
+  including ownership of the destination address, configured network/token,
+  amount and canonical event identity. A user-entered public TxID alone is not
+  proof that the deposit belongs to that user. Deposits have no 72-hour hold.
+- Withdrawal scheduling is durable. Redis/queues may trigger execution, but
+  PostgreSQL is authoritative for due time, state, reservation and attempt data.
+  Workers and retries must tolerate duplicates, races, crashes and restarts.
+- At most one active withdrawal per user, including SCHEDULED, SIGNING, SUBMITTED
+  and UNKNOWN categories. UNKNOWN is not terminal. Preserve reservation sources
+  on refund/cancellation. A possibly submitted transfer stays reserved until
+  reconciled; an uncertain result must never cause blind repayment or refund.
+- Persist the signed payout attempt and transaction identity before broadcasting.
+  Reconcile canonical results and reuse the same safe attempt as specified in
+  PLAN.md; a retry is not permission to sign a fresh payment.
+- Isolate signing credentials/private keys from the browser, public API routes,
+  logs and fixtures. Preserve custody, backup, recovery and restore controls.
+  Do not publish unbacked deposit addresses or restore financial operation
+  without the roadmap's reconciliation/fencing procedure.
+- Protect authentication, secrets, private proof files and administrative actions.
+  Audit privileged changes without logging secrets or private financial payloads.
+- Preserve approved business decisions, including no admin 2FA/dual approval,
+  and explicitly report their residual risks. Never claim guaranteed immunity
+  from hacking or misuse. Do not weaken compensating controls to simplify work.
+- Detailed formulas, dates, fees, eligibility, limits, proof retention and state
+  machines come from PLAN.md. Do not reopen settled decisions or copy stale UI
+  behavior. A genuine newly discovered financial ambiguity requires clarification.
+
+G. Tests and truthful completion
+
+- Every implementation phase must create or extend actual automated test files.
+  A test plan, screenshots or a passing formatter alone are insufficient.
+- Cover phase acceptance behavior and realistic failure paths. For affected
+  money/provider paths include replay, concurrency, unauthorized access,
+  malformed input, boundary times, crash/retry and ambiguous results as relevant.
+- Use existing test ownership/tools and the actual scripts in manifests. Do not
+  invent scripts, install test infrastructure redundantly or claim commands ran
+  without execution evidence. Add missing infrastructure only when this phase
+  explicitly owns it. Keep tests focused on risk, not arbitrary coverage targets.
+- Run focused tests and affected shared regressions for bounded batches. Run
+  full current regressions at roadmap checkpoints P05/P09/P12/P14/P15 and before
+  release, as specified in PLAN.md. Do not rerun every unrelated suite per edit.
+- Backend groups must be complete and tested before frontend integration.
+  Do not connect money-changing controls to incomplete services or mock success.
+- Required financial/integration checks that cannot run leave the relevant gate
+  incomplete. Distinguish actual failures, existing failures and unavailable
+  services/tools. Never mark a task complete based on optimism.
+- Stop after the selected command and scope. Give a concise result with PHASE_ID,
+  active feature path, changed artifacts/files, actual checks/results, unresolved
+  risks/gates and the next appropriate command. Do not create ceremonial reports
+  or duplicate specifications for each tiny task batch.
+- Distinguish fresh runs, reused/cached results and checks not run. Name missing
+  Docker, Redis, provider/testnet access or other required infrastructure rather
+  than substituting mocks and claiming the real gate passed.
+
+PROMPT: CONSTITUTION
+
+$speckit-constitution
+
+Create the project-wide OSCAR constitution using the installed skill and the
+existing .specify/memory/constitution.md template. Read this pack's operating
+contract, PLAN.md, all eight docs/engineering guides and applicable repository
+instructions before writing. This is a one-time governance task, not P00 and not
+an implementation phase. Do not execute the roadmap or change application code.
+
+Write enforceable principles, not generic motivational text. Cover:
+1. Approved scope and evidence: roadmap phases govern scope; engineering guides
+   govern implementation/review; verify claims against source and actual tools.
+2. Approved frontend preservation: finished pages/design are frozen; allow only
+   minimal functional integration using existing surfaces. Require explicit owner
+   decisions for missing UI or conflicts, including the missing admin login page.
+3. Existing monorepo ownership and maintainability: shared validated contracts,
+   focused modules, meaningful reuse, proportionate abstraction and no speculative
+   infrastructure or mandatory artificial file-size/coverage rules.
+4. Backend-before-frontend delivery: enforce group prerequisites, one selected
+   roadmap phase at a time and dependency-safe task batches.
+5. Financial integrity and custody: server-only authority, exact USDT arithmetic,
+   source-aware immutable audit trail, atomic transitions, database uniqueness,
+   safe reservations, idempotent effects, durable scheduling and uncertain payout
+   reconciliation. No mainnet spending or deployment without owner authorization.
+6. Security: current role/status/ownership checks, secure credential/session/file
+   boundaries, protected signing keys and privileged audits. State that approved
+   no-2FA/single-admin choices carry residual risk; do not promise perfect security.
+7. Required verification: actual phase tests, applicable skills, focused and
+   checkpoint regressions, code/test/docs review and truthful evidence.
+
+Make consulting docs/engineering mandatory before planning, task generation,
+implementation, refactoring and review. Read all eight at each phase start and
+revisit applicable sections per bounded batch. Reference each guide by its owner
+instead of copying its entire content into the constitution. Require docs-backed
+review during implementation and convergence, not just before code generation.
+Keep the constitution durable and project-wide: do not copy phase descriptions,
+route counts, task lists, transient file inventories or package-rate tables into
+it. Use normative requirements and concise rationale for each real principle.
+Include source-preserving financial transitions, final-approval-only task credits,
+and unresolved payout outcomes remaining active/reserved as stable invariants.
+Require a shared server-authoritative Asia/Baghdad calendar; keep its approved
+phase-specific rules and formulas in PLAN.md and the relevant specifications.
+
+Define amendment/version governance and completion gates. Current accepted owner
+decisions may amend policy explicitly; agents cannot dilute principles to make a
+feature pass. Resolve required template placeholders and include the installed
+skill's synchronization report, version and dates. Synchronize only genuinely
+affected Spec Kit templates/guidance. Preserve unrelated content and do not
+rewrite PLAN.md or engineering guides merely to hide conflicts.
+
+Stop after constitution work. Report files changed, principles added, unresolved
+conflicts and readiness for P01. Do not run specify or implementation automatically.
+
+PROMPT: SPECIFY
+
+$speckit-specify
+
+PHASE_ID = <selected OSCAR roadmap phase, for example P01>
+
+Specify only PHASE_ID from PLAN.md. Apply the operating contract in this pack.
+Read the completed constitution, all eight engineering guides and current source
+to distinguish already implemented capabilities from missing deliverables. Do not
+generate a specification for the entire roadmap or a new toolkit setup phase.
+
+Before creating anything, check whether a specification for PHASE_ID already
+exists. If it does, report its exact path and reuse it for downstream commands;
+do not overwrite accepted spec content or create a duplicate without permission.
+For a new phase, create exactly one feature through the installed skill, include
+PHASE_ID and the roadmap title, and report the generated path and feature pointer.
+
+Describe WHAT this phase must achieve and WHY, not a technical architecture.
+Include actors, current capability, in/out of scope, prerequisites, user scenarios,
+testable requirements, entities, failure cases and measurable acceptance outcomes.
+Translate relevant roadmap invariants into behavior, not implementation guesses.
+Keep backend-only phases backend-only; frontend phases only integrate frozen UI.
+
+Cover applicable identity/ownership/state checks, safe repeat requests, concurrent
+actions, unavailable providers, boundary dates and uncertain financial outcomes.
+Preserve approved rules and exact phase boundaries. Specify verification outcomes
+without pretending code, tests or production services already exist.
+
+Flag material unresolved conflicts, especially required absent UI. Do not default
+to changing the design or weakening controls. Follow the installed limit for
+clarification markers and its built-in requirements quality checklist. Review
+documentation accuracy with docs-guard, within this command's write boundaries.
+
+Stop after spec generation/validation. Report scope, exact feature path, checklist
+status and genuine questions for clarify. Do not design or implement the solution.
+
+PROMPT: CLARIFY
+
+$speckit-clarify
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Clarify only the existing specification for PHASE_ID. Apply the operating
+contract and verify the active feature pointer before any writes. Read PLAN.md,
+the constitution, all eight engineering guides and relevant existing source.
+
+Find genuine ambiguities that affect correctness, acceptance, ownership, scope,
+data/state transitions, money, security or deployment prerequisites. Do not ask
+again about approved fees, duration, formulas, no 2FA or other settled decisions.
+Use source inspection to answer repository questions instead of asking the owner
+to repeat information already present. Never invent a safe-sounding financial
+policy when multiple business interpretations remain possible.
+
+Prioritize financial/security and frozen-UI conflicts. Ask at most five questions
+in this session, one at a time, as the installed skill requires. Explain each
+material tradeoff and offer a grounded recommendation when possible. Record
+accepted answers in the active spec immediately. If no material questions remain,
+report that clearly; do not create questions for ceremony.
+
+Update only artifacts owned by clarify: active spec and permitted changed markers
+in its built-in checklists/requirements.md. Do not mark custom checklists reviewed,
+change application code, rewrite the roadmap/constitution, or add UI. Review the
+changed technical text for accuracy within the same write boundary.
+
+Stop with the answered questions, remaining risks and readiness for plan. A
+required conflict without an owner answer stays visible, not silently resolved.
+
+PROMPT: PLAN
+
+$speckit-plan
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Create the technical implementation plan only for the clarified PHASE_ID spec.
+Apply the operating contract. Verify the active feature, completed constitution
+and prerequisite phase evidence. Read all eight engineering guides and inspect
+affected apps/packages, callers, contracts, manifests and installed library docs.
+
+Separate existing code from proposed work. Reuse the boilerplate's actual layers,
+transport, contracts, test tools and dependencies. Identify concrete owners and
+target paths; do not present proposed files/APIs as already implemented. Plan only
+changes needed for this phase, with explicit exclusions and frozen-UI constraints.
+
+Detect existing plan artifacts before generating. For a remediation/amendment
+run, patch only the identified owning sections, preserve accepted unrelated
+decisions, contracts and artifact paths, and report the requested revision.
+Do not regenerate the plan suite wholesale without explicit owner authorization.
+
+Design applicable schemas/migrations, validated request/response contracts,
+authorization, services, transactions, provider adapters, workers and recovery.
+Include state transitions, precision, constraints, idempotency/replay handling,
+concurrent conflicts, retries, failures, audit and observability where applicable.
+Do not rely on browser state or a queue lock for financial integrity.
+
+Use backend-first ordering. A frontend integration phase requires evidence that
+its backend group is complete and tested. Specify minimal changes to existing
+adapters/hooks/components without altering approved rendering, static copy,
+routes or popups. A missing required surface is an owner decision, not a design
+task the model can add to this phase automatically.
+
+Provide a risk-proportionate test strategy with actual future test-file locations,
+tools/services needed, realistic fixtures and failure/concurrency/time cases.
+Include phase gate criteria, affected regressions and required checkpoint checks.
+Explain any necessary dependency and compatibility decision; use relevant skills
+and verified upstream documentation for APIs whose behavior is uncertain.
+
+Produce only the artifacts owned by the installed plan skill: plan.md and its
+applicable research, data-model, contracts and quickstart artifacts. Quickstart
+describes how to validate; it is not an authorization to implement the backend.
+Do not create speculative paperwork where no decision needs it. Apply docs-guard.
+
+Stop with architecture decisions, target paths, constitution checks, tests and
+unresolved gates. Do not generate tasks or application code automatically.
+
+PROMPT: CHECKLIST
+
+$speckit-checklist
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Generate a focused REQUIREMENTS-QUALITY checklist for PHASE_ID, using its spec,
+plan, constitution, PLAN.md and docs/engineering. Apply the operating contract
+and verify the active feature. This checklist checks whether requirements are
+complete, clear, consistent, measurable and traceable, not whether tests ran.
+
+Cover only relevant phase risks: scope/prerequisites, frozen UI, ownership and
+authorization, exact money rules, state transitions, idempotency, concurrency,
+provider uncertainty, dates, privacy, recovery and explicit verification criteria.
+Include boundary/failure requirements, not only happy paths. Link items to real
+requirement/plan evidence. Avoid generic filler, duplicate checklists and unrelated
+future-phase requirements. Preserve existing checklist content/IDs and follow
+the skill's append behavior when a suitable checklist already exists.
+
+Leave new custom checklist items unapproved. Generation is not reviewer approval.
+Do not mark them passed, change code/spec/plan, run tests or claim implementation
+readiness. Stop with the file path, focus and items needing evidence review.
+
+PROMPT: TASKS
+
+$speckit-tasks
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Generate dependency-ordered tasks only for PHASE_ID from its approved spec/plan.
+Apply the operating contract and verify the active feature, constitution and
+approved phase requirements. Read all eight engineering guides and current source.
+Do not generate tasks for the whole roadmap or add setup/constitution phases.
+
+Tests are explicitly REQUIRED for OSCAR: create/extend actual automated test
+files in this phase. Include concrete paths, behavior under test, required
+services, commands verified from manifests and acceptance evidence. Plan focused
+checks and affected shared regressions, plus full checks at roadmap checkpoints.
+
+Use the installed task format with unique IDs, real target paths, story labels
+where applicable and clear dependencies. Break work into small reviewable batches
+with observable outcomes. Mark parallel tasks only when their file ownership and
+dependencies are independent; do not parallelize conflicting financial changes.
+
+Order contracts/schema/migrations/domain/authorization/provider/backend tests
+before integration that depends on them. Preserve phase boundaries: backend
+phases do not acquire frontend design work; frontend phases do not bypass an
+incomplete backend group. Include minimal approved-UI wiring only when in scope.
+
+Include applicable code-quality/security review, test-guard, docs-guard and UI
+preservation checks inside meaningful tasks, not one ritual task per rule/file.
+Do not add broad refactors, arbitrary splits, dependency upgrades or generic
+infrastructure. Treat unresolved UI/security/business conflicts as gates.
+
+If tasks.md already exists with implementation progress, preserve completed work
+and IDs. Do not overwrite it blindly; report the requested revision and seek
+approval if regeneration would destroy accepted progress or task identity.
+
+Stop after tasks generation. Report task scope, dependencies, safe first batch,
+actual test-file work and readiness for analyze. Do not execute the tasks yet.
+
+PROMPT: ANALYZE
+
+$speckit-analyze
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Perform a STRICTLY READ-ONLY analysis of PHASE_ID's current spec, plan and tasks.
+Apply the operating contract. Verify .specify/feature.json already selects the
+correct feature. Do not supply a differing feature override that would write
+the pointer; if selection is wrong, stop. Do not modify any files or checkboxes.
+
+Read the constitution, PLAN.md, all eight engineering guides, applicable source
+and requirement-quality checklist results. Check ambiguity, contradiction,
+duplication, missing requirements, unverifiable claims and requirement-to-task
+coverage. Review scope, backend-first order, concrete file ownership, dependency
+ordering, test coverage and whether proposed APIs/library usage match actual tools.
+
+Treat constitutional and financial invariant violations as critical. Check that
+tasks do not add/redesign frontend pages or bypass missing backend gates. Check
+money precision, server authority, replay/concurrency defenses, provider unknowns,
+source-preserving reservations, protected keys and tests where this phase applies.
+Do not demand future-phase capabilities as current implementation scope, but
+verify interfaces/prerequisites needed for the selected phase are accounted for.
+
+Produce prioritized findings with artifact/line evidence and concrete remediation
+in the owning artifact. Distinguish mandatory blockers from proportionate optional
+improvements; do not turn stylistic preferences into new architecture requirements.
+Report readiness for implementation honestly. Do not fix artifacts, weaken the
+constitution, mark checklists or execute implementation automatically.
+
+PROMPT: IMPLEMENT
+
+$speckit-implement
+
+PHASE_ID = <selected OSCAR roadmap phase>
+TASK_SCOPE = <explicit task IDs, an approved bounded batch,
+              NEXT_DEPENDENCY_SAFE_BATCH, or ALL_ACTIVE_PHASE_TASKS>
+
+Implement ONLY this PHASE_ID and TASK_SCOPE. Apply the operating contract.
+The installed command normally executes the active tasks.md, so this scope is
+an explicit restriction. Verify its feature pointer, spec, plan, task IDs,
+constitution, required checklist status, analysis blockers and predecessor gates
+before editing. Do not implement other phases or create a new specification.
+Out-of-scope task lines are read-only. For this invocation, the installed skill's
+global completion condition is narrowed to TASK_SCOPE, not every tasks.md item.
+Report both batch completion and whole-phase status without conflating them.
+
+Read all eight engineering guides at phase start, then relevant sections/source
+for each batch. Read and apply applicable skills. Reuse current modules, schemas,
+API transport, hooks and test conventions. Check the working tree and preserve
+unrelated edits. Identify the batch's file owners and required verification.
+
+Implement dependency-ordered, small changes. Complete backend behavior and tests
+before any authorized frontend integration. Enforce server-side authority and
+financial constraints atomically. Handle duplicate delivery, concurrent requests,
+crashes, unavailable providers and uncertain outcomes according to the plan.
+Do not fabricate provider confirmation, financial success or production readiness.
+
+For integration, replace fixtures/local mock actions with real adapters/hooks and
+validated server responses in existing UI. Preserve its routes, rendering, static
+copy and approved design. Reuse existing controls/feedback surfaces; stop and
+ask about a missing required surface instead of adding a page/modal or redesign.
+
+Create/extend actual test files for changed behavior. Run focused tests and
+affected shared regressions; run checkpoint checks if finishing that phase.
+Load clean-code-guard for nontrivial production changes, test-guard for tests,
+security-best-practices where applicable, vercel-react-best-practices for React,
+playwright for required browser checks and docs-guard for technical docs.
+Review against the engineering guides after edits and fix in-scope findings.
+
+Checklist approval markers are read-only during implementation; do not mark
+requirements reviewed to bypass gates. Update task completion only after its
+implementation and required verification pass. Do not weaken tests/checks or
+mark unavailable integration/financial validation as complete.
+
+Use only authorized files/config/docs needed by these tasks. Apply necessary
+ignore changes only when the installed skill requires them for actual artifacts;
+avoid unrelated config churn. No mainnet transfers, production deployment,
+credential creation with real secrets, purchases, commits or pushes unasked.
+
+Stop at the selected scope. Report task IDs completed/remaining, changed files,
+tests added/changed, commands actually run and results, skills actually applied,
+UI preservation evidence and unresolved risks/gates. If the selected batch is
+not the whole phase, say so. Do not run convergence or the next phase automatically.
+
+PROMPT: CONVERGE
+
+$speckit-converge
+
+PHASE_ID = <selected OSCAR roadmap phase>
+
+Audit actual implementation for the active PHASE_ID after its implementation
+tasks have run. Apply the operating contract. Verify the already pinned feature;
+do not change .specify/feature.json or use a conflicting override.
+
+Use current spec/plan/tasks as feature intent and the constitution plus
+docs/engineering as quality rules. Read relevant actual source/callers and
+available test execution evidence. Use applicable clean-code-guard, test-guard,
+security-best-practices, vercel-react-best-practices and docs-guard in review mode.
+Use installed skill rules to keep this audit within its write boundary.
+
+Check correctness, acceptance coverage, contracts, folder ownership, excessive
+responsibility, meaningful duplication, maintainability, auth/ownership/state
+checks, money/provider invariants and test realism. Verify required backend gates
+and that integration preserved approved UI. Check for mock success, invented
+execution evidence, unused fallback implementations and unsafe retries.
+
+Do not redesign frontend, expand feature scope, apply implementation fixes,
+rewrite spec/plan, change checkbox markers or alter existing task IDs/content.
+Do not execute tests or commands that can mutate the worktree: runners can create
+caches, snapshots, coverage or generated artifacts. Inspect existing execution
+evidence; missing fresh evidence becomes a reported gate or remediation task.
+All review skills are advisory/read-only here; findings become appended tasks,
+not edits. The ONLY permitted write is the installed
+skill's append-only convergence section at the end of active tasks.md with new
+unique IDs after existing ones. Use its next internal task-group number; this
+is not a new OSCAR roadmap phase.
+
+For each genuine gap, append a concrete dependency-safe remediation task with
+source evidence, requirement/plan traceability, target paths and verification.
+Do not append speculative improvements or future-phase work. If no gaps exist,
+leave tasks.md byte-for-byte unchanged. Keep missing test execution visible;
+absence of evidence is not an invented pass.
+
+Stop with findings, appended task IDs and phase gate status. If remediation is
+needed, recommend IMPLEMENT for those IDs only, then another CONVERGE. Do not
+execute either automatically or claim the phase complete while required gaps
+remain.
+
+PROMPT PACK VALIDATION - REVIEW CASES, NOT EXECUTABLE TASKS
+
+Use these cases to assess future edits to this pack. They are not permission to
+create specifications, modify code, run tests or enter other phases.
+
+- Normal P04: scope stays P04; full target-price upgrade debit and positive
+  difference-based commission remain distinct; source ordering/tests are included.
+- Edge P03: absent admin login UI plus freeze yields OWNER DECISION REQUIRED;
+  no route/screen is created and no auth requirement is silently discarded.
+- Failure P08/P11: missing provider/testnet access, resources or funding leaves
+  the relevant gate incomplete; no mainnet fallback or fabricated confirmation.
+- Converge gap: a missing source-preserving cancellation race test produces a
+  concrete traceable appended task only; existing tasks/code stay unchanged.
+
+VERIFIED WORKFLOW NOTES
+
+- Current installed Codex integration metadata: version 0.12.11.dev0.
+- Registered stage skills are in .agents/skills/speckit-*/SKILL.md.
+- The bundled workflow does not automatically enforce every quality step in
+  this pack. The owner invokes them explicitly in the order above.
+- Clarify's current limit is five sequential questions per session.
+- Analyze is read-only. Converge appends tasks only; implement performs repairs.
+- taskstoissues is optional and deliberately excluded. This pack does not
+  authorize creating GitHub issues or external artifacts.
+- Local installed skills are authoritative for command mechanics. Recheck them
+  if Spec Kit is upgraded; do not assume older prompts match a new version.
+
+Official reference, complementary to inspected installed skills:
+https://github.github.com/spec-kit/reference/agentic-sdd.html
+https://github.github.com/spec-kit/concepts/complex-features.html

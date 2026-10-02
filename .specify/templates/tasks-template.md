@@ -1,17 +1,37 @@
 ---
-
 description: "Task list template for feature implementation"
 ---
 
 # Tasks: [FEATURE NAME]
 
-**Input**: Design documents from `/specs/[###-feature-name]/`
+**Roadmap Phase**: [Pnn - exact title from PLAN.md]
 
-**Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
+**Feature Directory**: [exact selected feature path; verify .specify/feature.json and spec.md]
 
-**Tests**: The examples below include test tasks. Tests are OPTIONAL - only include them if explicitly requested in the feature specification.
+**Input**: Design documents from the verified feature directory
 
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Prerequisites**: Populated constitution, approved spec.md/plan.md, required reviewed
+requirements and predecessor gates; applicable research.md, data-model.md, contracts/
+
+**Implementation Scope**: [Owner binds exact task IDs or a selected dependency-safe
+batch at IMPLEMENT time; task generation does not authorize execution]
+
+**Tests**: REQUIRED for OSCAR. Every implementation phase MUST create or extend
+actual automated test files. Include concrete paths, observable behavior, relevant
+failure/concurrency/time/retry cases, required services, and manifest-backed commands.
+Tests are selected by phase risk, without arbitrary coverage or one-test-per-method rules.
+
+**Organization**: Group tasks by story within this selected roadmap phase and declared
+dependencies. Internal "Phase N" headings below are task groups, not OSCAR phases.
+
+Read the constitution, PLAN.md, applicable repository instructions, and all eight
+engineering guides before generating tasks. Revisit owning guides/source per batch
+and use them in review. Preserve existing apps/packages, validated shared contracts,
+approved UI, and unrelated changes. Backend groups MUST be complete and tested before
+frontend integration; missing UI/frozen-presentation decisions remain gates. Include
+applicable production/security/test/docs review and UI preservation checks in meaningful
+tasks. Missing required infrastructure or unexecuted checks leave completion incomplete.
+Generate only this phase; do not add toolkit setup or repeat completed foundations.
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -21,10 +41,12 @@ description: "Task list template for feature implementation"
 
 ## Path Conventions
 
-- **Single project**: `src/`, `tests/` at repository root
-- **Web app**: `backend/src/`, `frontend/src/`
-- **Mobile**: `api/src/`, `ios/src/` or `android/src/`
-- Paths shown below assume single project - adjust based on plan.md structure
+- **Backend**: Owning modules/adapters under `apps/api/src/`
+- **Frontend**: Existing features/hooks/API adapters under `apps/web/src/`
+- **Shared contracts**: `packages/contracts/src/`
+- **Persistence**: Schema, forward migrations, and tests in `packages/database/`
+- Use actual discovery/ownership from `docs/engineering/testing.md` and plan.md.
+  Paths below are illustrative placeholders; replace them with phase-specific paths.
 
 <!--
   ============================================================================
@@ -36,41 +58,48 @@ description: "Task list template for feature implementation"
   - Entities from data-model.md
   - Endpoints from contracts/
 
-  Tasks MUST be organized by user story so each story can be:
-  - Implemented independently
-  - Tested independently
-  - Delivered as an MVP increment
+  Tasks MUST preserve each story's explicit prerequisites and backend-first order.
+  Identify contracts/schema, domain/authorization, provider/worker, test, and approved
+  integration work only when required by this phase. Independent testability does
+  not authorize deploying a story or bypassing group acceptance gates.
 
   DO NOT keep these sample tasks in the generated tasks.md file.
   ============================================================================
 -->
 
-## Phase 1: Setup (Shared Infrastructure)
+## Phase 1: Selected-Phase Prerequisites
 
-**Purpose**: Project initialization and basic structure
+**Purpose**: Verify scope, existing owners, and predecessor gates; no toolkit/project
+reinitialization. Replace all examples with only this phase's necessary work.
 
-- [ ] T001 Create project structure per implementation plan
-- [ ] T002 Initialize [language] project with [framework] dependencies
-- [ ] T003 [P] Configure linting and formatting tools
+- [ ] T001 Verify selected phase/feature, predecessor evidence, and affected owners in plan.md
+- [ ] T002 Verify required scripts/dependencies and infrastructure in owning package.json files
+- [ ] T003 Identify focused/shared/checkpoint verification from docs/engineering/testing.md
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented
+**Purpose**: Only in-phase shared work required before dependent stories
 
-**⚠️ CRITICAL**: No user story work can begin until this phase is complete
+**⚠️ CRITICAL**: Dependent story work waits for these tasks; completed infrastructure
+is reused. Frontend work also waits for its entire required backend group gate.
+
+For a frontend phase, verify backend predecessor evidence and remove backend sample
+tasks outside this phase's ownership. A missing predecessor gate does not authorize
+implementing another roadmap phase within this task list.
 
 Examples of foundational tasks (adjust based on your project):
 
-- [ ] T004 Setup database schema and migrations framework
-- [ ] T005 [P] Implement authentication/authorization framework
-- [ ] T006 [P] Setup API routing and middleware structure
-- [ ] T007 Create base models/entities that all stories depend on
-- [ ] T008 Configure error handling and logging infrastructure
-- [ ] T009 Setup environment configuration management
+- [ ] T004 Extend required schema/forward migrations in packages/database/prisma/
+- [ ] T005 Extend phase-required shared contracts in packages/contracts/src/[domain]/
+- [ ] T006 Extend phase-required authorization/routes in apps/api/src/modules/[domain]/
+- [ ] T007 Implement required domain transitions in apps/api/src/modules/[domain]/
+- [ ] T008 Reuse safe error/audit handling for affected operations in apps/api/src/modules/[domain]/
+- [ ] T009 Extend only required validated configuration in apps/api/src/core/config/
 
-**Checkpoint**: Foundation ready - user story implementation can now begin in parallel
+**Checkpoint**: In-phase prerequisites verified; independent story work may begin
+only within selected task scope and satisfied dependencies.
 
 ---
 
@@ -80,23 +109,25 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 1 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 1 (required applicable coverage)
 
-> **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
+> Create or extend meaningful tests in this phase. Reproduce failures for bug fixes;
+> verify acceptance/failure behavior and final persisted outcomes where required.
 
-- [ ] T010 [P] [US1] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T011 [P] [US1] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T010 [P] [US1] Contract tests for [boundary] in packages/contracts/src/[domain]/[name].test.ts
+- [ ] T011 [P] [US1] Integration tests for [journey/failure] in apps/api/src/modules/[domain]/[name].integration.test.ts
 
 ### Implementation for User Story 1
 
-- [ ] T012 [P] [US1] Create [Entity1] model in src/models/[entity1].py
-- [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
-- [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
-- [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T012 [US1] Extend [domain] wire schemas in packages/contracts/src/[domain]/[domain].schema.ts
+- [ ] T013 [US1] Extend [domain] schema/constraints in packages/database/prisma/schema.prisma and a forward migration
+- [ ] T014 [US1] Implement [operation] in apps/api/src/modules/[domain]/[domain].service.ts (depends on T012, T013)
+- [ ] T015 [US1] Implement [authorized boundary] in apps/api/src/modules/[domain]/[domain].routes.ts
 - [ ] T016 [US1] Add validation and error handling
 - [ ] T017 [US1] Add logging for user story 1 operations
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+**Checkpoint**: User Story 1 meets its acceptance checks within declared prerequisites;
+record actual commands/results and any incomplete gate.
 
 ---
 
@@ -106,19 +137,20 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 2 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 2 (required applicable coverage)
 
-- [ ] T018 [P] [US2] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T019 [P] [US2] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T018 [P] [US2] Contract tests for [boundary] in packages/contracts/src/[domain]/[name].test.ts
+- [ ] T019 [P] [US2] Integration tests for [journey/failure] in apps/api/src/modules/[domain]/[name].integration.test.ts
 
 ### Implementation for User Story 2
 
-- [ ] T020 [P] [US2] Create [Entity] model in src/models/[entity].py
-- [ ] T021 [US2] Implement [Service] in src/services/[service].py
-- [ ] T022 [US2] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T020 [US2] Extend [domain] persistence in packages/database/prisma/schema.prisma and a forward migration
+- [ ] T021 [US2] Implement [operation] in apps/api/src/modules/[domain]/[domain].service.ts
+- [ ] T022 [US2] Implement [authorized boundary] in apps/api/src/modules/[domain]/[domain].routes.ts
 - [ ] T023 [US2] Integrate with User Story 1 components (if needed)
 
-**Checkpoint**: At this point, User Stories 1 AND 2 should both work independently
+**Checkpoint**: User Stories 1 and 2 meet their applicable acceptance checks within
+declared prerequisites; unresolved required checks remain incomplete.
 
 ---
 
@@ -128,18 +160,19 @@ Examples of foundational tasks (adjust based on your project):
 
 **Independent Test**: [How to verify this story works on its own]
 
-### Tests for User Story 3 (OPTIONAL - only if tests requested) ⚠️
+### Tests for User Story 3 (required applicable coverage)
 
-- [ ] T024 [P] [US3] Contract test for [endpoint] in tests/contract/test_[name].py
-- [ ] T025 [P] [US3] Integration test for [user journey] in tests/integration/test_[name].py
+- [ ] T024 [P] [US3] Contract tests for [boundary] in packages/contracts/src/[domain]/[name].test.ts
+- [ ] T025 [P] [US3] Integration tests for [journey/failure] in apps/api/src/modules/[domain]/[name].integration.test.ts
 
 ### Implementation for User Story 3
 
-- [ ] T026 [P] [US3] Create [Entity] model in src/models/[entity].py
-- [ ] T027 [US3] Implement [Service] in src/services/[service].py
-- [ ] T028 [US3] Implement [endpoint/feature] in src/[location]/[file].py
+- [ ] T026 [US3] Extend [domain] persistence in packages/database/prisma/schema.prisma and a forward migration
+- [ ] T027 [US3] Implement [operation] in apps/api/src/modules/[domain]/[domain].service.ts
+- [ ] T028 [US3] Implement [authorized boundary] in apps/api/src/modules/[domain]/[domain].routes.ts
 
-**Checkpoint**: All user stories should now be independently functional
+**Checkpoint**: Selected stories meet their acceptance checks; whole-phase completion
+also requires all remaining phase tasks and applicable checkpoint verification.
 
 ---
 
@@ -149,12 +182,13 @@ Examples of foundational tasks (adjust based on your project):
 
 ## Phase N: Polish & Cross-Cutting Concerns
 
-**Purpose**: Improvements that affect multiple user stories
+**Purpose**: Required in-scope verification and corrections across affected stories;
+do not add broad refactors or speculative optimization work.
 
 - [ ] TXXX [P] Documentation updates in docs/
 - [ ] TXXX Code cleanup and refactoring
-- [ ] TXXX Performance optimization across all stories
-- [ ] TXXX [P] Additional unit tests (if requested) in tests/unit/
+- [ ] TXXX Correct any demonstrated in-scope performance issue with relevant evidence
+- [ ] TXXX Extend relevant acceptance/failure regressions in actual owning test files
 - [ ] TXXX Security hardening
 - [ ] TXXX Run quickstart.md validation
 
@@ -164,48 +198,45 @@ Examples of foundational tasks (adjust based on your project):
 
 ### Phase Dependencies
 
-- **Setup (Phase 1)**: No dependencies - can start immediately
-- **Foundational (Phase 2)**: Depends on Setup completion - BLOCKS all user stories
-- **User Stories (Phase 3+)**: All depend on Foundational phase completion
-  - User stories can then proceed in parallel (if staffed)
+- **Prerequisites (Phase 1)**: Verify selected roadmap scope and predecessor gates first
+- **Foundational (Phase 2)**: Depends on prerequisite verification; blocks its dependent tasks
+- **User Stories (Phase 3+)**: Follow their explicit foundational and story dependencies
+  - Parallel work requires independent file ownership and satisfied dependencies
   - Or sequentially in priority order (P1 → P2 → P3)
-- **Polish (Final Phase)**: Depends on all desired user stories being complete
+- **Polish (Final Phase)**: Only necessary in-scope verification/cleanup after its dependencies
 
 ### User Story Dependencies
 
-- **User Story 1 (P1)**: Can start after Foundational (Phase 2) - No dependencies on other stories
-- **User Story 2 (P2)**: Can start after Foundational (Phase 2) - May integrate with US1 but should be independently testable
-- **User Story 3 (P3)**: Can start after Foundational (Phase 2) - May integrate with US1/US2 but should be independently testable
+- **User Story 1 (P1)**: [Exact prerequisite task IDs and acceptance boundary]
+- **User Story 2 (P2)**: [Exact prerequisite task IDs, including US1 dependencies if needed]
+- **User Story 3 (P3)**: [Exact prerequisite task IDs, including US1/US2 dependencies if needed]
 
 ### Within Each User Story
 
-- Tests (if included) MUST be written and FAIL before implementation
+- Actual automated test work is required; acceptance checks MUST pass before completion
 - Models before services
 - Services before endpoints
-- Core implementation before integration
+- Complete and tested backend group before dependent frontend integration
 - Story complete before moving to next priority
 
 ### Parallel Opportunities
 
-- All Setup tasks marked [P] can run in parallel
-- All Foundational tasks marked [P] can run in parallel (within Phase 2)
-- Once Foundational phase completes, all user stories can start in parallel (if team capacity allows)
+- Prerequisite/foundational tasks marked [P] require distinct owners and satisfied dependencies
+- Stories can run in parallel only with independent file owners and satisfied dependencies
 - All tests for a user story marked [P] can run in parallel
-- Models within a story marked [P] can run in parallel
-- Different user stories can be worked on in parallel by different team members
+- Tasks touching the same schema/service/shared owner MUST NOT run in parallel
+- All parallel work remains within the explicitly selected phase/task scope
 
 ---
 
 ## Parallel Example: User Story 1
 
-```bash
-# Launch all tests for User Story 1 together (if tests requested):
-Task: "Contract test for [endpoint] in tests/contract/test_[name].py"
-Task: "Integration test for [user journey] in tests/integration/test_[name].py"
+```text
+# Illustrative test-authoring work with independent files and satisfied dependencies:
+Task: "Contract tests in packages/contracts/src/[domain]/[name].test.ts"
+Task: "Integration tests in apps/api/src/modules/[domain]/[name].integration.test.ts"
 
-# Launch all models for User Story 1 together:
-Task: "Create [Entity1] model in src/models/[entity1].py"
-Task: "Create [Entity2] model in src/models/[entity2].py"
+# Schema changes sharing packages/database/prisma/schema.prisma are sequential.
 ```
 
 ---
@@ -214,30 +245,30 @@ Task: "Create [Entity2] model in src/models/[entity2].py"
 
 ### MVP First (User Story 1 Only)
 
-1. Complete Phase 1: Setup
-2. Complete Phase 2: Foundational (CRITICAL - blocks all stories)
+1. Verify Phase 1: Selected-Phase Prerequisites
+2. Complete the selected story's required Phase 2 foundational tasks
 3. Complete Phase 3: User Story 1
 4. **STOP and VALIDATE**: Test User Story 1 independently
-5. Deploy/demo if ready
+5. Report the selected scope; deployment requires an explicit owner instruction
 
 ### Incremental Delivery
 
-1. Complete Setup + Foundational → Foundation ready
-2. Add User Story 1 → Test independently → Deploy/Demo (MVP!)
-3. Add User Story 2 → Test independently → Deploy/Demo
-4. Add User Story 3 → Test independently → Deploy/Demo
+1. Verify Prerequisites + complete necessary Foundational work
+2. Add selected User Story 1 tasks → Test within prerequisites → Report batch status
+3. Add selected User Story 2 tasks → Test within prerequisites → Report batch status
+4. Add selected User Story 3 tasks → Test within prerequisites → Report batch status
 5. Each story adds value without breaking previous stories
 
 ### Parallel Team Strategy
 
 With multiple developers:
 
-1. Team completes Setup + Foundational together
-2. Once Foundational is done:
+1. Team verifies Prerequisites + completes necessary Foundational work
+2. When dependencies/file ownership permit within selected scope:
    - Developer A: User Story 1
    - Developer B: User Story 2
    - Developer C: User Story 3
-3. Stories complete and integrate independently
+3. Integrate only after relevant dependencies and backend group verification pass
 
 ---
 
@@ -245,8 +276,12 @@ With multiple developers:
 
 - [P] tasks = different files, no dependencies
 - [Story] label maps task to specific user story for traceability
-- Each user story should be independently completable and testable
-- Verify tests fail before implementing
-- Commit after each task or logical group
+- Each story is testable within declared prerequisites; do not assume all can run independently
+- Preserve completed tasks/IDs and accepted unrelated decisions on revisions
+- Record actual tests/checks, fresh versus cached evidence, and missing infrastructure
+- Run focused/shared regressions per batch and full checks at roadmap checkpoints/release
+- Do not mark unavailable required checks or a partial phase complete
+- Do not commit, push, deploy, or spend real funds without an owner instruction
+- Stop after the selected command/scope; do not execute another stage or roadmap phase
 - Stop at any checkpoint to validate story independently
-- Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence
+- Avoid vague tasks, conflicting parallel edits, and hidden cross-story dependencies

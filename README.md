@@ -4,6 +4,20 @@ A generic Next.js 16, Express 5, PostgreSQL, and Prisma 7 foundation with a
 complete email/password account lifecycle. It contains no product domain,
 organization, tenant, payment, or demo data model.
 
+## OSCAR governance
+
+OSCAR work follows the [project constitution](.specify/memory/constitution.md),
+the approved [roadmap](PLAN.md), the [engineering guides](docs/engineering/README.md),
+and the [workflow operating contract](docs/workflow/speckit-prompts.txt).
+Read all eight engineering guides at each phase start and revisit relevant sections
+for each task batch and review. Execute only the owner's selected command, phase,
+and task scope; satisfy predecessor and verification gates before completion.
+Approved employee/admin designs are frozen, with missing UI or conflicting
+presentation changes requiring an explicit owner decision.
+
+The remaining sections document the existing authentication foundation and runtime
+setup; they do not establish OSCAR financial acceptance or release authorization.
+
 ## What is included
 
 - React 19 and Next.js App Router

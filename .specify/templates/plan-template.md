@@ -2,9 +2,15 @@
 
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Roadmap Phase**: [Pnn - exact title from PLAN.md]
 
-**Note**: This template is filled in by the `/speckit-plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
+**Feature Directory**: [exact selected feature path; verify .specify/feature.json and spec.md]
+
+**Input**: Feature specification from the verified feature directory's `spec.md`
+
+**Note**: Use the installed `$speckit-plan` skill and the selected PLAN prompt in
+`docs/workflow/speckit-prompts.txt`. Spec Kit research/design steps below are internal
+steps for this feature, not additional OSCAR roadmap phases or implementation authority.
 
 ## Summary
 
@@ -18,86 +24,84 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]
+**Language/Version**: [TypeScript/Node versions verified against owning manifests]
 
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]
+**Primary Dependencies**: [Existing phase-relevant dependencies; justify/verify any additions]
 
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
+**Storage**: [Applicable PostgreSQL/private-file/queue boundaries and current implementation state]
 
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
+**Testing**: [Owning existing harnesses, actual scripts, and phase-required infrastructure]
 
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
+**Target Platform**: [Relevant browser/server/worker/signer runtime; deployment remains separately authorized]
 
-**Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
+**Project Type**: [Affected owners within the existing web/API monorepo]
 
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]
+**Performance Goals**: [Approved phase-relevant workload and measurable boundaries; no invented guarantees]
 
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]
+**Constraints**: [Applicable scope, frontend freeze, financial/security rules, prerequisite gates]
 
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Scale/Scope**: [Selected roadmap phase only; approved workload assumptions from PLAN.md]
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+_GATE: Must pass before planning research. Re-check after design._
 
-[Gates determined based on constitution file]
+Read `.specify/memory/constitution.md`, applicable repository instructions, `PLAN.md`,
+and all eight `docs/engineering/` guides before planning. Record PASS/BLOCKED with
+concrete evidence for every gate; justify any inapplicable financial/UI boundary.
+
+- **I - Scope/evidence**: One selected roadmap phase, matching feature pointer/spec,
+  explicit deliverables/exclusions, verified current source/tools, and proposed work
+  clearly distinguished from existing behavior.
+- **II - Frontend preservation**: Only authorized integration of existing UI; no
+  frozen presentation changes or missing surfaces assumed approved. Relevant owner
+  decisions, including the missing admin login conflict, remain visible gates.
+- **III - Ownership/design**: Existing apps/packages, shared contracts, central
+  transport, and installed stack preserved; dependencies/abstractions justified by
+  this phase and assigned to the engineering guides' existing owners.
+- **IV - Backend prerequisites**: Predecessor gates evidenced; backend group complete
+  and tested before dependent frontend integration; dependency-safe bounded work.
+- **V - Financial/custody invariants**: Applicable exact USDT, source-preserving
+  atomic/idempotent transitions, snapshots, Baghdad calendar, durable reservations,
+  uncertain-payout reconciliation, signing, and recovery rules accounted for.
+- **VI - Security**: Current role/status/session/ownership and state checks, protected
+  credential/file/provider/signing boundaries, privileged audits, and accepted
+  no-2FA/single-admin-action residual risk accounted for where affected.
+- **VII - Verification**: Actual automated test work has concrete paths, boundary
+  scenarios, manifest-backed commands, required infrastructure, focused/shared and
+  checkpoint checks. Missing evidence is an explicit completion gate.
+
+Design and review MUST consult the owning engineering guides. A plan does not prove
+implementation, a test pass, or release authorization. Unresolved required conflicts
+MUST NOT be waived by the complexity table.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit-plan command output)
-├── research.md          # Phase 0 output (/speckit-plan command)
-├── data-model.md        # Phase 1 output (/speckit-plan command)
-├── quickstart.md        # Phase 1 output (/speckit-plan command)
-├── contracts/           # Phase 1 output (/speckit-plan command)
-└── tasks.md             # Phase 2 output (/speckit-tasks command - NOT created by /speckit-plan)
+[exact selected feature directory]/
+├── plan.md              # This file ($speckit-plan output)
+├── research.md          # Internal research output ($speckit-plan)
+├── data-model.md        # Applicable design output ($speckit-plan)
+├── quickstart.md        # Validation instructions ($speckit-plan)
+├── contracts/           # Applicable design output ($speckit-plan)
+└── tasks.md             # $speckit-tasks output; not created by $speckit-plan
 ```
 
 ### Source Code (repository root)
+
 <!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
+  ACTION REQUIRED: Narrow the existing owner map below to this phase's affected
+  paths and identify proposed files explicitly. Do not replace the monorepo,
+  reinitialize existing frameworks, or create empty layers to match a template.
 -->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+apps/api/src/            # Owning domain modules and protected infrastructure
+apps/web/src/            # Existing App Router, features, hooks, central transport
+packages/contracts/src/  # Shared browser-safe runtime wire schemas
+packages/database/       # Prisma schema, forward migrations, persistence tests
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real
@@ -105,9 +109,11 @@ directories captured above]
 
 ## Complexity Tracking
 
-> **Fill ONLY if Constitution Check has violations that must be justified**
+> **Fill only for necessary complexity or a concrete unresolved policy conflict.**
+> Justification is not permission to violate the constitution. A required owner
+> decision or explicit policy amendment remains a gate until resolved; agents MUST
+> NOT amend the constitution during ordinary phase planning.
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+| Violation                                     | Why Needed            | Simpler Alternative Rejected Because                              |
+| --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
+| [necessary complexity or unresolved conflict] | [phase-specific need] | [simpler approach considered; required owner decision if blocked] |

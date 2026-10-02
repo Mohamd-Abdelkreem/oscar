@@ -1,0 +1,280 @@
+# Tasks: P01 - Financial Backend Foundation
+
+**Roadmap Phase**: P01 - Financial Backend Foundation
+
+**Feature Directory**: `specs/001-financial-backend-foundation`, verified against `.specify/feature.json` and `spec.md` on 2026-10-02.
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [financial boundary](contracts/financial-boundary.md), [internal service contract](contracts/ledger-service.md) and [quickstart.md](quickstart.md), governed by the [constitution](../../.specify/memory/constitution.md), [roadmap](../../PLAN.md), all eight [engineering guides](../../docs/engineering/README.md) and the TASKS [operating contract](../../docs/workflow/speckit-prompts.txt).
+
+**Implementation Scope**: Targeted TASKS amendment only. Existing T001-T038 IDs, story/parallel labels, progress markers and unrelated decisions are preserved while CHK010/CHK035 work is aligned to the amended design. The owner must select task IDs or a dependency-safe batch for a later IMPLEMENT invocation. Internal Phase 1-8 headings below are task groups within P01, not additional roadmap phases.
+
+**Tests**: REQUIRED. Eight automated test files are proposed, four existing test files are extended, and all financial persistence/rollback/race claims require real migrated PostgreSQL. No application code, test files, migrations, dependency installation or test execution is performed by generating this list.
+
+**Existing foundation**: Auth/users/health routing, User/RefreshToken persistence, shared auth/account/http contracts, Vitest and PostgreSQL Testcontainers already exist. Extend their owners; no toolkit initialization, constitution work or replacement test infrastructure.
+
+**Scope boundary**: Internal exact money/calendar/accounting only. No financial HTTP routes, OpenAPI additions, wallet provisioning during registration, frontend wiring/design, subscription/referral workflows, task approvals, chain providers, custody, Redis, workers, withdrawal requests, signing, settlement, restore or deployment. The missing admin login remains a P03 owner decision.
+
+## Requirements and execution gates
+
+- P01 has no predecessor implementation phase. Existing baseline and isolated database availability must be assessed during implementation, not assumed from planning.
+- The specification is labelled Draft. Use its supplied intent and design for this task list without inventing approval. Built-in `checklists/requirements.md` is checked; custom [financial-foundation.md](checklists/financial-foundation.md) has CHK001-CHK036 unchecked and explicitly unapproved. TASKS does not change any approval marker.
+- **CHK010**: Representation/precision is resolved by the accepted clarification and amended financial boundary. T007/T009/T011 own the shared schema/converter, and T025-T027 implement and verify exact counted-millisecond calendar behavior. Custom checklist review and the selected ANALYZE stage remain required; this amendment approves no checklist marker.
+- **CHK035**: The amended data model/internal service contract defines immutable accepted evidence and complete per-operation reconciliation alongside wallet/source/ACTIVE-allocation aggregates. T012-T017/T019/T021/T031-T032 produce and preserve that evidence; T033-T035 verify missing/extra postings, magnitude/source/result/audit/allocation faults even when aggregates agree. Design is resolved; custom checklist review, ANALYZE and real implementation evidence remain required.
+- Required checklist review and the separately selected ANALYZE stage must establish the execution gate before implementation. Critical unresolved findings block affected work. Missing Docker/image/database execution or failed checks leave P01 incomplete.
+- Every task includes its target/read-only evidence paths. `[P]` means independent file ownership after the stated prerequisites. Parallel examples concern authoring; integration runners retain their existing serial-file configuration. Shared schema, migration, ledger service and service-test edits remain sequential.
+- Apply clean-code-guard after nontrivial production edits, test-guard to changed tests, security-best-practices to sensitive TypeScript boundaries and docs-guard to changed technical text. Resolve in-scope findings before the relevant task/checkpoint is complete. No browser/design skill is needed for backend-only P01.
+
+## Phase 1: Selected-Phase Prerequisites
+
+**Outcome**: Confirm the selected implementation scope and distinguish real baseline evidence from missing prerequisites. No setup platform or new report artifact is created.
+
+- [ ] T001 Verify P01 selection, constitution v1.0.0, owner-selected task scope, required checklist review and ANALYZE findings using `.specify/feature.json`, `.specify/memory/constitution.md`, `specs/001-financial-backend-foundation/spec.md`, `plan.md` and `checklists/financial-foundation.md`; keep approval markers read-only and stop dependent implementation at unresolved required gates.
+- [ ] T002 Check Node 24/pnpm 11, workspace dependency artifacts and Docker/image access from `package.json`, `apps/api/package.json`, `packages/contracts/package.json`, `packages/database/package.json`, `apps/api/tests/integration/global-setup.ts` and `packages/database/tests/integration/global-setup.ts`; build contracts then database and run the existing package unit plus auth/database integration baseline from Verification commands below, reporting actual failures/unavailable services without falling back to a developer database (depends on T001).
+
+**Checkpoint**: The implementation result names fresh/cached baseline evidence and missing services. T002 is not financial acceptance. No baseline commands run during TASKS.
+
+## Phase 2: Foundational Persistence and Test Ownership
+
+**Outcome**: Shared persistence and fixtures support the later accounting stories without changing existing auth semantics.
+
+- [ ] T003 Extend `packages/database/prisma/schema.prisma` with Wallet, FinancialOperation, RequestIdentity, LedgerPosting, ReservationAllocation and AuditRecord plus their enums/relations from `specs/001-financial-backend-foundation/data-model.md`; use BigInt micro-units, four source/state components, one wallet per existing owner, business/request identities and same-wallet composite references, preserving User/RefreshToken and adding no automatic wallet/backfill or future workflow models (depends on T002; FR-003, FR-006-FR-009, FR-013, FR-018-FR-019, FR-024-FR-026).
+- [ ] T004 Add `packages/database/prisma/migrations/20261002000000_financial_foundation/migration.sql` after confirming the timestamp remains unused; implement named numeric-cast total/allocation bounds, nonnegative components, actor/state/kind/origin/link checks, restrictive financial FKs, unique identities/posting/release/audit constraints, immutable UPDATE/DELETE and statement-level TRUNCATE guards, and only conditional ACTIVE-to-RELEASED allocation changes. Enforce P01 CREDIT origins DEPOSIT/TASK_REWARD with NON_REFERRAL or REFERRAL_COMMISSION with REFERRAL; ADMIN_ADJUSTMENT belongs to CORRECTION. Preserve `20260818000000_init_authentication/migration.sql` unchanged (depends on T003; same requirement coverage as T003).
+- [ ] T005 Generate the Prisma client with the existing `pnpm db:generate` script and extend explicit persistence exports in `packages/database/src/index.ts`; validate schema/build compatibility while preserving existing exports and never hand-editing `packages/database/src/generated/prisma/` (depends on T004).
+- [ ] T006 Add owned account/wallet/identity fixtures, injected clocks and independent-client race barriers in `apps/api/src/modules/ledger/testing/financial-fixtures.ts`; narrowly exclude `src/modules/ledger/testing/**` in `apps/api/tsconfig.build.json`; scope cleanup AND counts/refresh reads to each suite's own auth fixtures in `apps/api/src/app.integration.test.ts` and `apps/api/src/modules/auth/auth.service.integration.test.ts`, retaining financial history until disposable database teardown and preserving auth assertions (depends on T005; FR-026, FR-035).
+
+**Checkpoint**: Schema/client owners are ready for service work. Final constraint/upgrade acceptance is T028-T030/T035; foundation completion alone does not prove those outcomes. US1 and US4 pure work can overlap persistence once T002 passes because they do not consume the new database models.
+
+## Phase 3: User Story 1 - Keep Every USDT Amount Exact (Priority: P1)
+
+**Goal**: Preserve every supported micro-unit at validated JSON and arithmetic boundaries.
+
+**Independent test**: Exact `0`, `1`, `1.000001`, `0.000001` and maximum amounts round-trip; invalid grammar/ranges fail, percentage results floor exactly, and gross equals fee plus net. Shared hour validation preserves allowed zero spellings, converts supported fractions exactly to integer milliseconds and rejects fractional milliseconds without rounding; the full calendar outcome belongs to US4. Database credit-total overflow is additionally exercised in US2/US5.
+
+### Tests
+
+- [ ] T007 [P] [US1] Create `packages/contracts/src/financial/financial.schema.test.ts` for canonical nonnegative/positive/signed amounts, signed zero, length/range/precision/whitespace/exponent/grouping/numeric rejection, integer basis points, real dates/offset instants, request-key bounds and strict source/wallet/allocation/discriminated result shapes; reject unknown/private/authority fields and invalid source sums without normalizing USDT input or using zero fallback. Test proposed `positiveCountedHoursSchema` and its single shared exact-duration converter: original string output, allowed leading/trailing zeros, `"1.5"`/`"0001.5000"` -> 5,400,000 ms, `"0.0000025"`/trailing-zero variants -> 9 ms, fractional-millisecond `"0.0000001"`/`"0.000001"` and numeric/nonpositive/malformed rejection. Exercise eight integer/seven fractional normalized-digit bounds, permitted redundant raw zeros beyond the 16-character scratch bound, exact BigInt results and JSON-safe schema output (depends on T002; FR-001-FR-005, FR-031, FR-033; SC-001 and shared SC-005 boundary).
+- [ ] T008 [P] [US1] Create `apps/api/src/core/financial/money.test.ts` for exact micro/max parse-format round trips, signed movements, component/total overflow and underflow, full-range percentage intermediate multiplication, floor/zero derived results, approved 2100 and 1200/600/400/200/200 rates and gross/fee/net conservation (depends on T002; FR-001-FR-004; SC-001).
+
+### Implementation
+
+- [ ] T009 [US1] Implement the proposed browser-safe schemas and inferred types in `packages/contracts/src/financial/financial.schema.ts` and explicit exports in `packages/contracts/src/index.ts` according to `contracts/financial-boundary.md`, preserving strict canonical JSON-safe projections and existing auth/account/http exports. Implement `positiveCountedHoursSchema` and one exact-duration converter in that same schema file: ASCII decimal grammar, linear scratch normalization of redundant zeros, derived eight integer/seven fractional digit bounds before BigInt/powers, positivity and exact divisibility of coefficient * 3,600,000 by 10^scale. Keep money's raw string bounds distinct from hours' normalized bounds; preserve valid hour spelling, return transient integer milliseconds only from the converter and introduce no arbitrary raw-hour maximum, canonical-hour policy, rounding or minimum. Export the schema/type and shared converter deliberately; no second parser/file, Node/Prisma/Luxon import or client-authority command API (depends on T007).
+- [ ] T010 [US1] Implement exact parse/format, bounded component/total arithmetic, basis-point floor and gross/fee/net helpers in `apps/api/src/core/financial/money.ts`, consuming shared validation with BigInt arithmetic and explicit failure; preserve `apps/api/src/core/serialization/decimal.ts` and avoid Number/parseFloat money conversion or global JSON hooks (depends on T008, T009).
+- [ ] T011 [US1] Review and validate `packages/contracts/src/financial/financial.schema.ts`, `financial.schema.test.ts`, `packages/contracts/src/index.ts` and `apps/api/src/core/financial/money.ts`, `money.test.ts` with applicable code/test/security rules; run the focused financial contract/money tests, including hour-schema/converter precision, normalized bounds, original spelling and safe output, plus existing contract and Decimal regressions. Verify explicit exports and rebuild contracts for downstream API imports; report SC-001 and shared extension-boundary evidence while complete calendar SC-005 remains pending T027 (depends on T009, T010; FR-031, FR-033, FR-035).
+
+**Checkpoint**: US1 is the first useful acceptance slice. It is not a complete P01 backend or authority to expose a financial endpoint.
+
+## Phase 4: User Story 2 - Preserve Fund Sources Through Spending and Reservation (Priority: P1)
+
+**Goal**: Commit trusted credits, ordered spending, original-source reservations and safe releases through one atomic accounting boundary.
+
+**Independent test**: Credit 70 non-referral/30 referral; debit 20 leaves 70/10; reserve gross 75 moves 70/5 to reserved; release after expiry restores 70/10 once. Free/expired reservations exclude referral; insufficient eligible/unreserved funds and unsafe release leave every record unchanged.
+
+### Tests
+
+- [ ] T012 [P] [US2] Create `apps/api/src/modules/ledger/ledger.service.integration.test.ts` against real migrated PostgreSQL for trusted-origin credits, the 70/30 sequence, referral-first purchase spending, eligible non-referral-first full-gross reservation, retained Free/expired referral ownership, reserved-fund exclusion, original-source release after expiry, closed/unsafe/wrong-wallet release and aggregate credit overflow. Assert operation/posting/audit/allocation counts and all four components, immutable acceptedTerms walletBefore plus deltas equals saved walletAfter, explicit credit source and accepted reservationId/eligibleSources/original allocation; deny invalid origin/source combinations and ADMIN_ADJUSTMENT CREDIT alongside pending/unverified events and missing/forged ownership/context (depends on T006, T011; FR-006-FR-015, FR-023; SC-004).
+
+### Implementation
+
+- [ ] T013 [P] [US2] Define server-only operation intents, mandatory trusted USER/allowlisted PROCESS context, participant-wallet declarations, transaction-local mutation/observation guards and transaction-bound handle in `apps/api/src/modules/ledger/ledger.types.ts`. Define strict kind-specific private acceptedTerms shapes within existing JSON: every operation's four-component/total walletBefore; CREDIT source; CORRECTION source/direction/reason/referenceOperationId; RESERVE reservationId and unique accepted eligibleSources; RELEASE original reservationId. Keep immutable walletAfter/allocation/result state in the existing outcome, with no new model/column/public projection. Define the planned safe module error codes using the existing AppError shape in `apps/api/src/modules/ledger/ledger.errors.ts`, with no anonymous/role/eligibility/safe-release fallback (depends on T005, T011; FR-005, FR-008, FR-015, FR-023, FR-025, FR-034).
+- [ ] T014 [P] [US2] Implement the shared Serializable transaction runner in `apps/api/src/modules/ledger/ledger.transaction.ts`: same Prisma.TransactionClient for guards/financial/domain writes, deterministic authority-account then sorted-wallet then allocation locks, undeclared-participant rejection, initial 5s maxWait/10s timeout and at most three complete P2034 attempts retaining identity/rechecking current authority; forbid nested/root-client fallback and external I/O in retryable callbacks (depends on T013; FR-016-FR-017, FR-021-FR-023).
+- [ ] T015 [P] [US2] Implement explicit immutable JSON-safe wallet/allocation/operation-result mapping in `apps/api/src/modules/ledger/ledger.mapper.ts` using US1 formatting and shared result validation; return the recorded after-snapshot and server recordedAt without raw Prisma/BigInt/audit/private fields or guessed defaults (depends on T013; FR-005, FR-007, FR-013, FR-020, FR-034).
+- [ ] T016 [US2] Implement `execute`, `runInTransaction` and transaction-bound credit/purchase-debit/reservation in `apps/api/src/modules/ledger/ledger.service.ts`; validate consequential intent and trusted origin/source using P01 CREDIT's DEPOSIT/TASK_REWARD NON_REFERRAL or REFERRAL_COMMISSION REFERRAL allowlist, bind stable business and actor/kind/request identities under locks, and check current observation/mutation authority. Hash explicit consequential intent while excluding request key, clock, observed walletBefore and changing eligibility grants. For new effects capture validated walletBefore after locks, save strict kind-specific acceptedTerms including source or reservationId/accepted eligibleSources, and atomically insert immutable completed operation/outcome, ordered source postings/projections, full-gross allocation, exactly one required audit and optional database-only dependent domain writes. Same-intent replay retains original acceptedTerms and returns the original authorized outcome without mutation callbacks or recomputing terms; ADMIN_ADJUSTMENT is reserved for CORRECTION (depends on T012-T015; FR-008-FR-013, FR-016-FR-020, FR-023, FR-025).
+- [ ] T017 [US2] Implement transaction-bound safe release in `apps/api/src/modules/ledger/ledger.service.ts`, locking and matching the recorded wallet/allocation, observing replay under current authority and requiring owning-domain same-transaction safety evidence for a new conditional ACTIVE-to-RELEASED effect. Capture the release's walletBefore and original reservationId in its immutable acceptedTerms and save the original allocation with RELEASED outcome alongside exact inverse source postings and one audit. Restore recorded sources once; retain the original RESERVE terms and ACTIVE outcome even after allocation release. Reject other closed/unsafe release identities without inferring safety from a timeout or changed eligibility (depends on T016; FR-013-FR-015, FR-020, FR-025).
+- [ ] T018 [US2] Review the ledger source/type/transaction/mapper/error changes and `apps/api/src/modules/ledger/ledger.service.integration.test.ts` against financial/security/test rules, then run the real service integration file and affected scoped auth suites; report source conservation, bounds, exact release and current authority evidence, leaving unavailable PostgreSQL checks incomplete (depends on T017; FR-035; SC-004).
+
+**Checkpoint**: Source primitives are testable within their supplied trusted domain guards. P10/P11 must still implement actual withdrawal eligibility/lifecycle/safe-unsent proof and settlement before product integration.
+
+## Phase 5: User Story 3 - Apply One Atomic Effect Despite Repeats and Races (Priority: P1)
+
+**Goal**: Recover committed results safely while concurrent operations, callback failures and retries cannot create duplicate or partial effects.
+
+**Independent test**: One credit AND debit business identity each delivered 100 times creates one effect despite new/missing keys; two 80 debits against 100 yield one commit/final 20. Fail the actual service's dependent-domain callback after financial and fixture-owned user writes, then verify complete rollback. Lost replies recover the original result.
+
+### Tests
+
+- [ ] T019 [P] [US3] Extend `apps/api/src/modules/ledger/ledger.service.integration.test.ts` for 100 credit/debit deliveries with same/new/absent keys, consequential-intent conflicts, new alias binding then changed reuse, actor/kind textual-key independence, current unauthorized replay/recovery and original snapshots after later balance/eligibility/allocation changes. Prove observed walletBefore and accepted eligibility grants stay outside the intent hash, acceptedTerms remain unchanged and an original RESERVE replay still returns its ACTIVE result after a later RELEASE. Exercise callback-skipping replay, lost replies, full finance/domain rollback through a real failing callback and a two-wallet outer conflict that cannot recover one child as compound success (depends on T018; FR-016-FR-020, FR-023; SC-002-SC-003).
+- [ ] T020 [P] [US3] Create `apps/api/src/modules/ledger/ledger-concurrency.integration.test.ts` using separate real clients/connections and explicit start/lock barriers for 80/80 debit contention against 100, debit/reservation competition, duplicate credit and request-alias races, concurrent releases and authority changes before transactional checks; assert winner/loser results, exact components/postings/audit, no partial effects and bounded retry/exhaustion outcomes rather than sequential replay or sleeps (depends on T018; FR-014, FR-016-FR-023; SC-002-SC-003).
+
+### Implementation
+
+- [ ] T021 [US3] Complete authorized `recoverOperation`, request-alias replay binding and exact known-identity uniqueness recovery in `apps/api/src/modules/ledger/ledger.service.ts`: leave a failed standalone transaction before fresh authorized lookup/fingerprint comparison, safely bind any new replay key without a posting/domain effect/mutation audit, retain original acceptedTerms and return only the original authorized outcome or safe unresolved conflict. Never replace walletBefore/grants with current balances/eligibility or reinterpret an original RESERVE ACTIVE result after release; preserve observation privacy. Propagate transaction-bound uniqueness conflicts to abort the whole owning transaction (depends on T019, T020; FR-017-FR-020, FR-023).
+- [ ] T022 [US3] Validate and narrow retry/constraint/diagnostic handling in `apps/api/src/modules/ledger/ledger.transaction.ts` and `ledger.errors.ts` against actual installed-adapter failures in `ledger-concurrency.integration.test.ts` and `ledger.service.integration.test.ts`; retain the three-attempt P2034 bound, add structured 40001/40P01 classification only with real evidence, never retry broad uniqueness/P2010/messages/authority/funds/intent failures, and prove nested sentinel driver secrets/private outcomes are absent from safe errors/logs (depends on T021; FR-022, FR-034).
+- [ ] T023 [US3] Review and run `apps/api/src/modules/ledger/ledger.service.integration.test.ts` and `ledger-concurrency.integration.test.ts` on real migrated PostgreSQL; record 100-delivery identities, true competing-connection outcomes, retry limits, complete rollback and lost-reply original-result evidence, preserving shared auth error behavior and applying code/security/test reviews (depends on T022; FR-035; SC-002-SC-003).
+
+**Checkpoint**: Atomic/replay safety has actual persisted evidence. No per-wallet replay is represented as later compound-domain success, and no external transfer is attempted or retried.
+
+## Phase 6: User Story 4 - Use the Same Baghdad Business Boundaries (Priority: P2)
+
+**Goal**: Supply deterministic task, subscription and counted-deadline policies independently of host/browser time.
+
+**Independent test**: Identical fixed inputs yield identical Baghdad results in fresh UTC and America/New_York processes: 12:00 inclusive/18:00 exclusive, 365 work dates with following-calendar-midnight exclusive expiry, Friday 12:00 plus 72 counted hours equals Wednesday 12:00, and Friday 23:30 plus `"1.5"` equals Monday 01:00. A `"0.0000025"` extension adds 9 ms; fractional-millisecond and supported-range failures leave the existing deadline unchanged.
+
+### Dependency and tests
+
+- [ ] T024 [P] [US4] Add only the planned API runtime `luxon@3.7.2` and development `@types/luxon@3.7.6` in `apps/api/package.json` and `pnpm-lock.yaml`, rechecking pinned-version Node 24/pnpm 11 compatibility and actual installed declarations before use; preserve unrelated dependency versions and keep Luxon outside browser-safe contracts (depends on T011).
+- [ ] T025 [US4] Create `apps/api/src/core/business-calendar/business-clock.test.ts` for fixed Baghdad task/weekend boundaries, purchase before/exactly/after 18:00, weekend first date, exactly 365 Monday-Friday dates, exclusive expiry even on Saturday, leap/month/year edges, Friday+72 counted hours, weekend starts and separate dispatch normalization. Apply the accepted CHK010 contract: add `"1.5"`/`"0001.5000"` as 5,400,000 ms and `"0.0000025"` as 9 ms to the existing deadline; Friday 23:30 + `"1.5"` yields Monday 01:00 Baghdad. Reject fractional milliseconds (`"0.0000001"`, `"0.000001"`), numeric/nonpositive/invalid inputs and out-of-range results with unchanged original deadlines and no guessed value. Cover years 0001-0099, explicit-offset/precision failures and input/intermediate Baghdad/output UTC years 0001-9999, plus weekend credit/reconciliation independence; avoid duplicating T007's complete grammar inventory (depends on T024; FR-027-FR-033; SC-005).
+
+### Implementation
+
+- [ ] T026 [US4] Implement `apps/api/src/core/business-calendar/business-clock.ts` with explicit Asia/Baghdad, ISO weekdays 1-5, injected clock and shared strict date-only/explicit-offset/millisecond instant validation before Luxon parsing. Import T009's single exact-duration converter; check positive exact milliseconds and safe integer bounds before Number conversion for Luxon, then count integer-millisecond residuals across Baghdad weekday boundaries without decimal-hour Number/parseFloat or fractional-hour arithmetic. Add extensions to the existing deadline and supply initial 72 counted hours internally as `"72"`. Explicitly validate input, intermediate Baghdad and output UTC years 0001-9999 beyond isValid, with checked non-null serialization and safe unchanged-deadline failures. Keep immediate activation, first/final counted dates, following-calendar-midnight exclusive expiry and new-dispatch normalization separate; preserve `apps/api/src/core/date-only.ts`, impose no weekend credit/confirmation hold and do not edit the shared parser owner or introduce new precision/rounding/minimum policy (depends on T025; FR-027-FR-033).
+- [ ] T027 [US4] Review `apps/api/src/core/business-calendar/business-clock.ts` and `business-clock.test.ts`, run the calendar file in separate UTC and America/New_York package invocations using the existing `specs/001-financial-backend-foundation/quickstart.md` PowerShell procedure with TZ restoration, and run the existing date-only regression. Report both fresh outcomes for whole/fractional and 9 ms acceptance, fractional-millisecond/type rejection, unchanged deadlines and supported-year boundaries alongside the existing calendar scenarios (depends on T026; FR-035; SC-005).
+
+**Checkpoint**: Calendar policy passes in both host timezones. Scheduling queues, subscriptions and payout dispatch remain later domain work.
+
+## Phase 7: User Story 5 - Explain History and Preserve Existing Accounts (Priority: P2)
+
+**Goal**: Append authorized corrections, report consistent exact accounting discrepancies without repair, and preserve populated auth data through forward upgrades.
+
+**Independent test**: Reconstruct every operation kind and a correction using saved before/after evidence, exact complete posting sets/magnitudes, one matching audit and allocation links/state in one read-only snapshot, alongside ACTIVE-allocation/wallet aggregates. Detect zero-posting, 10/9 and offsetting 9/11 faults despite aggregate agreement, preserve exact diagnostics beyond int64 and leave fixture state unchanged. Fresh/populated/repeated auth-data upgrades retain accounts and constraints without invented history.
+
+### Tests
+
+- [ ] T028 [P] [US5] Extend `packages/database/tests/schema-contract.test.ts` and `packages/database/tests/integration/migration.integration.test.ts` with the exact six new model/table inventories and retained User/RefreshToken/auth relationships, named normalized-email/status checks and refresh cascade assertions; cover fresh deploy/redeploy/client behavior rather than deleting old inventory or auth expectations (depends on T005; FR-026; SC-006).
+- [ ] T029 [P] [US5] Create `packages/database/tests/integration/financial-constraints.integration.test.ts` for real source/total/allocation/actor bounds, identity/posting/release uniqueness, same-wallet kind/origin/reference FKs/guards, restrictive account deletion, immutable UPDATE/DELETE/TRUNCATE and illegal allocation reopening/replacement. Verify P01 CREDIT permits only DEPOSIT/TASK_REWARD NON_REFERRAL or REFERRAL_COMMISSION REFERRAL, with ADMIN_ADJUSTMENT restricted to CORRECTION. Retain history until isolated database destruction and inspect real named failure categories without disabling guards (depends on T005; FR-003, FR-006-FR-009, FR-013-FR-019, FR-024-FR-026).
+- [ ] T030 [P] [US5] Create `packages/database/tests/integration/financial-upgrade.integration.test.ts` using an additional disposable database initially migrated only by `packages/database/prisma/migrations/20260818000000_init_authentication/migration.sql` through the existing migration tooling with valid Prisma migration history; insert meaningful existing account/credential/refresh fixtures, apply the P01 forward migration then redeploy, verify retained values/constraints/relationships and no automatic wallets/balances/history, and cleanly drop only its isolated runtime (depends on T005; FR-026; SC-006).
+- [ ] T031 [US5] Extend `apps/api/src/modules/ledger/ledger.service.integration.test.ts` for available-only ADMIN_ADJUSTMENT corrections by current active/verified ADMIN with explicit source/direction, nonblank bounded reason and same-wallet original reference. Verify immutable correction walletBefore/source/direction/reason/referenceOperationId, saved walletAfter and exactly one matching audit; prove unchanged original history, atomic audit/source effects, changed direction/reason/reference identity conflicts and denial of ordinary/stale admins, reserved debits or source relabeling (depends on T023; FR-024, FR-023, FR-034; SC-007).
+
+### Implementation and reconciliation tests
+
+- [ ] T032 [US5] Implement transaction-bound `correctAvailable` in `apps/api/src/modules/ledger/ledger.service.ts`, including consequential source/direction/reason/reference hashing, current ADMIN guard, same-wallet reference checks and bounded available-only ADMIN_ADJUSTMENT effects. Capture walletBefore under locks and persist its strict source/direction/reason/referenceOperationId acceptedTerms with new immutable operation/posting/walletAfter outcome and exactly one matching audit; exclude observed before-balances from intent hashing. Reuse the same atomic/replay path without an admin endpoint, historic edit, task reversal, fabricated receipt or reserved-fund deduction (depends on T031; FR-024, FR-025).
+- [ ] T033 [US5] Create `apps/api/src/modules/ledger/ledger-reconciliation.integration.test.ts` for all five operation kinds: complete source posting sets/magnitudes/origins, source ordering from saved walletBefore/accepted grant, before-plus-deltas equals recorded walletAfter, result IDs/kind/amount/time, exactly one matching actor/action/correction audit and reservation/opening/release links/allocation/state. An original RESERVE ACTIVE result remains valid after release. Verify source/state and ACTIVE-allocation aggregates alongside operation checks in consistent read-only concurrent snapshots. Seed new fixture-owned faults by admissible direct INSERTs: completed operation with no postings, declared CREDIT 10 with posting/projection 9, two declared 10 credits posting 9/11 with matching aggregates, missing audit and inconsistent saved outcome/allocation. Preserve row bounds/FKs/uniqueness/origin/shapes; if a guard rejects a fault, assert that named constraint and choose another admissible fault, never disable guards or UPDATE immutable history. Include exact cumulative sums/diagnostic differences beyond int64 and separate isolated mutable-projection corruption. Assert safe scoped discrepancies and byte-for-byte unchanged fixture state after reconciliation, not aggregate-only success or repair (depends on T032; FR-009, FR-025, FR-034; SC-007).
+- [ ] T034 [US5] Implement authorized `reconcileWallet` through `apps/api/src/modules/ledger/ledger-reconciliation.ts` and the facade in `ledger.service.ts`. Begin one scoped Prisma RepeatableRead callback with fixed `SET TRANSACTION READ ONLY` as its first statement before the read-only observation guard/data reads; do not invent a readOnly option. Scan every FinancialOperation with LEFT JOIN postings, including zero-row sets, and validate each kind's complete expected nonzero-source posting map/magnitude/origin, strict acceptedTerms/outcome IDs/kind/amount/time, before-plus-deltas/after bounds, exactly one matching audit and reservation/opening/release allocation/link/state against `contracts/ledger-service.md`'s reconciliation section. Retain historical RESERVE ACTIVE outcomes after release; do not infer timestamp commit order or reinterpret current eligibility. Also compare exact wallet/ledger/ACTIVE-allocation components using parameterized numeric/text aggregates parsed as BigInt. Return bounded categorized authorized IDs and exact canonical signed-decimal expected/actual/differences, even beyond single-movement bounds, without Number conversion, clamping, bounded posting-delta schema, raw snapshots/audit/hash/driver data or any history/balance/source repair (depends on T033; FR-025, FR-023, FR-034).
+- [ ] T035 [US5] Review `packages/database/tests/`, `apps/api/src/modules/ledger/ledger.service.ts`, `ledger-reconciliation.ts` and their integration suites, then run the complete existing database unit/integration profiles and combined ledger integration files plus scoped auth regressions from Verification commands below. Demonstrate fresh/populated/repeated upgrade, immutable accepted snapshots/history, per-kind complete posting/magnitude/audit/allocation checks including zero-posting and aggregate-agreeing faults, exact diagnostics beyond int64, and read-only snapshot/state preservation without guard bypass. Retain all failed/unavailable checks as open gates (depends on T028-T030, T034; FR-026, FR-035; SC-006-SC-007).
+
+**Checkpoint**: History, upgrade and reconciliation evidence is complete only after the required real services and amended acceptance checks run. CHK010/CHK035 design alignment does not approve the custom checklist or supply runtime evidence.
+
+## Phase 8: Polish and Cross-Cutting Verification
+
+**Outcome**: Confirm the whole P01 foundation and accurately report its limits without executing the next roadmap phase.
+
+- [ ] T036 Align `specs/001-financial-backend-foundation/quickstart.md` with the actual implemented entrypoints, file filters, pinned dependency, services and validation procedures, applying docs-guard and preserving accepted intent/checklist markers; only update other P01 design text if separately authorized, and do not record planned checks as passes or create a duplicate phase report (depends on T027, T035).
+- [ ] T037 Run affected contract/API unit and auth integration regressions, package lint, `pnpm check-types`, `pnpm build`, `pnpm verify:build-output` and owned-path formatting/`git diff --check` for `packages/contracts/src/financial/`, `packages/database/`, `apps/api/src/core/financial/`, `apps/api/src/core/business-calendar/` and `apps/api/src/modules/ledger/` using the commands below; inspect `apps/api/dist/modules/ledger/testing/` absence because the existing build-output checker alone does not cover helper names, distinguish cached/fresh results, and run the Prisma-error-mapper regression only if its owner changed (depends on T036; FR-035).
+- [ ] T038 Complete the P01 acceptance review of `specs/001-financial-backend-foundation/spec.md` SC-001-SC-007 against actual T011/T018/T023/T027/T035/T037 evidence and changed source/test/docs paths; apply clean-code-guard, security-best-practices, test-guard and docs-guard, resolve in-scope findings, inspect the diff for untouched `apps/web/`/router/OpenAPI and unrelated files, then report completed/remaining IDs and whole-phase gates without approving checklists, committing, deploying, moving to P02 or claiming live-money readiness (depends on T037).
+
+## Dependencies and Execution Order
+
+The default linear order is T001-T038. Optional overlap is allowed only after the prerequisites below and within the owner's selected scope.
+
+```text
+Required review / ANALYZE gates -> T001 -> T002
+  Persistence: T003 -> T004 -> T005 -> T006 --------------------+
+  US1: (T007 || T008) -> T009 -> T010 -> T011 ------------------+-> US2
+  US4: T011 -> T024 -> T025 -> T026 -> T027                   |
+                                                             |
+  US2: (T012 || T013) -> (T014 || T015) -> T016 -> T017 -> T018 |
+  US3: T018 -> (T019 || T020) -> T021 -> T022 -> T023           |
+  US5 DB: T005 -> (T028 || T029 || T030)                       |
+  US5 ledger: T023 -> T031 -> T032                            |
+              -> T033 -> T034 -> T035 (also waits US5 DB)      |
+  Finish: T027 + T035 -> T036 -> T037 -> T038 <---------------+
+```
+
+T009 waits for T007; T010 waits for T008 and T009. T016 waits for all T012-T015. T013 also waits for T005; therefore US2 cannot begin just because pure US1 passed. T035 waits for every database test task and reconciliation. The graph does not authorize skipping prerequisite reviews or accepting red tests as completed work.
+
+| Story    | Exact prerequisites                                                      | Completion boundary                                 |
+| -------- | ------------------------------------------------------------------------ | --------------------------------------------------- |
+| US1 (P1) | T002; its internal T007-T011 dependencies                                | Pure schema/money acceptance at T011                |
+| US2 (P1) | T006, T011; T012-T018 in declared order                                  | Source/authority/atomic primitives at T018          |
+| US3 (P1) | T018; T019-T023                                                          | Replay/rollback/real races at T023                  |
+| US4 (P2) | T011, T024, T025-T027                                                    | Baghdad policy under two host timezones at T027     |
+| US5 (P2) | T005 for DB test work; T023 for correction; T033-T035 for reconciliation | History/fresh/populated/redeploy acceptance at T035 |
+
+### Small reviewable batches
+
+| Batch              | Task IDs                               | Observable result / gate                                                                          |
+| ------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| First              | T001-T002                              | Correct selected execution gate and measured existing baseline; stop at missing required evidence |
+| Exact money        | T007-T011                              | First standalone US1 acceptance slice                                                             |
+| Persistence        | T003-T005, then T028-T030              | Generated client plus real fresh/constraint/populated-upgrade evidence                            |
+| Owned fixtures     | T006                                   | Combined auth/finance suites cannot erase or count each other's fixtures                          |
+| Source accounting  | T012-T018                              | Complete atomic source operations and real release evidence                                       |
+| Repeat/race safety | T019-T023                              | One effect, complete rollback and real competing-connection outcomes                              |
+| Calendar           | T024-T027, after shared contracts T011 | One Baghdad policy in both host timezones                                                         |
+| History            | T031-T035, with T028-T030 DB tests     | Audited corrections and consistent discrepancy reporting                                          |
+| Final gate         | T036-T038                              | Accurate docs, shared/static/build checks and SC-001-SC-007 review                                |
+
+These batches are suggestions for later owner selection, not implementation performed by TASKS. Early DB test work retains [US5] identity and does not declare US5 complete before its ledger work.
+
+### Parallel examples per story
+
+| Story | Safe example after prerequisites                                                                                                           | Shared-owner restriction                                                                                        |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| US1   | T007 contract test author and T008 money test author after T002; US1 files can also overlap T003-T005 persistence files                    | T009 owns contract exports; money implementation waits for schemas                                              |
+| US2   | T012 service-test author and T013 type/error author after T006/T011; T014 transaction and T015 mapper authors after T013                   | T016 then T017 both own ledger.service.ts; no concurrent edits                                                  |
+| US3   | T019 service-test author and T020 concurrency-test author after T018                                                                       | T021/T022 are sequenced financial recovery/retry work; do not change common intent/locking policy independently |
+| US4   | Its T024-T027 sequence can overlap US2/US3 after T011                                                                                      | Calendar test and implementation remain ordered; only T024 owns dependency/lockfile edits                       |
+| US5   | T028 inventory/migration tests, T029 constraint tests and T030 upgrade tests after T005, with separately owned files and isolated fixtures | T031 waits for US3 service tests; T032/T034 share ledger.service.ts and remain serial                           |
+
+## Verification Commands and Required Services
+
+Commands below were checked against the current root/API/contracts/database manifests and Vitest discovery. New test paths are proposed by this list. Run commands only during an authorized IMPLEMENT scope after the relevant files exist; command verification here is source inspection, not test execution.
+
+**Services**: Docker-compatible runtime and access to `postgres:18.4`; package integration global setups deploy migrations into disposable PostgreSQL. Invoke via pnpm so their Prisma CLI helper receives npm_execpath. API/database profiles own separate containers. Populated-upgrade T030 additionally establishes a legacy-only isolated database. No Redis/provider/signing/testnet/mainnet resources are required. Preserve local-only CLI configuration without printing secrets; never point acceptance tests at a live/developer database.
+
+### Existing baseline (T002)
+
+Build dependency artifacts in this order; database build generates its client. Run only existing suites at baseline, before new filename filters exist.
+
+```sh
+pnpm --filter @template/contracts build
+pnpm --filter @template/database build
+pnpm --filter @template/contracts test
+pnpm --filter @template/database test
+pnpm --filter @template/api test
+pnpm --filter @template/database test:integration
+pnpm --filter @template/api test:integration src/modules/auth/auth.service.integration.test.ts src/app.integration.test.ts
+```
+
+### New focused acceptance (T011, T018, T023, T027, T035)
+
+```sh
+pnpm --filter @template/contracts test src/financial/financial.schema.test.ts
+pnpm --filter @template/api test src/core/financial/money.test.ts
+pnpm --filter @template/api test src/core/business-calendar/business-clock.test.ts
+pnpm --filter @template/database test
+pnpm --filter @template/database test:integration
+pnpm --filter @template/api test:integration src/modules/ledger/ledger.service.integration.test.ts
+pnpm --filter @template/api test:integration src/modules/ledger/ledger.service.integration.test.ts src/modules/ledger/ledger-concurrency.integration.test.ts
+pnpm --filter @template/api test:integration src/modules/ledger/ledger.service.integration.test.ts src/modules/ledger/ledger-concurrency.integration.test.ts src/modules/ledger/ledger-reconciliation.integration.test.ts
+```
+
+Select the command for the current checkpoint; do not run every overlapping invocation after each edit. Use [quickstart.md](quickstart.md)'s PowerShell TZ-preserving procedure for separate UTC/America/New_York calendar processes. Test runners remain serial across files; real race tests create separate connections and barriers within their cases.
+
+### Affected regressions and final static/build checks (T037)
+
+```sh
+pnpm --filter @template/contracts test
+pnpm --filter @template/api test src/core/date-only.test.ts src/core/serialization/decimal.test.ts
+pnpm --filter @template/api test:integration src/modules/auth/auth.service.integration.test.ts src/app.integration.test.ts
+pnpm --filter @template/contracts lint
+pnpm --filter @template/database lint
+pnpm --filter @template/api lint
+pnpm check-types
+pnpm build
+pnpm verify:build-output
+git diff --check
+```
+
+If `apps/api/src/infrastructure/database/prisma-error.mapper.ts` changes for an evidenced financial constraint, add its existing `prisma-error.mapper.test.ts` to the focused API run; no unconditional shared mapper edit is planned. Use the installed Prettier CLI only on owned changed files. Check generated build output for the test-helper directory without introducing a new checker framework.
+
+P01 is not a full-regression checkpoint. Full current regressions remain required at P05/P09/P12/P14/P15 and release. Root `pnpm verify` writes the Prisma schema through db:format and runs broader suites; it is neither a read-only generation check nor an instruction to reformat unrelated changes.
+
+## Requirement Coverage and Implementation Strategy
+
+| Acceptance area                                                  | Main implementation                     | Actual test-file work                                                | Outcome                                                                                 |
+| ---------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Exact contracts/money, FR-001-FR-005                             | T009-T010                               | T007-T008                                                            | SC-001; persisted total overflow also T012/T029                                         |
+| Ownership/source/credit/debit/reserve/release, FR-006-FR-015     | T003-T005, T013-T017                    | T012, T029                                                           | SC-004                                                                                  |
+| Atomicity/identities/replay/races/authority, FR-016-FR-023       | T013-T017, T021-T022                    | T019-T020, T029                                                      | SC-002-SC-003                                                                           |
+| History/correction/reconciliation/upgrade, FR-009, FR-024-FR-026 | T003-T005, T013-T017, T021, T032, T034  | T012, T019, T028-T031, T033                                          | SC-006-SC-007; complete CHK035 operation/snapshot/audit/allocation acceptance           |
+| Calendar and extension boundary, FR-027-FR-033                   | T009, T024, T026                        | T007/T011 shared boundary, T025/T027 calendar and two-host execution | SC-005; exact CHK010 precision and supported-calendar acceptance                        |
+| Safe errors/no public financial authority, FR-034                | T013, T015-T017, T021-T022, T032-T034   | T007, T012, T019-T020, T031-T033                                     | Current authority, strict safe projections, sentinel failures, unchanged public routing |
+| Actual tests/shared compatibility, FR-035                        | T006, T011, T018, T023, T027, T035-T038 | Eight new and four extended files described below                    | Required services/results remain explicit                                               |
+
+**MVP first**: After the execution gates and T001-T002, T007-T011 deliver independently testable exact-money contracts/arithmetic. They can precede persistence because their dependencies are pure. Report that slice as US1 complete only after its checks, with P01 still open.
+
+**Incremental delivery**: Complete migration/client and owned fixtures before financial service acceptance, then US2 and US3. Complete database constraint/upgrade tests, corrections/reconciliation and final checks before the whole P01 gate. US4 can overlap ledger work under independent ownership after shared contracts T011. Do not expose a primitive or integrate frontend controls until later owning-domain gates pass.
+
+**Test ownership**: New files are `packages/contracts/src/financial/financial.schema.test.ts`, `apps/api/src/core/financial/money.test.ts`, `apps/api/src/core/business-calendar/business-clock.test.ts`, `apps/api/src/modules/ledger/ledger.service.integration.test.ts`, `ledger-concurrency.integration.test.ts`, `ledger-reconciliation.integration.test.ts`, `packages/database/tests/integration/financial-constraints.integration.test.ts` and `financial-upgrade.integration.test.ts`. Extended files are `packages/database/tests/schema-contract.test.ts`, `packages/database/tests/integration/migration.integration.test.ts`, `apps/api/src/app.integration.test.ts` and `apps/api/src/modules/auth/auth.service.integration.test.ts`. Repeated service-test tasks extend one owned suite rather than create duplicate suites.
+
+**Completion rule**: 38 tasks; US1 5, US2 7, US3 5, US4 4, US5 8, common prerequisites/foundation/final checks 9. All boxes remain unchecked. A later selected batch and the whole P01 phase have distinct completion status. Required reviews and SC-001-SC-007 evidence must pass; absent infrastructure or unexecuted acceptance is an open gate, never a fabricated success.
