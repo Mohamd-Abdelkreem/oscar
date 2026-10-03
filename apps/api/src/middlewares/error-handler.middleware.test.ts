@@ -6,6 +6,42 @@ import { errorHandlerMiddleware } from "./error-handler.middleware.js";
 import { LedgerError } from "../modules/ledger/ledger.errors.js";
 
 describe("errorHandlerMiddleware", () => {
+  it("projects safe diagnostics for raw unexpected failures and hidden private causes", () => {
+    const sentinel = "sentinel-private-unexpected-error";
+    const requestLog = { error: vi.fn(), warn: vi.fn() };
+    const httpRequest = {
+      log: requestLog,
+      path: "/safe-path",
+      requestId: "client-correlation",
+    } as unknown as Request;
+    const json = vi.fn();
+    const status = vi.fn();
+    const response = { status, json } as unknown as Response;
+    status.mockReturnValue(response);
+    for (const failure of [
+      new Error(sentinel, {
+        cause: new Error(sentinel, { cause: { providerKey: sentinel } }),
+      }),
+      { unexpected: { password: sentinel } },
+      { code: "P2002", meta: { privateKey: sentinel }, message: sentinel },
+    ]) {
+      errorHandlerMiddleware(failure, httpRequest, response, vi.fn());
+    }
+    expect(
+      JSON.stringify([
+        json.mock.calls,
+        requestLog.error.mock.calls,
+        requestLog.warn.mock.calls,
+      ]),
+    ).not.toContain(sentinel);
+    for (const [payload] of json.mock.calls)
+      expect(payload).not.toHaveProperty("stack");
+    expect(requestLog.error.mock.calls[0]?.[0]).toEqual({
+      code: "INTERNAL_SERVER_ERROR",
+      requestId: "client-correlation",
+      statusCode: 500,
+    });
+  });
   it("keeps a ledger fault cause out of the HTTP response and ordinary logs", () => {
     const secret = "sentinel-private-ledger-diagnostics";
     const cause = new Error(secret, { cause: { credentials: secret } });

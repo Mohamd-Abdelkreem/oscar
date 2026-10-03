@@ -28,7 +28,9 @@ if (enabled.length === 0) {
     const now = new Date();
     for (const decision of enabled) {
       await database.user.upsert(buildSeedUpsert(decision, now));
-      console.info(`Seeded optional ${decision.group.toLowerCase()} account.`);
+      console.info(
+        `Ensured optional local ${decision.group.toLowerCase()} account.`,
+      );
     }
   } finally {
     await database.$disconnect();

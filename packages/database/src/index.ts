@@ -20,4 +20,8 @@ export type {
   RequestIdentity,
   ReservationAllocation,
   Wallet,
+  AuthSession,
+  AdminInvitation,
+  AdminSetupState,
+  IdentityAuditRecord,
 } from "./generated/prisma/client.js";

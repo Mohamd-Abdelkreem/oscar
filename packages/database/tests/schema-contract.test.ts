@@ -22,6 +22,10 @@ describe("authentication and financial foundation Prisma schema", () => {
     expect(models).toEqual([
       "User",
       "RefreshToken",
+      "AuthSession",
+      "AdminSetupState",
+      "AdminInvitation",
+      "IdentityAuditRecord",
       "Wallet",
       "FinancialOperation",
       "RequestIdentity",

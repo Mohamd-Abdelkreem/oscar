@@ -461,11 +461,7 @@ describe("scoped read-only ledger reconciliation", () => {
       },
       f.context,
     );
-    const admin = await createFinancialAccount(database);
-    await database.user.update({
-      where: { id: admin.ownerUserId },
-      data: { role: UserRole.ADMIN },
-    });
+    const admin = await createFinancialAccount(database, UserRole.ADMIN);
     await service.execute(
       {
         ...financialIdentity(),

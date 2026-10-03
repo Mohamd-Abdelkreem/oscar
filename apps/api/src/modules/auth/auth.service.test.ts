@@ -1,232 +1,134 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment -- Vitest types asymmetric expect.any matchers as any; the exact atomic-update assertions intentionally use them. */
-import { describe, expect, it, vi } from "vitest";
+import { randomUUID } from "node:crypto";
+import jwt from "jsonwebtoken";
+import { createDatabaseClient } from "@template/database";
+import { afterAll, describe, expect, it } from "vitest";
 
-import { UserStatus, type DatabaseClient } from "@template/database";
-
+import { authConfig, jwtConfig } from "../../core/config/auth.config.js";
 import { BadRequestException } from "../../core/errors/bad-request.error.js";
-import { ForbiddenException } from "../../core/errors/forbidden.error.js";
-import { ServiceUnavailableException } from "../../core/errors/service-unavailable.error.js";
-import type { EmailService } from "../../infrastructure/email/email.service.js";
-import { generateVerificationToken } from "../../infrastructure/security/index.js";
-import { SAFE_USER_SELECT } from "../users/users.mapper.js";
+import { UnauthorizedException } from "../../core/errors/unauthorized.error.js";
+import { EmailService } from "../../infrastructure/email/email.service.js";
+import { generateResetToken } from "../../infrastructure/security/index.js";
 import { AuthService } from "./auth.service.js";
 
-describe("AuthService registration delivery", () => {
-  it("rejects registration when verification email delivery fails", async () => {
-    const deleteMany = vi
-      .fn<(input: unknown) => Promise<{ count: number }>>()
-      .mockResolvedValue({ count: 1 });
-    const database = {
-      user: {
-        create: vi.fn().mockResolvedValue({
-          id: "1b3d904e-a46c-4dd8-9cb7-d0767546ea95",
-          email: "user@example.com",
-          passwordHash: "not-returned",
-          fullName: "Template User",
-          phone: null,
-          role: "USER",
-          status: "PENDING_VERIFICATION",
-          emailVerifiedAt: null,
-          verificationTokenHash: "hash",
-          verificationTokenExpiresAt: new Date(),
-          resetTokenHash: null,
-          resetTokenExpiresAt: null,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }),
-        deleteMany,
-      },
-    } as unknown as DatabaseClient;
-    const deliveryError = new Error("delivery unavailable");
-    const emailService = {
-      sendVerificationEmail: vi.fn().mockRejectedValue(deliveryError),
-    } as unknown as EmailService;
-    const service = new AuthService(database, emailService);
+const database = createDatabaseClient(
+  process.env["DATABASE_URL"] ?? "postgresql://test:test@127.0.0.1:1/unused",
+);
+const service = new AuthService(
+  database,
+  new EmailService({
+    provider: "console",
+    send: () => Promise.reject(new Error("Unexpected mail boundary.")),
+  }),
+);
+afterAll(async () => {
+  await database.$disconnect();
+});
 
-    const registration = service.register({
-      fullName: "Template User",
-      email: "user@example.com",
-      phone: null,
-      password: "a-secure-test-password",
-    });
-    await expect(registration).rejects.toBeInstanceOf(
-      ServiceUnavailableException,
+describe("P02 US3 reset credential boundary", () => {
+  it.each([
+    "malformed",
+    "legacy email-only",
+    "wrong purpose",
+    "mismatched subject",
+    "expired despite tolerance",
+  ])("rejects %s before database access", async (scenario) => {
+    const userId = randomUUID();
+    const email = "person@example.com";
+    const claims = {
+      sub: userId,
+      userId,
+      email,
+      jti: randomUUID(),
+      type: "PASSWORD_RESET",
+    };
+    const token =
+      scenario === "malformed"
+        ? "malformed"
+        : jwt.sign(
+            {
+              ...claims,
+              sub:
+                scenario === "legacy email-only"
+                  ? email
+                  : scenario === "mismatched subject"
+                    ? randomUUID()
+                    : userId,
+              userId: scenario === "legacy email-only" ? undefined : userId,
+              type: scenario === "wrong purpose" ? "VERIFICATION" : claims.type,
+            },
+            jwtConfig.resetSecret,
+            {
+              algorithm: "HS256",
+              issuer: authConfig.issuer,
+              audience: authConfig.audience,
+              expiresIn: scenario === "expired despite tolerance" ? -1 : 60,
+            },
+          );
+    await expect(service.validateResetToken(token)).rejects.toBeInstanceOf(
+      UnauthorizedException,
     );
-    await expect(registration).rejects.toMatchObject({
-      statusCode: 503,
-      code: "SERVICE_UNAVAILABLE",
-      message: "Registration is temporarily unavailable. Please try again.",
-    });
-    await expect(registration).rejects.not.toBe(deliveryError);
-    expect(deleteMany.mock.calls[0]?.[0]).toMatchObject({
-      where: {
-        id: "1b3d904e-a46c-4dd8-9cb7-d0767546ea95",
-        status: "PENDING_VERIFICATION",
-        emailVerifiedAt: null,
-      },
-    });
-    const cleanup = deleteMany.mock.calls[0]?.[0] as
-      { where?: { verificationTokenHash?: unknown } } | undefined;
-    expect(typeof cleanup?.where?.verificationTokenHash).toBe("string");
+    await expect(
+      service.resetPassword(
+        {
+          newPassword: "test-only-replacement-password",
+          passwordConfirmation: "test-only-replacement-password",
+        },
+        token,
+      ),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });
 
-type VerificationCandidate = Readonly<{
-  id: string;
-  status: UserStatus;
-  emailVerifiedAt: Date | null;
-}>;
-
-const verificationCandidate: VerificationCandidate = {
-  id: "1b3d904e-a46c-4dd8-9cb7-d0767546ea95",
-  status: UserStatus.PENDING_VERIFICATION,
-  emailVerifiedAt: null,
-};
-
-const activatedUser = {
-  id: verificationCandidate.id,
-  fullName: "Template User",
-  email: "user@example.com",
-  phone: null,
-  role: "USER",
-  status: UserStatus.ACTIVE,
-  emailVerifiedAt: new Date("2026-08-18T00:00:00.000Z"),
-  createdAt: new Date("2026-08-18T00:00:00.000Z"),
-  updatedAt: new Date("2026-08-18T00:00:00.000Z"),
-};
-
-const createVerificationHarness = ({
-  candidate = verificationCandidate,
-  consumedCount = 1,
-}: Readonly<{
-  candidate?: VerificationCandidate;
-  consumedCount?: number;
-}> = {}) => {
-  const findFirst = vi.fn().mockResolvedValue(candidate);
-  const updateMany = vi.fn().mockResolvedValue({ count: consumedCount });
-  const findUnique = vi.fn().mockResolvedValue(activatedUser);
-  const transaction = { user: { findFirst, findUnique, updateMany } };
-  const runTransaction = vi
-    .fn<
-      (
-        callback: (value: typeof transaction) => Promise<unknown>,
-      ) => Promise<unknown>
-    >()
-    .mockImplementation(async (callback) => callback(transaction));
-  const database = {
-    $transaction: runTransaction,
-  } as unknown as DatabaseClient;
-  const service = new AuthService(database, {} as EmailService);
-
-  return { findFirst, findUnique, service, updateMany };
-};
-
-describe("AuthService email verification", () => {
-  it("atomically consumes a pending verification token and returns a safe user", async () => {
-    const token = generateVerificationToken(" User@Example.com ");
-    const { findFirst, findUnique, service, updateMany } =
-      createVerificationHarness();
-
-    await expect(service.verifyEmail(token)).resolves.toMatchObject({
-      user: {
-        id: verificationCandidate.id,
-        email: "user@example.com",
-        status: UserStatus.ACTIVE,
-      },
-    });
-
-    expect(findFirst).toHaveBeenCalledWith({
-      where: {
-        email: "user@example.com",
-        verificationTokenHash: expect.any(String),
-        verificationTokenExpiresAt: { gt: expect.any(Date) },
-      },
-      select: {
-        id: true,
-        status: true,
-        emailVerifiedAt: true,
-      },
-    });
-    expect(updateMany).toHaveBeenCalledWith({
-      where: {
-        id: expect.any(String),
-        email: expect.any(String),
-        status: UserStatus.PENDING_VERIFICATION,
-        emailVerifiedAt: null,
-        verificationTokenHash: expect.any(String),
-        verificationTokenExpiresAt: { gt: expect.any(Date) },
-      },
-      data: {
-        status: UserStatus.ACTIVE,
-        emailVerifiedAt: expect.any(Date),
-        verificationTokenHash: null,
-        verificationTokenExpiresAt: null,
-      },
-    });
-    expect(findUnique).toHaveBeenCalledWith({
-      where: { id: verificationCandidate.id },
-      select: SAFE_USER_SELECT,
-    });
-  });
-
-  it("rejects an active candidate without attempting to consume the token", async () => {
-    const token = generateVerificationToken("user@example.com");
-    const { findUnique, service, updateMany } = createVerificationHarness({
-      candidate: {
-        ...verificationCandidate,
-        status: UserStatus.ACTIVE,
-      },
-    });
-
+describe("P02 US1 credential boundary", () => {
+  it.each([
+    "malformed",
+    "wrong purpose",
+    "legacy email-only",
+    "mismatched subject",
+    "expired despite tolerance",
+  ])("rejects %s before database access", async (scenario) => {
+    const userId = randomUUID();
+    const claims = {
+      sub: userId,
+      userId,
+      email: "user@example.com",
+      jti: randomUUID(),
+      type: "VERIFICATION",
+    };
+    let token: string;
+    if (scenario === "malformed") token = "malformed";
+    else if (scenario === "wrong purpose")
+      token = generateResetToken(
+        claims.email,
+        userId,
+        new Date(Date.now() + 60_000),
+      );
+    else
+      token = jwt.sign(
+        scenario === "legacy email-only"
+          ? {
+              sub: claims.email,
+              email: claims.email,
+              jti: claims.jti,
+              type: claims.type,
+            }
+          : {
+              ...claims,
+              sub: scenario === "mismatched subject" ? randomUUID() : userId,
+            },
+        jwtConfig.verificationSecret,
+        {
+          algorithm: "HS256",
+          issuer: authConfig.issuer,
+          audience: authConfig.audience,
+          expiresIn: scenario === "expired despite tolerance" ? -1 : 60,
+        },
+      );
+    await expect(
+      service.validateVerificationToken(token),
+    ).rejects.toBeInstanceOf(BadRequestException);
     await expect(service.verifyEmail(token)).rejects.toBeInstanceOf(
       BadRequestException,
     );
-    expect(updateMany).not.toHaveBeenCalled();
-    expect(findUnique).not.toHaveBeenCalled();
-  });
-
-  it("rejects a candidate that is already verified", async () => {
-    const token = generateVerificationToken("user@example.com");
-    const { findUnique, service, updateMany } = createVerificationHarness({
-      candidate: {
-        ...verificationCandidate,
-        emailVerifiedAt: new Date(),
-      },
-    });
-
-    await expect(service.verifyEmail(token)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
-    expect(updateMany).not.toHaveBeenCalled();
-    expect(findUnique).not.toHaveBeenCalled();
-  });
-
-  it("rejects a suspended candidate without changing its status", async () => {
-    const token = generateVerificationToken("user@example.com");
-    const { findUnique, service, updateMany } = createVerificationHarness({
-      candidate: {
-        ...verificationCandidate,
-        status: UserStatus.SUSPENDED,
-      },
-    });
-
-    await expect(service.verifyEmail(token)).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-    expect(updateMany).not.toHaveBeenCalled();
-    expect(findUnique).not.toHaveBeenCalled();
-  });
-
-  it("rejects a token that loses the atomic consumption race", async () => {
-    const token = generateVerificationToken("user@example.com");
-    const { findUnique, service, updateMany } = createVerificationHarness({
-      consumedCount: 0,
-    });
-
-    await expect(service.verifyEmail(token)).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
-    expect(updateMany).toHaveBeenCalledOnce();
-    expect(findUnique).not.toHaveBeenCalled();
   });
 });

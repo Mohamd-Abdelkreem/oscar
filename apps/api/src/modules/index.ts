@@ -6,3 +6,10 @@ export {
   type HealthResult,
 } from "./health/index.js";
 export { UsersController, usersRoutes, UsersService } from "./users/index.js";
+export {
+  AdminsController,
+  adminsRoutes,
+  AdminsService,
+  AdminLifecycleService,
+  AdminInvitationsService,
+} from "./admins/index.js";

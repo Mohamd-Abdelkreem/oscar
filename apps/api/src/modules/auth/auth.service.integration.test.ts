@@ -2,13 +2,16 @@ import { createDatabaseClient, UserStatus } from "@template/database";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { BadRequestException } from "../../core/errors/bad-request.error.js";
-import { ForbiddenException } from "../../core/errors/forbidden.error.js";
 import { ServiceUnavailableException } from "../../core/errors/service-unavailable.error.js";
 import { UnauthorizedException } from "../../core/errors/unauthorized.error.js";
 import type { EmailDelivery } from "../../infrastructure/email/email-delivery.js";
 import { EmailService } from "../../infrastructure/email/email.service.js";
 import { sha256 } from "../../infrastructure/security/token-hasher.js";
 import { AuthService } from "./auth.service.js";
+import {
+  createIdentityFixture,
+  withIdentityDatabase,
+} from "./testing/identity-fixtures.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined) {
@@ -54,10 +57,59 @@ const tokenFromLastEmail = (): string => {
   return decodeURIComponent(match[1]);
 };
 
+describe("P02 foundations isolated identity fixtures", () => {
+  it("owns separate fresh singleton histories without resetting protected state", async () => {
+    await withIdentityDatabase(async (isolated) => {
+      const employee = await createIdentityFixture(isolated);
+      const admin = await createIdentityFixture(isolated, { role: "ADMIN" });
+      expect(employee.wallet).toMatchObject({
+        availableNonReferralUnits: 0n,
+        availableReferralUnits: 0n,
+      });
+      expect(admin.wallet).toBeNull();
+      expect(employee.session.userId).toBe(employee.user.id);
+      await isolated.adminSetupState.update({
+        where: { id: 1 },
+        data: {
+          firstAdminUserId: admin.user.id,
+          completedAt: new Date(),
+          completionSource: "BOOTSTRAP",
+        },
+      });
+    });
+    await withIdentityDatabase(async (isolated) => {
+      expect(
+        await isolated.adminSetupState.findUnique({ where: { id: 1 } }),
+      ).toMatchObject({ completedAt: null, firstAdminUserId: null });
+      expect(await isolated.user.count()).toBe(0);
+    });
+  });
+  it("exposes the migrated P01 frontier for historical fixtures", async () => {
+    await withIdentityDatabase(async (isolated) => {
+      const rows = await isolated.$queryRaw<
+        { present: boolean }[]
+      >`SELECT to_regclass('wallets') IS NOT NULL AND to_regclass('auth_sessions') IS NULL AS present`;
+      expect(rows).toEqual([{ present: true }]);
+    }, "P01");
+  });
+});
+
 describe("AuthService with PostgreSQL", () => {
   beforeEach(async () => {
     deliveredHtml.length = 0;
     await database.refreshToken.deleteMany({ where: ownedRefreshTokens });
+    await database.authSession.deleteMany({ where: { user: ownedUsers } });
+    await database.wallet.deleteMany({
+      where: {
+        owner: ownedUsers,
+        availableNonReferralUnits: 0n,
+        reservedNonReferralUnits: 0n,
+        availableReferralUnits: 0n,
+        reservedReferralUnits: 0n,
+        operations: { none: {} },
+        allocations: { none: {} },
+      },
+    });
     await database.user.deleteMany({ where: ownedUsers });
   });
 
@@ -116,7 +168,7 @@ describe("AuthService with PostgreSQL", () => {
     ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 
-  it("removes a pending user after delivery failure so registration can be retried", async () => {
+  it("P02 US1 retains the complete pending registration after delivery failure", async () => {
     const send = vi
       .fn<EmailDelivery["send"]>()
       .mockRejectedValueOnce(new Error("delivery unavailable"))
@@ -143,13 +195,18 @@ describe("AuthService with PostgreSQL", () => {
     );
     await expect(
       database.user.findUnique({ where: { email: registration.email } }),
-    ).resolves.toBeNull();
-    await expect(retryService.register(registration)).resolves.toMatchObject({
-      user: { email: registration.email, status: "PENDING_VERIFICATION" },
+    ).resolves.toMatchObject({ status: "PENDING_VERIFICATION" });
+    expect(
+      await database.wallet.count({
+        where: { owner: { email: registration.email } },
+      }),
+    ).toBe(1);
+    await expect(retryService.register(registration)).rejects.toMatchObject({
+      code: "CONFLICT",
     });
   });
 
-  it("atomically consumes one verification token under concurrent requests", async () => {
+  it("P02 US1 atomically consumes one verification token under concurrent requests", async () => {
     await service.register({
       fullName: "Concurrent Verification User",
       email: "concurrent@example.com",
@@ -183,7 +240,7 @@ describe("AuthService with PostgreSQL", () => {
     expect(concurrentUser.emailVerifiedAt).toBeInstanceOf(Date);
   });
 
-  it("replaces an expired verification token when verification is resent", async () => {
+  it("P02 US1 replaces an expired verification token when verification is resent", async () => {
     await service.register({
       fullName: "Resend Verification User",
       email: "resend@example.com",
@@ -211,7 +268,7 @@ describe("AuthService with PostgreSQL", () => {
     });
   });
 
-  it("does not activate a suspended user that still has verification credentials", async () => {
+  it("P02 US1 does not activate a suspended user that still has verification credentials", async () => {
     await service.register({
       fullName: "Suspended Verification User",
       email: "suspended@example.com",
@@ -228,7 +285,7 @@ describe("AuthService with PostgreSQL", () => {
     });
 
     await expect(service.verifyEmail(token)).rejects.toBeInstanceOf(
-      ForbiddenException,
+      BadRequestException,
     );
     const suspendedUser = await database.user.findUniqueOrThrow({
       where: { email: "suspended@example.com" },
@@ -270,6 +327,15 @@ describe("AuthService with PostgreSQL", () => {
       },
       resetToken,
     );
+    expect(
+      await database.authSession.count({
+        where: { userId: login.user.id, revokedAt: null },
+      }),
+    ).toBe(0);
+    expect(
+      (await database.user.findUniqueOrThrow({ where: { id: login.user.id } }))
+        .resetTokenExpiresAt,
+    ).toBeNull();
 
     await expect(service.validateResetToken(resetToken)).rejects.toBeInstanceOf(
       UnauthorizedException,

@@ -15,6 +15,7 @@ import {
   registerBodyDtoSchema,
   resetPasswordBodyDtoSchema,
   tokenQueryDtoSchema,
+  adminInvitationAcceptBodyDtoSchema,
 } from "./dto/index.js";
 
 export const authRoutes = (
@@ -26,11 +27,40 @@ export const authRoutes = (
     AUTH_CONSTANTS.refreshTokenCookieName,
   );
 
+  router.use((_request, response, next) => {
+    response.setHeader("Cache-Control", "no-store");
+    next();
+  });
+
   router.post(
     "/register",
     authRateLimiters.registerSource,
     validationMiddleware({ body: registerBodyDtoSchema }),
     controller.register,
+  );
+  router.get(
+    "/validate-admin-invitation",
+    authRateLimiters.invitationSource,
+    validationMiddleware({ query: tokenQueryDtoSchema }),
+    authRateLimiters.invitationToken,
+    controller.validateAdminInvitation,
+  );
+  router.post(
+    "/admin-invitations/accept",
+    authRateLimiters.invitationSource,
+    validationMiddleware({
+      query: tokenQueryDtoSchema,
+      body: adminInvitationAcceptBodyDtoSchema,
+    }),
+    authRateLimiters.invitationToken,
+    controller.acceptAdminInvitation,
+  );
+  router.get(
+    "/validate-verification-token",
+    authRateLimiters.verifySource,
+    validationMiddleware({ query: tokenQueryDtoSchema }),
+    authRateLimiters.verifyToken,
+    controller.validateVerificationToken,
   );
   router.post(
     "/verify-email",
@@ -54,9 +84,18 @@ export const authRoutes = (
     controller.login,
   );
   router.post(
+    "/admin/login",
+    authRateLimiters.loginSource,
+    validationMiddleware({ body: loginBodyDtoSchema }),
+    authRateLimiters.loginAccountSource,
+    controller.adminLogin,
+  );
+  router.post(
     "/refresh",
+    authRateLimiters.refreshSource,
     authRateLimiters.refreshFamilySource,
     refreshCsrf,
+    authRateLimiters.refreshSessionSource,
     controller.refresh,
   );
   router.post(

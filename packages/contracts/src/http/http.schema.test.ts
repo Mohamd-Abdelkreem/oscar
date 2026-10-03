@@ -13,6 +13,31 @@ const base = {
 };
 
 describe("HTTP envelope contracts", () => {
+  it("preserves target-prefixed errors and zero-result pagination for identity consumers", () => {
+    const empty = {
+      page: 1,
+      limit: 25,
+      total: 0,
+      totalPages: 0,
+      hasNextPage: false,
+      hasPreviousPage: false,
+    };
+    expect(paginationMetaSchema.parse(empty)).toEqual(empty);
+    const failure = {
+      ...base,
+      success: false,
+      statusCode: 400,
+      code: "VALIDATION_ERROR",
+      message: "Invalid intent.",
+      errors: [
+        { field: "body.expectedVersion", message: "Version is required." },
+      ],
+    };
+    expect(errorEnvelopeSchema.parse(failure)).toEqual(failure);
+    expect(
+      paginationMetaSchema.safeParse({ ...empty, totalPages: 1 }).success,
+    ).toBe(false);
+  });
   it("keeps success and error payloads discriminated", () => {
     expect(
       successEnvelopeSchema.parse({

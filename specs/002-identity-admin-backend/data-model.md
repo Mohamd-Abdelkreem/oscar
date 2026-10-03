@@ -1,0 +1,162 @@
+# P02 Data Model
+
+**Status:** Proposed persistence design for [spec.md](spec.md), following the completed [research decisions](research.md). PLAN has not generated Prisma code, applied migrations or executed these invariants. Database ownership remains `packages/database`; domain transitions remain in the owning API services.
+
+## Existing persistence and preservation boundary
+
+The current [Prisma schema](../../packages/database/prisma/schema.prisma) contains User, RefreshToken and the six P01 financial models. The [auth migration](../../packages/database/prisma/migrations/20260818000000_init_authentication/migration.sql) supplies normalized-email and status/verification SQL checks. The [financial migration](../../packages/database/prisma/migrations/20261002000000_financial_foundation/migration.sql) supplies wallet/source, history and relationship protections beyond Prisma declarations.
+
+P02 extends identity persistence with AuthSession, AdminSetupState, AdminInvitation and IdentityAuditRecord. It preserves Wallet, FinancialOperation, RequestIdentity, LedgerPosting, ReservationAllocation and financial AuditRecord definitions/history. Identity controls never recalculate or reset wallet components, release reservations, create financial postings or grant entitlements. The data guide's older auth-only inventory is superseded by inspected P01 source for this baseline.
+
+## User additions and SQL invariants
+
+Retain UUID identity, unique normalized email, current bounded name/phone/password-hash fields, verification/reset hash and expiry pairs, role, status and timestamps. Add these canonical fields:
+
+| Field                | Proposed storage and meaning                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `referralCode`       | Unique nonnull `char(32)`, lowercase hexadecimal UUID characters; generated independently of fixtures, email or credentials.                     |
+| `sponsorUserId`      | Nullable UUID self-relation; the registration-selected existing USER, or permanently null. Restrictive update/delete FK.                         |
+| `tasksBlocked`       | Nonnull boolean, default false; employee task control independent of status and withdrawal control.                                              |
+| `withdrawalsBlocked` | Nonnull boolean, default false; employee withdrawal control independent of status and task control.                                              |
+| `accountVersion`     | Nonnegative integer, default 0; increments once per successful status/restriction transition, including public email activation. Supports stale-command conflicts, not JWT revocation. |
+
+Generate an internal code for every stored User so a database default also supports existing fixtures and administrator creation. Only USER codes are referral targets; safe ADMIN DTOs expose `referralCode: null`. A code is not a secret or an administrator-invitation credential. Registration resolves input `referralCode` into `sponsorUserId`; it never copies a client-supplied sponsor UUID or role.
+
+Use named SQL constraints/triggers in addition to Prisma relations:
+
+- Preserve normalized unique email and existing bounded columns; pair each action hash and expiry as both null or both present. Hashes are SHA-256 hex, never raw action credentials.
+- Enforce the code shape, uniqueness, nonnegative version and `sponsorUserId != id`. On sponsor assignment at insert, require an already-existing USER; immediate FK plus insert-time role validation excludes references to nonexistent/new cyclic targets.
+- Freeze role, own code and sponsor relationship after backfill with an UPDATE trigger comparing old/new values using null-safe semantics. Changing null sponsor to a sponsor is rejected as well as replacement/removal. Existing sponsor edges cannot later change or acquire an ADMIN target.
+- ADMIN requires null sponsor, both partial controls false, and a role-compatible status. USER cannot be DEACTIVATED; ADMIN cannot be SUSPENDED or BANNED after historical normalization.
+- Replace `ck_users_status_timestamps_consistent`: ACTIVE requires nonnull `emailVerifiedAt`. Employee SUSPENDED/BANNED may retain either verification state; DEACTIVATED ADMIN requires prior verification. Preserve historical verification evidence rather than impose a new pending/null constraint. None of these states clears an established verification timestamp.
+- The unique code index serves registration lookup; retain the existing status/role index. Add sponsor lookup index for later authorized referral queries, without implementing commission traversal. Use `(role, createdAt, id)` for deterministic administrator pagination; add further indexes only against actual filters/query plans.
+
+Database role/code/sponsor invariants apply to direct writes as well as HTTP input. Shared strict schemas remain responsible for rejecting unsupported authority fields. Concurrent duplicate emails/codes are classified by the exact unique constraint; retry only the exact generated referralCode unique constraint, at most three fresh generated-code attempts with no delay. Email/business/state/other uniqueness failures are not code collisions; exhaustion returns safe 503 without partial provisioning.
+
+## Status and control transitions
+
+Append BANNED and DEACTIVATED to the existing PostgreSQL `user_status` enum. Full-account denial and partial controls remain separate dimensions.
+
+| Target                             | Eligible transition                                          | Atomic effects                                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| Pending employee                   | Valid current verification credential → ACTIVE               | Set verification instant; consume current hash/expiry; preserve both partial controls.                              |
+| Employee                           | Allowed status → SUSPENDED or BANNED                         | Version-guarded status change, revoke all sessions/refresh credentials, required audit.                             |
+| Suspended/banned employee          | Restore → ACTIVE if verified, otherwise PENDING_VERIFICATION | Version-guarded restoration and audit; retain partial controls and prior revocations.                               |
+| Employee                           | Set/remove one partial control                               | Version-guarded change of that boolean only and audit; no login/session denial caused by the partial control alone. |
+| Pending historical/bootstrap admin | Valid verification credential → ACTIVE                       | Prove email and consume credential; no privileged timestamp supplied by operator/client.                            |
+| Active verified admin              | ADMIN lifecycle → DEACTIVATED                                | Reject self/last-admin loss; revoke sessions and outstanding issued invitations; audit together.                    |
+| Verified deactivated admin         | ADMIN lifecycle → ACTIVE                                     | Require current authorized actor, confirmation, reason and version; audit; old authority stays revoked.             |
+
+Administrative control commands lock/recheck actor and target, require the expected `accountVersion`, and increment it once with the committed audit. Public email activation also increments it once for the pending-to-active transition; an earlier confirmed version conflicts instead of silently applying to the activated state. A stale version produces conflict without changing either independent restriction. Validated unchanged-state commands return safe 409 CONFLICT without a mutation, version increment or committed-effect audit; they still recheck authority and supplied version. Profile/password changes do not advance this control version. Activation, reset and recovery never unsuspend, unban, reactivate or change role. ADMIN lifecycle targets verified ACTIVE/DEACTIVATED identities only; denial of pending membership or pending verification is intentionally excluded. Revoke an unaccepted invitation through its existing command.
+
+Any full SUSPENDED/BANNED/DEACTIVATED denial clears both verification and reset hash/expiry pairs atomically with sessions, status/version and required audit. Restoration retains those null pairs; fresh eligible resend/recovery supplies new credentials. Changing only a partial control neither clears action links nor revokes login.
+
+P02 exposes these current controls to later owners; task eligibility, referral award eligibility and withdrawal cancellation/settlement belong to their later phases. It performs no speculative downstream financial action.
+
+## Registration and existing wallet ownership
+
+Registration hashes the validated password outside the transaction. Its transaction resolves the optional sponsor, creates one USER with an immutable sponsor decision/code, and creates its P01 Wallet. A dependent failure rolls back all these records. Email delivery begins only after commit; a rejected/unknown send retains the complete pending identity and zero wallet for bounded recovery.
+
+All four existing wallet components begin at `0n`: availableNonReferralUnits, reservedNonReferralUnits, availableReferralUnits and reservedReferralUnits. No ledger operation/audit is invented for a zero opening balance. Existing unique `ownerUserId`, restrictive owner FK and financial constraints remain authoritative. New registration is the provisioning entry point; an email conflict cannot reuse another identity or overwrite its wallet.
+
+The populated upgrade creates only missing USER wallets with explicit UUID and `updatedAt`, because P01 SQL supplies no defaults for those columns. Use owner uniqueness and `ON CONFLICT(owner_user_id) DO NOTHING`; leave existing amounts, wallet IDs, timestamps, reservations and histories unchanged. Provision no ADMIN wallet merely because administrators share User storage.
+
+## AuthSession and rotating RefreshToken
+
+| Model/field                | Proposed representation                                                                                                      |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| AuthSession `id`, `userId` | UUID stable session identity; owned User FK, restrictive update/delete.                                                      |
+| `rememberMe`               | Nonnull boolean; the login-selected remembered-session policy, retained across rotations and checked against refresh claims. |
+| `createdAt`, `expiresAt`   | UTC `timestamptz(6)`; original absolute refresh-family interval.                                                             |
+| `revokedAt`                | Nullable UTC instant; irreversible first revocation tombstone.                                                               |
+| RefreshToken `sessionId`   | New required UUID; existing rotating ID/hash, userId, createdAt and expiresAt remain.                                        |
+
+AuthSession has unique `(id, userId)`. RefreshToken has a composite FK `(sessionId, userId)` to that key, binding the credential and session to the same owner; retain unique tokenHash and existing lookup/expiry indexes. Add unique sessionId so there is at most one current refresh credential per session. Session indexes cover user ownership/revocation and expiry cleanup. Temporal checks require `expiresAt > createdAt` and, when present, `revokedAt >= createdAt`; a guard rejects clearing/changing an already recorded revocation. Preserve tombstones while their issued access tokens could otherwise remain usable.
+
+Each login creates a new AuthSession and its first refresh row atomically. Access and refresh JWTs require sessionId and retain rotating tokenId/jti, purpose, issuer, audience and existing algorithm checks. JWT role never replaces live account authority. Every protected request requires an owned unrevoked session valid strictly before expiresAt plus current ACTIVE/verified User and required role.
+
+Refresh locks User then session/current credential, rechecks account/session and exact token/hash, consumes one current row, and inserts its replacement with the unchanged session/refresh expiry. The service enforces cross-row expiry equality; tests exercise direct owner-binding constraints and transactional rotation. A JWT lacking sessionId cannot use a compatibility bypass.
+
+Single logout derives sessionId from authenticated server context and revokes that stable session even if its refresh cookie has rotated. Logout-all, successful reset/change and full account denial mark every unrevoked owned session and remove all owned refresh rows in the same transaction as the triggering change. Restoration never clears a tombstone. No account-wide `authRevision` is introduced: locking plus live session authority provides revocation; accountVersion serves control-command concurrency only.
+
+## Verification/reset action state
+
+Retain the existing User hash/expiry fields rather than introduce a generic credential registry. Each newly issued JWT binds intended User ID, normalized email and action purpose; current exact hash/expiry must also match. Replacement changes the hash and invalidates the previous credential. Consumption clears the pair atomically with the action.
+
+Verification remains default 24 hours, reset default 30 minutes and resend cooldown 60 seconds. Credentials are valid only when `now < expiresAt`; obtain the actual server instant after acquiring locks. These elapsed-time instants do not use Baghdad work dates/weekends. GET/HEAD validation performs no consume/authority mutation. Explicit activation/reset requests do, with active/pending/current-hash predicates checked again under User lock.
+
+Resend must support an eligible pending identity whose hash/expiry pair is null, including the migrated historical/bootstrap case. Under User lock issue a fresh bound credential; apply cooldown only when an earlier issuance exists. Do not retain today's nonnull-hash prerequisite after the cutover. A suspended/banned/deactivated account remains ineligible and the public response remains neutral.
+
+Recovery issuance, GET/HEAD validation and consumption require current USER or ADMIN with ACTIVE status and nonnull emailVerifiedAt. Pending, unverified, SUSPENDED, BANNED and DEACTIVATED identities are ineligible; partial controls do not affect recovery. Issuance/consumption recheck under User lock; validation checks current persisted account/credential without consuming. Missing/ineligible issuance responds neutrally. Reset preserves role/status/verification, replaces the password hash, consumes the reset pair and revokes all prior sessions. Password change rechecks the previously compared password hash under lock and clears the outstanding reset pair with its password/session changes. Recovery issuance before change is invalidated; issuance after change may create a fresh eligible link. Full denial clears both action pairs, so restoration never revives pre-denial links.
+
+## AdminSetupState and irreversible bootstrap
+
+Use one constrained singleton row (`id = 1`), initialized by migration. It records nullable `firstAdminUserId`, completion instant and completion source, with a restrictive User FK and a check requiring these three completion fields to be either all null or all present. Sources distinguish protected BOOTSTRAP from LEGACY_PRESENT. UPDATE/DELETE guards prohibit removing the row or clearing/replacing established completion evidence; a statement-level TRUNCATE guard preserves the singleton too.
+
+For a populated database, any historical ADMIN permanently closes bootstrap, including a pending/inactive one. Select a deterministic existing ADMIN reference and record migration-time observation with LEGACY_PRESENT; this does not claim its original creation was an audited protected bootstrap. Do not fabricate historical operator identity, reason or audit entries. If none exists, the row remains incomplete and permits one authorized setup attempt.
+
+Historical viability is a cutover precondition, not a bootstrap exception. If any historical ADMIN exists, require at least one ACTIVE verified ADMIN or PENDING_VERIFICATION ADMIN recoverable through ordinary email proof/resend after cutover (including null action pairs). A database with only SUSPENDED/ineligible admins must halt before identity backfill, status normalization or credential invalidation. Preserve all historical rows and closed-bootstrap policy; neither migration, seed nor CLI promotes/reactivates an admin. Obtain separately authorized historical recovery before retrying such a cutover. Pending ADMIN may prove email, then use ordinary ACTIVE recovery if its password is unavailable.
+
+The protected Linux application CLI enforces the nonroot configured-UID/real-effective-OS-identity policy in [operations](contracts/operations.md#protected-first-administrator) before reading stdin or accessing database/provider configuration. Obtain validated fullName/email/password/reason through protected stdin and hash before the transaction. Under the guard lock, recheck incomplete setup and unused email; atomically create PENDING_VERIFICATION ADMIN, complete the marker and append protected-operator audit with the OS-derived UID/name. Never accept a client/operator verified timestamp. Post-commit verification send failure leaves the pending account and completed marker intact; resend recovers it rather than reopening bootstrap.
+
+All bootstrap, administrator population/lifecycle and invitation mutations acquire this guard first. After target locks, count current ACTIVE, verified ADMIN eligibility and reject any denial leaving none. Self-deactivation always fails even when another admin exists. Employee restriction endpoints reject ADMIN targets, so SUSPENDED/BANNED cannot bypass this lifecycle rule.
+
+## AdminInvitation generations and delivery state
+
+One current invitation intent is keyed by normalized unique email. It carries these bounded fields:
+
+| Field group       | Proposed representation                                                                                                                                                |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identity          | UUID id; normalized unique email (`varchar(320)`); validated fullName (`varchar(150)`); current issuerUserId UUID, restrictive FK.                                     |
+| Credential        | Positive integer tokenVersion; current SHA-256 tokenHash (`char(64)`); issuedAt/expiresAt UTC instants.                                                                |
+| Final disposition | Nullable acceptedAt/acceptedUserId or revokedAt/revokedByUserId; optional bounded revocation reason; restrictive FKs.                                                  |
+| Delivery attempt  | UUID emailAttemptId; `deliveryStatus` NOT_ATTEMPTED / UNKNOWN / ACKNOWLEDGED / REJECTED; nullable emailAttemptedAt/emailAcknowledgedAt; allowlisted failure code only. |
+| Lifecycle         | createdAt/updatedAt UTC instants, retained across reissue.                                                                                                             |
+
+Checks enforce normalized email, positive generation, expiry after issuance, paired acceptance fields, mutually exclusive accepted/revoked dispositions and ACKNOWLEDGED timestamp consistency. Current tokenHash is unique. Index issuer/current disposition for atomic outstanding-invitation revocation and `(createdAt, id)` for any authorized bounded intent listing. No stored raw token, recipient password, rendered email, reusable URL or private provider response exists.
+
+Issue requires an active verified ADMIN session, unused User email, explicit confirmation and reason. Persist intent/current generation and audit before network dispatch. JWT purpose ADMIN_INVITATION uses the explicit verification key and binds intent ID, generation and normalized email. Default expiry is the existing 24-hour verification duration.
+
+Reissue of an unaccepted intent replaces hash/generation, issuer, issue/expiry and attempt state while retaining its original fullName and clearing prior revocation as an explicit newly audited grant. It never revives the old credential. Existing User email conflicts fail; accepted intents cannot overwrite the resulting administrator. Explicit revocation consumes outstanding authority and audits the action; issuer deactivation performs outstanding revocation with its lifecycle transaction. Retain prior generation actors/reasons in append-only audit instead of rewriting them.
+
+Each newly issued generation starts delivery NOT_ATTEMPTED with a new safe attempt ID. Persist UNKNOWN and its attempted-at instant before network dispatch. Provider retries use identical payload and idempotency key for that attempt, outside transactions. Write acknowledgement/failure only when intent ID, tokenVersion and emailAttemptId still match, preventing an old response from changing a reissued generation. ACKNOWLEDGED means provider API acceptance, never mailbox delivery. Unknown/crash outcomes remain recoverable through a newly authorized generation; later rejection cannot erase an earlier uncertain dispatch.
+
+Projection precedence is ACCEPTED, then REVOKED, then EXPIRED, otherwise PENDING; mutually exclusive acceptance/revocation evidence remains authoritative after expiry. Delivery does not override disposition. Before dispatch, recheck current generation/attempt, issuer and outstanding eligibility; skip known closed/expired or superseded work. After network I/O, condition the safe delivery write and read current disposition. An acknowledged same-generation issue/reissue returns its current projection even if accepted/revoked/expired while sending; a superseded generation returns safe 409. If it closed before dispatch, return safe 409 with no send. A failure/uncertain send returns 503 with intent retained. A closure after the pre-dispatch check may leave a late unusable email; credential validation denies it. No database lock spans the network call or promise of atomic/exactly-once email is made.
+
+Acceptance acquires guard, current issuer User and invitation locks; rechecks expiry, generation/hash/email, unaccepted/unrevoked state, unused User email and active verified ADMIN issuer. Hash the recipient password before the transaction. Create exactly one ACTIVE verified ADMIN with fullName from the validated intent, consume the invitation and append audit together. Recipient cannot choose email, role, inviter, verification time or another account. Acceptance issues no session; subsequent shared admin login does. An acceptance committed before issuer deactivation remains complete; later restoration does not revive revoked invitations.
+
+## Append-only identity/admin audit
+
+Add IdentityAuditRecord independently of P01 financial AuditRecord. Store UUID ID, server instant, allowlisted action/outcome, actor kind, required nonblank reason for admin/operator commands and allowlisted before/after control snapshots. Include restrictive nullable actorUserId, targetUserId and invitationId relations; a protected operator identity string is permitted only for bootstrap. Acceptance records both validated recipient/target and inviter context, retaining the generation so later reissue cannot reinterpret attribution.
+
+The action/actor matrix is fixed: BOOTSTRAP → OPERATOR; INVITATION_ISSUE/REISSUE/REVOKE, EMPLOYEE_CONTROL and ADMIN_ACTIVATE/DEACTIVATE → ADMIN; INVITATION_ACCEPT → INVITED_RECIPIENT; ADMIN_EMAIL_ACTIVATE → VERIFIED_EMAIL_RECIPIENT. Each record has outcome COMMITTED only. OPERATOR has protected UID/name and no actorUserId; ADMIN has the live actorUserId; recipient actions have the validated new/activated target as actorUserId. Invitation records retain invitationId, issuerUserId and tokenVersion; issuer deactivation records one INVITATION_REVOKE per revoked outstanding intent in its lifecycle transaction. Reasons are required nonblank 1–500 characters for OPERATOR/ADMIN actions, null for recipient proof/acceptance. Employee public activation is not an admin mutation and adds no identity audit; pending ADMIN email activation is attributable and audited with its guard-locked status/version transition.
+
+Snapshot keys are restricted to target id/role/status/tasksBlocked/withdrawalsBlocked/accountVersion; invitation id/issuerUserId/tokenVersion/issuedAt/expiresAt/acceptedAt/acceptedUserId/revokedAt/revokedByUserId/disposition; and bootstrap firstAdminUserId/completedAt/completionSource. Applicable before/after snapshots may be null for creation. No name/email/password/hash/token/session/provider fields are admitted. Actor/target/invitation links and the protected operator string carry attribution outside snapshots; enforce this matrix in SQL row checks and the strict audit writer, including bounded strings and no extra JSON keys.
+
+Use named checks for valid actor-kind/identity combinations, bounded reason and known action/outcome. Enforce append-only UPDATE/DELETE and statement-level TRUNCATE rejection; no cascade from account or invitation can erase audit. Index target/time/id and invitation/time/id for authorized review. Never persist hashes, tokens, passwords, signing/provider values, private provider bodies or client-submitted actor/time/outcome.
+
+Required mutation/audit share the same transaction; an audit insert failure rolls back the mutation. Safe no-change/conflict/denial does not fabricate a committed material effect. Ordinary diagnostic/security failures may be logged through redacted existing owners but cannot replace required durable audit. Migration/backfill records real upgrade evidence without inventing unavailable historical administrators' actions.
+
+## Lock order and transaction boundary
+
+Identity operations without admin-population impact lock User IDs ascending, then owned AuthSession IDs, RefreshToken IDs and invitation IDs deterministically. Operations with admin-population/invitation impact acquire AdminSetupState first, then that same ordered sequence. Pending ADMIN email activation also changes that population and must acquire the guard before User. A preliminary database role read may select this lock path because role is immutable; role/status/credential authority is still rechecked under the locks. Do not discover the need for the guard after taking User locks. Lock only required rows and recheck actor session, password/current credential, target role/version and eligibility after locks.
+
+When an operation touches P01 ownership, retain its established [ledger order](../../apps/api/src/modules/ledger/ledger.transaction.ts): sorted User rows before sorted Wallet rows before sorted ReservationAllocation rows. P02 restriction/lifecycle writes do not need financial-row mutations. Use parameterized Prisma SQL in focused owning helpers, not process-local mutexes or generic repositories.
+
+If refresh commits first, subsequent revocation sees and removes its replacement; if revocation commits first, refresh sees a revoked session and fails. Guard serialization likewise decides invite-accept versus issuer-deactivation and competing last-admin commands. Interactive transactions use maxWait 5,000 ms and timeout 10,000 ms, with at most three total attempts and zero deliberate retry delay. Retry only Prisma P2034 or known Prisma adapter errors whose actual driverAdapterError.cause.originalCode is exactly 40001/40P01, verified against the installed adapter as in P01. An arbitrary nested code/text is insufficient. Recheck expiry/authority/intent on each attempt; never retry stale versions, uniqueness, validation, denial or provider failures as transient conflicts. Exhaustion yields safe 409 without claiming commit. Hashing/email/network I/O remains outside database transactions and retry bodies. List page/count use the same bounded read-only RepeatableRead snapshot.
+
+## Forward migration and compatibility work
+
+Use two new forward migrations: first add BANNED/DEACTIVATED enum values and commit; second uses them for schema/backfill/protection. Do not edit the existing applied migrations, use db push, or reset populated databases.
+
+The second migration proceeds in an inspected order:
+
+1. In an explicit transaction, lock users against concurrent writes and assert historical viability before any identity change. Maintenance preflight must perform the same check before migration deployment. If historical ADMIN exists without an ACTIVE verified or ordinary-email-recoverable pending ADMIN, abort the authority migration and halt cutover; an already committed enum-only migration is harmless and grants no authority. Only after passing, add identity columns compatible with backfill; generate codes, preserve unknown sponsors as null, initialize partial controls/version, normalize historical ADMIN SUSPENDED to DEACTIVATED and replace role/status checks.
+2. Provision missing employee wallets once, preserving every existing financial row/value. Install final code/sponsor/role immutability and named row/relationship protections after backfill.
+3. Create session, guard, invitation and audit persistence. Seed guard from historical ADMIN presence without fabricated bootstrap audit.
+4. Invalidate all legacy RefreshToken rows and verification/reset hash/expiry pairs before requiring session-bound new credentials. Require fresh eligible login/resend; old access JWTs missing sessionId are rejected by the coordinated API cutover. Do not trust a temporary legacy authority path.
+5. Commit the authority migration only with all backfill/invalidation/protections complete. Verify fresh, historical-active, historical-pending and only-ineligible historical-admin cases, retained P01 balances/history and repeated deployment; generate Prisma client from the reviewed schema. Failed preflight changes no identity/financial records, closes no pending email recovery path and enables no bootstrap override.
+
+Bounded compatibility changes belong to later implementation: [seed-config.ts](../../packages/database/src/seed-config.ts) must stop overwriting existing role/password/status/sponsor and provision only genuinely new employee wallets consistently. Production bootstrap never uses this local seed. Extend schema inventory and migrated-database assertions deliberately rather than deleting them. Existing employee-only cleanup may remove owned empty/no-history wallet and identity fixtures in valid relation order. Audited admin/invitation scenarios use unique per-test IDs/emails and retain their data until disposable database teardown, or use separate isolated databases: restrictive append-only audit cannot be deleted merely to clean up a fixture. Never disable protections or delete financial history to pass.
+
+Migration/code rollout requires a maintenance/cutover boundary so the old API cannot issue unbound credentials after invalidation or violate new invariants. Stop old API traffic/writes before preflight/deployment, keep it fenced during partial enum/schema/API rollout, and resume only the session-bound API after schema/config checks pass. If authority migration fails, its explicit transaction rolls back; keep cutover halted and use the reviewed forward-migration recovery procedure rather than changing completion evidence or reopening bootstrap. Record credential invalidation operationally without exposing values. P01 final convergence passed the owner-selected read-only review on 2026-10-03 using recorded execution evidence; migration recovery and actual P02 tests remain future execution gates. Runtime HTTP/delivery mappings belong to the companion contracts, and [quickstart.md](quickstart.md) owns future validation commands.

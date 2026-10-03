@@ -6,6 +6,13 @@ const CREDENTIAL_QUERY_KEYS = new Set([
   "code",
   "secret",
   "password",
+  "api_key",
+  "apikey",
+  "private_key",
+  "privatekey",
+  "signing_payload",
+  "seed",
+  "mnemonic",
 ]);
 
 const safelyDecode = (value: string): string => {
@@ -16,39 +23,68 @@ const safelyDecode = (value: string): string => {
   }
 };
 
+const isCredentialQueryKey = (key: string): boolean =>
+  CREDENTIAL_QUERY_KEYS.has(key.toLowerCase()) ||
+  /password|token|secret|api[_-]?key|private[_-]?key|signing[_-]?payload|signed[_-]?bytes|mnemonic/iu.test(
+    key,
+  );
+
 export const sanitizeRequestUrl = (value: string): string => {
+  const fragmentStart = value.indexOf("#");
+  const fragment = fragmentStart === -1 ? "" : value.slice(fragmentStart);
+  const credentialFragment = fragment
+    .slice(1)
+    .split("&")
+    .some(
+      (part) =>
+        isCredentialQueryKey(safelyDecode(part.split("=")[0] ?? "")) &&
+        part.includes("="),
+    );
+  const withoutFragment =
+    fragmentStart === -1 ? value : value.slice(0, fragmentStart);
   const queryStart = value.indexOf("?");
-  if (queryStart === -1) return value;
-  const fragmentStart = value.indexOf("#", queryStart);
+  if (queryStart === -1 || queryStart >= withoutFragment.length)
+    return `${withoutFragment}${credentialFragment ? "" : fragment}`;
   const path = value.slice(0, queryStart);
   const query =
     fragmentStart === -1
       ? value.slice(queryStart + 1)
       : value.slice(queryStart + 1, fragmentStart);
-  const fragment = fragmentStart === -1 ? "" : value.slice(fragmentStart);
   const sanitized = query
     .split("&")
     .map((part) => {
       const equals = part.indexOf("=");
       const rawKey = equals === -1 ? part : part.slice(0, equals);
-      return CREDENTIAL_QUERY_KEYS.has(safelyDecode(rawKey).toLowerCase())
+      return isCredentialQueryKey(safelyDecode(rawKey))
         ? `${rawKey}=[REDACTED]`
         : part;
     })
     .join("&");
-  return `${path}?${sanitized}${fragment}`;
+  return `${path}?${sanitized}${credentialFragment ? "" : fragment}`;
 };
 
 export const sanitizeRequestQuery = (
   value: unknown,
+  depth = 0,
 ): Record<string, unknown> | undefined => {
   if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
+  if (depth >= 8) return undefined;
   return Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
-      CREDENTIAL_QUERY_KEYS.has(key.toLowerCase()) ? "[REDACTED]" : item,
+      isCredentialQueryKey(key)
+        ? "[REDACTED]"
+        : item !== null && typeof item === "object"
+          ? Array.isArray(item)
+            ? item.map((element: unknown) =>
+                typeof element === "object" && element !== null
+                  ? sanitizeRequestQuery(element, depth + 1)
+                  : element,
+              )
+            : sanitizeRequestQuery(item, depth + 1)
+          : item,
     ]),
   );
 };
@@ -67,4 +103,13 @@ export const sanitizeRequestForLog = (
     ? {}
     : { query: sanitizeRequestQuery(value["query"]) }),
   raw: undefined,
+  ...(value["headers"] !== null && typeof value["headers"] === "object"
+    ? {
+        headers: Object.fromEntries(
+          Object.entries(value["headers"]).filter(
+            ([key]) => !["referer", "referrer"].includes(key.toLowerCase()),
+          ),
+        ),
+      }
+    : {}),
 });

@@ -3,6 +3,10 @@ import { logger } from "../logger/logger.js";
 import type { EmailDelivery } from "./email-delivery.js";
 import { resetPasswordTemplate } from "./templates/reset-password.template.js";
 import { verifyEmailTemplate } from "./templates/verify-email.template.js";
+import {
+  adminInvitationTemplate,
+  adminInvitationUrl,
+} from "./templates/admin-invitation.template.js";
 
 export class EmailService {
   constructor(
@@ -11,7 +15,31 @@ export class EmailService {
     private readonly fromName = emailConfig.fromName,
     private readonly replyTo = emailConfig.replyTo,
     private readonly publicWebUrl = emailConfig.publicWebUrl,
+    private readonly invitationDestination = emailConfig.invitationAcceptUrl,
   ) {}
+
+  async sendAdminInvitation(
+    input: Readonly<{
+      fullName: string;
+      email: string;
+      token: string;
+      assertCanDispatch: () => Promise<void>;
+    }>,
+  ): Promise<void> {
+    const actionUrl = adminInvitationUrl(
+      this.invitationDestination,
+      this.publicWebUrl,
+      input.token,
+    );
+    await this.delivery.send({
+      from: `"${this.fromName}" <${this.fromAddress}>`,
+      to: input.email,
+      subject: "Administrator invitation",
+      html: adminInvitationTemplate(input.fullName, input.email, actionUrl),
+      ...(this.replyTo === "" ? {} : { replyTo: this.replyTo }),
+      assertCanDispatch: input.assertCanDispatch,
+    });
+  }
 
   async sendVerificationEmail(
     name: string,

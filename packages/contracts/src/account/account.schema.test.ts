@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import {
   ACCOUNT_RESPONSE_FIELD_ALLOWLIST,
   safeUserSchema,
+  authUserDataSchema,
+  authSessionDataSchema,
+  type SafeUser,
+  type AuthUserData,
+  type AuthSessionData,
 } from "./account.schema.ts";
 
 const safeUser = {
@@ -18,6 +23,19 @@ const safeUser = {
 };
 
 describe("safe account contracts", () => {
+  it("preserves frozen legacy fixture assignments and response allowlists", () => {
+    const legacy: SafeUser = { ...safeUser, role: "USER", status: "ACTIVE" };
+    const account: AuthUserData = { user: legacy };
+    const session: AuthSessionData = {
+      user: legacy,
+      tokens: { accessToken: "intended-session" },
+    };
+    expect(authUserDataSchema.parse(account)).toEqual(account);
+    expect(authSessionDataSchema.parse(session)).toEqual(session);
+    expect(
+      safeUserSchema.safeParse({ ...legacy, tasksBlocked: false }).success,
+    ).toBe(false);
+  });
   it("accepts exactly the approved browser-visible user fields", () => {
     expect(Object.keys(safeUser).sort()).toEqual(
       [...ACCOUNT_RESPONSE_FIELD_ALLOWLIST].sort(),

@@ -1,6 +1,6 @@
 export { appConfig } from "./app.config.js";
 export { authRouteLimits } from "./auth-rate-limit.config.js";
-export { authConfig, jwtConfig } from "./auth.config.js";
+export { authConfig, jwtConfig, parseJwtSecrets } from "./auth.config.js";
 export { cookieConfig } from "./cookie.config.js";
 export { corsConfig } from "./cors.config.js";
 export { csrfConfig } from "./csrf.config.js";
@@ -8,6 +8,7 @@ export { databaseConfig } from "./database.config.js";
 export {
   emailConfig,
   parseEmailProvider,
+  parseEmailEnvironment,
   parseSmtpTlsMinVersion,
 } from "./email.config.js";
 export type { EmailProvider, SmtpTlsMinVersion } from "./email.config.js";

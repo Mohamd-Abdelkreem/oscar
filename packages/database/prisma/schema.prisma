@@ -18,6 +18,8 @@ enum UserStatus {
   PENDING_VERIFICATION
   ACTIVE
   SUSPENDED
+  BANNED
+  DEACTIVATED
 
   @@map("user_status")
 }
@@ -37,13 +39,30 @@ model User {
   resetTokenExpiresAt        DateTime?  @map("reset_token_expires_at") @db.Timestamptz(6)
   createdAt                  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  referralCode               String     @unique @default(dbgenerated("replace(gen_random_uuid()::text, '-'::text, ''::text)")) @map("referral_code") @db.Char(32)
+  sponsorUserId              String?    @map("sponsor_user_id") @db.Uuid
+  tasksBlocked               Boolean    @default(false) @map("tasks_blocked")
+  withdrawalsBlocked         Boolean    @default(false) @map("withdrawals_blocked")
+  accountVersion             Int        @default(0) @map("account_version")
 
-  refreshTokens       RefreshToken[]
-  wallet              Wallet?
-  financialOperations FinancialOperation[] @relation("FinancialActor")
-  financialAudits     AuditRecord[]        @relation("AuditActor")
+  refreshTokens        RefreshToken[]
+  wallet               Wallet?
+  financialOperations  FinancialOperation[]  @relation("FinancialActor")
+  financialAudits      AuditRecord[]         @relation("AuditActor")
+  sponsor              User?                 @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sponsoredUsers       User[]                @relation("Sponsor")
+  authSessions         AuthSession[]
+  adminSetupState      AdminSetupState?
+  issuedInvitations    AdminInvitation[]     @relation("InvitationIssuer")
+  acceptedInvitations  AdminInvitation[]     @relation("InvitationAcceptedUser")
+  revokedInvitations   AdminInvitation[]     @relation("InvitationRevokedBy")
+  identityActorAudits  IdentityAuditRecord[] @relation("IdentityActor")
+  identityTargetAudits IdentityAuditRecord[] @relation("IdentityTarget")
+  identityIssuerAudits IdentityAuditRecord[] @relation("IdentityIssuer")
 
   @@index([status, role], map: "users_status_role_idx")
+  @@index([sponsorUserId], map: "users_sponsor_idx")
+  @@index([role, createdAt, id], map: "users_role_created_id_idx")
   @@map("users")
 }
 
@@ -53,12 +72,96 @@ model RefreshToken {
   tokenHash String   @unique @map("token_hash") @db.Char(64)
   expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  sessionId String   @unique @map("session_id") @db.Uuid
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session AuthSession @relation(fields: [sessionId, userId], references: [id, userId], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([userId], map: "refresh_tokens_user_idx")
   @@index([expiresAt], map: "refresh_tokens_expiry_idx")
   @@map("refresh_tokens")
+}
+
+model AuthSession {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @map("user_id") @db.Uuid
+  rememberMe    Boolean        @map("remember_me")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt     DateTime       @map("expires_at") @db.Timestamptz(6)
+  revokedAt     DateTime?      @map("revoked_at") @db.Timestamptz(6)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  refreshTokens RefreshToken[]
+
+  @@unique([id, userId], map: "auth_sessions_id_user_key")
+  @@index([userId, revokedAt], map: "auth_sessions_user_revoked_idx")
+  @@index([expiresAt], map: "auth_sessions_expiry_idx")
+  @@map("auth_sessions")
+}
+
+model AdminSetupState {
+  id               Int       @id @default(1)
+  firstAdminUserId String?   @unique @map("first_admin_user_id") @db.Uuid
+  completedAt      DateTime? @map("completed_at") @db.Timestamptz(6)
+  completionSource String?   @map("completion_source") @db.VarChar(32)
+  firstAdmin       User?     @relation(fields: [firstAdminUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("admin_setup_state")
+}
+
+model AdminInvitation {
+  id                  String                @id @default(uuid()) @db.Uuid
+  email               String                @unique @db.VarChar(320)
+  fullName            String                @map("full_name") @db.VarChar(150)
+  issuerUserId        String                @map("issuer_user_id") @db.Uuid
+  tokenVersion        Int                   @map("token_version")
+  tokenHash           String                @unique @map("token_hash") @db.Char(64)
+  issuedAt            DateTime              @map("issued_at") @db.Timestamptz(6)
+  expiresAt           DateTime              @map("expires_at") @db.Timestamptz(6)
+  acceptedAt          DateTime?             @map("accepted_at") @db.Timestamptz(6)
+  acceptedUserId      String?               @map("accepted_user_id") @db.Uuid
+  revokedAt           DateTime?             @map("revoked_at") @db.Timestamptz(6)
+  revokedByUserId     String?               @map("revoked_by_user_id") @db.Uuid
+  revocationReason    String?               @map("revocation_reason") @db.VarChar(500)
+  emailAttemptId      String                @map("email_attempt_id") @db.Uuid
+  deliveryStatus      String                @default("NOT_ATTEMPTED") @map("delivery_status") @db.VarChar(32)
+  emailAttemptedAt    DateTime?             @map("email_attempted_at") @db.Timestamptz(6)
+  emailAcknowledgedAt DateTime?             @map("email_acknowledged_at") @db.Timestamptz(6)
+  failureCode         String?               @map("failure_code") @db.VarChar(32)
+  createdAt           DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  issuer              User                  @relation("InvitationIssuer", fields: [issuerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  acceptedUser        User?                 @relation("InvitationAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  revokedBy           User?                 @relation("InvitationRevokedBy", fields: [revokedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  audits              IdentityAuditRecord[]
+
+  @@index([issuerUserId, acceptedAt, revokedAt], map: "admin_invitations_issuer_disposition_idx")
+  @@index([createdAt, id], map: "admin_invitations_created_id_idx")
+  @@map("admin_invitations")
+}
+
+model IdentityAuditRecord {
+  id               String           @id @default(uuid()) @db.Uuid
+  occurredAt       DateTime         @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  action           String           @db.VarChar(32)
+  outcome          String           @db.VarChar(16)
+  actorKind        String           @map("actor_kind") @db.VarChar(32)
+  actorUserId      String?          @map("actor_user_id") @db.Uuid
+  operatorIdentity String?          @map("operator_identity") @db.VarChar(160)
+  targetUserId     String?          @map("target_user_id") @db.Uuid
+  invitationId     String?          @map("invitation_id") @db.Uuid
+  issuerUserId     String?          @map("issuer_user_id") @db.Uuid
+  tokenVersion     Int?             @map("token_version")
+  reason           String?          @db.VarChar(500)
+  beforeSnapshot   Json?            @map("before_snapshot")
+  afterSnapshot    Json?            @map("after_snapshot")
+  actor            User?            @relation("IdentityActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  target           User?            @relation("IdentityTarget", fields: [targetUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  issuer           User?            @relation("IdentityIssuer", fields: [issuerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  invitation       AdminInvitation? @relation(fields: [invitationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([targetUserId, occurredAt, id], map: "identity_audit_target_time_idx")
+  @@index([invitationId, occurredAt, id], map: "identity_audit_invitation_time_idx")
+  @@map("identity_audit_records")
 }
 
 enum FinancialOperationKind {

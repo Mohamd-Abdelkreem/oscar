@@ -16,6 +16,9 @@ process.env["AUTH_ARGON2_PARALLELISM"] = "1";
 process.env["LOG_LEVEL"] = "silent";
 process.env["EMAIL_PROVIDER"] = "console";
 process.env["WEB_APP_URL"] = "http://localhost:3000";
+// Test-only mail destination; this is not a frontend route or production approval.
+process.env["ADMIN_INVITATION_ACCEPT_URL"] =
+  "http://localhost:3000/test-only-invitation";
 process.env["MAIL_FROM_ADDRESS"] = "no-reply@example.com";
 process.env["AUTH_LIMIT_LOGIN_PER_15_MIN"] = "100";
 process.env["AUTH_LIMIT_LOGIN_PER_15_MIN_ACCOUNT"] = "100";

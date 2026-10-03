@@ -120,11 +120,7 @@ afterAll(async () => {
 describe("audited available-source corrections", () => {
   const adminFixture = async () => {
     const account = await fixture();
-    const admin = await createFinancialAccount(database);
-    await database.user.update({
-      where: { id: admin.ownerUserId },
-      data: { role: UserRole.ADMIN },
-    });
+    const admin = await createFinancialAccount(database, UserRole.ADMIN);
     const context: LedgerContext = {
       ...account.context,
       actor: { type: "USER", userId: admin.ownerUserId },
@@ -214,7 +210,7 @@ describe("audited available-source corrections", () => {
     expect(await records(f.wallet.id)).toEqual(after);
   });
 
-  it("rejects ordinary, downgraded, suspended and process actors before new effects", async () => {
+  it("rejects ordinary, wrong-role, deactivated and process actors before new effects", async () => {
     const f = await adminFixture();
     const before = await records(f.wallet.id);
     await expect(
@@ -226,16 +222,16 @@ describe("audited available-source corrections", () => {
         actor: { type: "PROCESS", processId: PROCESS },
       }),
     ).rejects.toMatchObject({ code: "LEDGER_FORBIDDEN" });
-    await database.user.update({
-      where: { id: f.admin.ownerUserId },
-      data: { role: UserRole.USER },
-    });
+    const wrongRole = await createFinancialAccount(database, UserRole.USER);
     await expect(
-      service.execute(f.intent, f.adminContext),
+      service.execute(f.intent, {
+        ...f.adminContext,
+        actor: { type: "USER", userId: wrongRole.ownerUserId },
+      }),
     ).rejects.toMatchObject({ code: "LEDGER_FORBIDDEN" });
     await database.user.update({
       where: { id: f.admin.ownerUserId },
-      data: { role: UserRole.ADMIN, status: UserStatus.SUSPENDED },
+      data: { status: UserStatus.DEACTIVATED },
     });
     await expect(
       service.execute(f.intent, f.adminContext),

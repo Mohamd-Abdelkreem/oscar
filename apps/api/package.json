@@ -8,6 +8,7 @@
     "clean": "rimraf dist node_modules/.cache/tsconfig.build.tsbuildinfo",
     "build": "pnpm clean && tsc -p tsconfig.build.json",
     "start": "node --enable-source-maps dist/server.js",
+    "admin:bootstrap": "node --enable-source-maps dist/modules/admins/admin-bootstrap.cli.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check-types": "tsc --noEmit",

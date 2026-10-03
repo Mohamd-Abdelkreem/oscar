@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
 
 import { cookieConfig } from "../../core/config/cookie.config.js";
+import { InternalServerError } from "../../core/errors/internal-server.error.js";
 import { AuthController } from "./auth.controller.js";
 import type { AuthService } from "./auth.service.js";
 
@@ -42,6 +43,49 @@ const loginRequest = {
 } as unknown as Request;
 
 describe("AuthController cookie options", () => {
+  it.each(["logout", "logoutAll", "changePassword"] as const)(
+    "%s rejects missing internal session context without clearing cookies or returning success",
+    async (method) => {
+      const controller = new AuthController({} as AuthService);
+      const response = responseMock();
+      await expect(
+        controller[method](
+          { user, path: "/auth/action", validated: { body: {} } } as Request,
+          response as unknown as Response,
+        ),
+      ).rejects.toBeInstanceOf(InternalServerError);
+      expect(response.clearCookie).not.toHaveBeenCalled();
+      expect(response.json).not.toHaveBeenCalled();
+    },
+  );
+
+  it("does not acknowledge or clear cookies while revocation is uncommitted or fails", async () => {
+    let fail = (_failure: Error) => {};
+    const pending = new Promise<void>((_resolve, reject) => {
+      fail = reject;
+    });
+    const controller = new AuthController({
+      logout: () => pending,
+    } as unknown as AuthService);
+    const response = responseMock();
+    const completion = controller.logout(
+      {
+        user,
+        authSession: {
+          userId: user.id,
+          sessionId: "6e61e019-6895-4e57-bfbd-e376502a7aa0",
+        },
+      } as Request,
+      response as unknown as Response,
+    );
+    expect(response.clearCookie).not.toHaveBeenCalled();
+    expect(response.json).not.toHaveBeenCalled();
+    const failure = new Error("test-only-transaction-failure");
+    fail(failure);
+    await expect(completion).rejects.toBe(failure);
+    expect(response.clearCookie).not.toHaveBeenCalled();
+    expect(response.json).not.toHaveBeenCalled();
+  });
   it.each([false, true])(
     "sets exact refresh and CSRF options for rememberMe=%s",
     async (rememberMe) => {
@@ -109,6 +153,10 @@ describe("AuthController cookie options", () => {
         path: "/auth/logout",
         requestId: "request-id",
         user,
+        authSession: {
+          userId: user.id,
+          sessionId: "6e61e019-6895-4e57-bfbd-e376502a7aa0",
+        },
         cookies: { refreshToken: "refresh" },
       } as unknown as Request,
       response as unknown as Response,

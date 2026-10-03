@@ -79,3 +79,51 @@ export type {
   UsdtAmount,
   WalletComponents,
 } from "./financial/financial.schema.ts";
+export {
+  accountVersionSchema,
+  adminIdentityStatusSchema,
+  confirmedReasonShape,
+  employeeRestrictionsBodySchema,
+  employeeRestrictionsDataSchema,
+  employeeRestrictionsSchema,
+  employeeStatusSchema,
+  identityListQuerySchema,
+  identitySessionDataSchema,
+  identityUserDataSchema,
+  identityUserParamsSchema,
+  identityUserSchema,
+  optionalReferralCodeSchema,
+  referralCodeSchema,
+  versionedControlShape,
+} from "./identity/identity.schema.ts";
+export type {
+  EmployeeRestrictions,
+  EmployeeRestrictionsBody,
+  IdentityListQuery,
+  IdentitySessionData,
+  IdentityUser,
+  IdentityUserData,
+} from "./identity/identity.schema.ts";
+export {
+  adminDataSchema,
+  adminInvitationAcceptBodySchema,
+  adminInvitationCommandBodySchema,
+  adminInvitationDataSchema,
+  adminInvitationIssueBodySchema,
+  adminInvitationListDataSchema,
+  adminInvitationParamsSchema,
+  adminInvitationSchema,
+  adminInvitationStatusSchema,
+  adminListDataSchema,
+  adminSchema,
+  adminStatusBodySchema,
+  emailDeliveryStatusSchema,
+} from "./admin/admin.schema.ts";
+export type {
+  Admin,
+  AdminInvitation,
+  AdminInvitationAcceptBody,
+  AdminInvitationCommandBody,
+  AdminInvitationIssueBody,
+  AdminStatusBody,
+} from "./admin/admin.schema.ts";

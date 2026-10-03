@@ -10,14 +10,15 @@ import type {
 import {
   Prisma,
   UserStatus,
+  UserRole,
   type DatabaseClient,
   type User,
 } from "@template/database";
 
-import { authConfig } from "../../core/config/auth.config.js";
+import { z } from "zod";
+
 import { BadRequestException } from "../../core/errors/bad-request.error.js";
 import { ConflictException } from "../../core/errors/conflict.error.js";
-import { ForbiddenException } from "../../core/errors/forbidden.error.js";
 import { ServiceUnavailableException } from "../../core/errors/service-unavailable.error.js";
 import { UnauthorizedException } from "../../core/errors/unauthorized.error.js";
 import type { EmailService } from "../../infrastructure/email/index.js";
@@ -29,13 +30,13 @@ import {
 } from "../../infrastructure/security/index.js";
 import {
   generateResetToken,
-  generateTokenPair,
   generateVerificationToken,
   verifyRefreshToken,
   verifyResetToken,
   verifyVerificationToken,
 } from "../../infrastructure/security/index.js";
 import { mapSafeUser, SAFE_USER_SELECT } from "../users/users.mapper.js";
+import type { AuthenticatedSession } from "../../core/types/request-context.types.js";
 import {
   FORGOT_PASSWORD_NEUTRAL_RESPONSE,
   RESET_TOKEN_TTL_MS,
@@ -46,196 +47,317 @@ import {
 import type {
   AuthResponseWithTokens,
   AuthResponseWithoutTokens,
-  TokenPair,
 } from "./types/auth.types.js";
 
+import {
+  runIdentityTransaction,
+  readSessionAuthority,
+  assertCurrentPasswordHash,
+} from "./session-authority.js";
+import { AuthSessionService } from "./auth-session.service.js";
+import { writeIdentityAudit } from "../admins/identity-audit.js";
+
+const uniqueFieldSchema = z.union([
+  z
+    .object({ target: z.array(z.string()) })
+    .transform((metadata) => metadata.target),
+  z
+    .object({
+      driverAdapterError: z.object({
+        cause: z.object({
+          constraint: z.object({ fields: z.array(z.string()) }),
+        }),
+      }),
+    })
+    .transform(
+      (metadata) => metadata.driverAdapterError.cause.constraint.fields,
+    ),
+]);
+const isUserUniqueField = (failure: unknown, field: string): boolean => {
+  if (
+    !(failure instanceof Prisma.PrismaClientKnownRequestError) ||
+    failure.code !== "P2002"
+  )
+    return false;
+  const metadata = uniqueFieldSchema.safeParse(failure.meta);
+  return (
+    metadata.success && metadata.data.length === 1 && metadata.data[0] === field
+  );
+};
+const invalidVerification = () =>
+  new BadRequestException("Invalid or expired verification token.");
+
 export class AuthService {
+  private readonly sessions = new AuthSessionService();
   constructor(
     private readonly database: DatabaseClient,
     private readonly emailService: EmailService,
+    private readonly createReferralCode: () => string = () =>
+      randomUUID().replaceAll("-", ""),
   ) {}
 
-  async register(data: RegisterBodyDto): Promise<AuthResponseWithoutTokens> {
-    const email = data.email.trim().toLowerCase();
-    const verificationToken = generateVerificationToken(email);
-    const verificationTokenHash = sha256(verificationToken);
-    const passwordHash = await generateHash(data.password);
-    let user: User;
-
-    try {
-      user = await this.database.user.create({
-        data: {
+  async register(input: RegisterBodyDto): Promise<AuthResponseWithoutTokens> {
+    const email = input.email.trim().toLowerCase();
+    const passwordHash = await generateHash(input.password);
+    const userId = randomUUID();
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const referralCode = this.createReferralCode();
+      let provisioned;
+      try {
+        provisioned = await this.provisionEmployee(input, passwordHash, {
+          userId,
+          referralCode,
           email,
-          fullName: data.fullName.trim(),
-          phone: data.phone,
-          passwordHash,
-          status: UserStatus.PENDING_VERIFICATION,
-          verificationTokenHash,
-          verificationTokenExpiresAt: new Date(
-            Date.now() + VERIFICATION_TOKEN_TTL_MS,
-          ),
-        },
-      });
-    } catch (error) {
-      if (this.isUniqueConstraintError(error)) {
-        throw new ConflictException("Email is already in use.");
+        });
+      } catch (failure) {
+        if (isUserUniqueField(failure, "email"))
+          throw new ConflictException("Email is already in use.");
+        if (!isUserUniqueField(failure, "referral_code")) throw failure;
+        if (attempt === 3)
+          throw new ServiceUnavailableException(
+            "Employee provisioning is temporarily unavailable.",
+          );
+        continue;
       }
-      throw error;
+      try {
+        await this.emailService.sendVerificationEmail(
+          provisioned.user.fullName,
+          provisioned.user.email,
+          provisioned.token,
+        );
+      } catch {
+        // Provider uncertainty never undoes the committed identity and wallet.
+        throw new ServiceUnavailableException(
+          "A pending account may exist. Request a new verification link to continue.",
+        );
+      }
+      return { user: mapSafeUser(provisioned.user) };
     }
+    throw new ServiceUnavailableException(
+      "Employee provisioning is temporarily unavailable.",
+    );
+  }
 
-    try {
-      await this.emailService.sendVerificationEmail(
-        user.fullName,
-        user.email,
-        verificationToken,
-      );
-    } catch {
-      await this.removeUndeliverablePendingUser(user.id, verificationTokenHash);
-      throw new ServiceUnavailableException(
-        "Registration is temporarily unavailable. Please try again.",
-      );
-    }
-
-    return { user: mapSafeUser(user) };
+  private provisionEmployee(
+    input: RegisterBodyDto,
+    passwordHash: string,
+    identity: Readonly<{ userId: string; referralCode: string; email: string }>,
+  ): Promise<{ user: User; token: string }> {
+    const { userId, referralCode, email } = identity;
+    return runIdentityTransaction(
+      this.database,
+      { userIds: [], adminPopulation: false },
+      async (transaction, now) => {
+        const sponsor =
+          input.referralCode === undefined
+            ? null
+            : await transaction.user.findUnique({
+                where: { referralCode: input.referralCode },
+                select: { id: true, role: true },
+              });
+        if (
+          input.referralCode !== undefined &&
+          (sponsor === null ||
+            sponsor.role !== UserRole.USER ||
+            sponsor.id === userId)
+        )
+          throw new BadRequestException("Invalid referral code.");
+        const expiresAt = new Date(now.getTime() + VERIFICATION_TOKEN_TTL_MS);
+        const token = generateVerificationToken(email, userId, expiresAt);
+        const user = await transaction.user.create({
+          data: {
+            id: userId,
+            email,
+            fullName: input.fullName.trim(),
+            phone: input.phone,
+            passwordHash,
+            role: UserRole.USER,
+            status: UserStatus.PENDING_VERIFICATION,
+            referralCode,
+            sponsorUserId: sponsor?.id ?? null,
+            verificationTokenHash: sha256(token),
+            verificationTokenExpiresAt: expiresAt,
+          },
+        });
+        await transaction.wallet.create({
+          data: {
+            ownerUserId: user.id,
+            availableNonReferralUnits: 0n,
+            reservedNonReferralUnits: 0n,
+            availableReferralUnits: 0n,
+            reservedReferralUnits: 0n,
+          },
+        });
+        return { user, token };
+      },
+    );
   }
 
   async resendVerification(
-    data: EmailRequestBodyDto,
+    input: EmailRequestBodyDto,
   ): Promise<typeof RESEND_NEUTRAL_RESPONSE> {
-    const user = await this.database.user.findUnique({
-      where: { email: data.email.trim().toLowerCase() },
-      select: {
-        id: true,
-        fullName: true,
-        email: true,
-        status: true,
-        emailVerifiedAt: true,
-        verificationTokenHash: true,
-        verificationTokenExpiresAt: true,
-      },
+    const candidate = await this.database.user.findUnique({
+      where: { email: input.email.trim().toLowerCase() },
+      select: { id: true },
     });
-
-    if (
-      user === null ||
-      user.status !== UserStatus.PENDING_VERIFICATION ||
-      user.emailVerifiedAt !== null ||
-      user.verificationTokenHash === null ||
-      user.verificationTokenExpiresAt === null
-    ) {
-      return RESEND_NEUTRAL_RESPONSE;
-    }
-
-    const issuedAt =
-      user.verificationTokenExpiresAt.getTime() - VERIFICATION_TOKEN_TTL_MS;
-    if (Date.now() - issuedAt < RESEND_COOLDOWN_MS) {
-      return RESEND_NEUTRAL_RESPONSE;
-    }
-
-    const token = generateVerificationToken(user.email);
-    const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
-    const replaced = await this.database.user.updateMany({
-      where: {
-        id: user.id,
-        verificationTokenHash: user.verificationTokenHash,
-        verificationTokenExpiresAt: user.verificationTokenExpiresAt,
-      },
-      data: {
-        verificationTokenHash: sha256(token),
-        verificationTokenExpiresAt: expiresAt,
-      },
-    });
-
-    if (replaced.count === 1) {
-      void this.emailService
-        .sendVerificationEmail(user.fullName, user.email, token)
-        .catch((_error: unknown) => {
-          logger.error(
-            { userId: user.id, outcome: "verification_resend_failed" },
-            "Failed to resend verification email.",
-          );
+    if (candidate === null) return RESEND_NEUTRAL_RESPONSE;
+    const issuance = await runIdentityTransaction(
+      this.database,
+      { userIds: [candidate.id], adminPopulation: false },
+      async (transaction, now) => {
+        const user = await transaction.user.findUnique({
+          where: { id: candidate.id },
         });
+        if (
+          user === null ||
+          user.status !== UserStatus.PENDING_VERIFICATION ||
+          user.emailVerifiedAt !== null
+        )
+          return null;
+        if (
+          user.verificationTokenExpiresAt !== null &&
+          now.getTime() -
+            (user.verificationTokenExpiresAt.getTime() -
+              VERIFICATION_TOKEN_TTL_MS) <
+            RESEND_COOLDOWN_MS
+        )
+          return null;
+        const expiresAt = new Date(now.getTime() + VERIFICATION_TOKEN_TTL_MS);
+        const token = generateVerificationToken(user.email, user.id, expiresAt);
+        await transaction.user.update({
+          where: { id: user.id },
+          data: {
+            verificationTokenHash: sha256(token),
+            verificationTokenExpiresAt: expiresAt,
+          },
+        });
+        return { user, token };
+      },
+    );
+    if (issuance !== null) {
+      try {
+        await this.emailService.sendVerificationEmail(
+          issuance.user.fullName,
+          issuance.user.email,
+          issuance.token,
+        );
+      } catch {
+        logger.error(
+          { userId: issuance.user.id, outcome: "verification_resend_failed" },
+          "Failed to resend verification email.",
+        );
+      }
     }
-
     return RESEND_NEUTRAL_RESPONSE;
+  }
+
+  async validateVerificationToken(token: string): Promise<{ valid: true }> {
+    const verified = verifyVerificationToken(token);
+    if (!verified.valid) throw invalidVerification();
+    const user = await this.database.user.findUnique({
+      where: { id: verified.payload.userId },
+    });
+    this.assertVerificationCredential(
+      user,
+      verified.payload.email,
+      sha256(token),
+      new Date(),
+    );
+    return { valid: true };
   }
 
   async verifyEmail(token: string): Promise<AuthResponseWithoutTokens> {
     const verified = verifyVerificationToken(token);
-
-    if (!verified.valid) {
-      throw new BadRequestException("Invalid or expired verification token.");
-    }
-
-    const normalizedEmail = verified.payload.email.trim().toLowerCase();
-    const tokenHash = sha256(token);
-    const now = new Date();
-
-    const updated = await this.database.$transaction(async (transaction) => {
-      const candidate = await transaction.user.findFirst({
-        where: {
-          email: normalizedEmail,
-          verificationTokenHash: tokenHash,
-          verificationTokenExpiresAt: { gt: now },
-        },
-        select: {
-          id: true,
-          status: true,
-          emailVerifiedAt: true,
-        },
-      });
-
-      if (candidate === null) {
-        throw new BadRequestException("Invalid or expired verification token.");
-      }
-
-      if (candidate.status === UserStatus.SUSPENDED) {
-        throw new ForbiddenException("Account is suspended.");
-      }
-
-      if (
-        candidate.status !== UserStatus.PENDING_VERIFICATION ||
-        candidate.emailVerifiedAt !== null
-      ) {
-        throw new BadRequestException("Invalid or expired verification token.");
-      }
-
-      const consumed = await transaction.user.updateMany({
-        where: {
-          id: candidate.id,
-          email: normalizedEmail,
-          status: UserStatus.PENDING_VERIFICATION,
-          emailVerifiedAt: null,
-          verificationTokenHash: tokenHash,
-          verificationTokenExpiresAt: { gt: now },
-        },
-        data: {
-          status: UserStatus.ACTIVE,
-          emailVerifiedAt: now,
-          verificationTokenHash: null,
-          verificationTokenExpiresAt: null,
-        },
-      });
-
-      if (consumed.count !== 1) {
-        throw new BadRequestException("Invalid or expired verification token.");
-      }
-
-      const activated = await transaction.user.findUnique({
-        where: { id: candidate.id },
-        select: SAFE_USER_SELECT,
-      });
-
-      if (activated === null) {
-        throw new BadRequestException("Invalid or expired verification token.");
-      }
-
-      return activated;
+    if (!verified.valid) throw invalidVerification();
+    const candidate = await this.database.user.findUnique({
+      where: { id: verified.payload.userId },
+      select: { id: true, role: true },
     });
-
+    if (candidate === null) throw invalidVerification();
+    const updated = await runIdentityTransaction(
+      this.database,
+      {
+        userIds: [candidate.id],
+        adminPopulation: candidate.role === UserRole.ADMIN,
+      },
+      async (transaction, now) => {
+        const user = await transaction.user.findUnique({
+          where: { id: candidate.id },
+        });
+        this.assertVerificationCredential(
+          user,
+          verified.payload.email,
+          sha256(token),
+          now,
+        );
+        const activated = await transaction.user.update({
+          where: { id: candidate.id },
+          data: {
+            status: UserStatus.ACTIVE,
+            emailVerifiedAt: now,
+            verificationTokenHash: null,
+            verificationTokenExpiresAt: null,
+            accountVersion: { increment: 1 },
+          },
+          select: SAFE_USER_SELECT,
+        });
+        if (activated.role === UserRole.ADMIN)
+          await writeIdentityAudit(
+            transaction,
+            {
+              action: "ADMIN_EMAIL_ACTIVATE",
+              actorKind: "VERIFIED_EMAIL_RECIPIENT",
+              actorUserId: activated.id,
+              targetUserId: activated.id,
+              beforeSnapshot: {
+                id: user.id,
+                status: user.status,
+                accountVersion: user.accountVersion,
+              },
+              afterSnapshot: {
+                id: activated.id,
+                status: activated.status,
+                accountVersion: activated.accountVersion,
+              },
+            },
+            now,
+          );
+        return activated;
+      },
+    );
     return { user: mapSafeUser(updated) };
   }
 
+  private assertVerificationCredential(
+    user: User | null,
+    email: string,
+    tokenHash: string,
+    now: Date,
+  ): asserts user is User {
+    if (
+      user === null ||
+      user.email !== email ||
+      user.status !== UserStatus.PENDING_VERIFICATION ||
+      user.emailVerifiedAt !== null ||
+      user.verificationTokenHash !== tokenHash ||
+      user.verificationTokenExpiresAt === null ||
+      now.getTime() >= user.verificationTokenExpiresAt.getTime()
+    )
+      throw invalidVerification();
+  }
+
   async login(data: LoginBodyDto): Promise<AuthResponseWithTokens> {
+    return this.signIn(data);
+  }
+
+  async adminLogin(data: LoginBodyDto): Promise<AuthResponseWithTokens> {
+    return this.signIn(data, UserRole.ADMIN);
+  }
+
+  private async signIn(
+    data: LoginBodyDto,
+    requiredRole?: UserRole,
+  ): Promise<AuthResponseWithTokens> {
     const user = await this.database.user.findUnique({
       where: { email: data.email.trim().toLowerCase() },
     });
@@ -245,26 +367,60 @@ export class AuthService {
     if (!passwordMatches) {
       throw new UnauthorizedException("Invalid credentials.");
     }
-    this.validateActiveUser(user);
-
-    const generated = this.buildTokenPair(user, data.rememberMe);
-    await this.database.refreshToken.create({ data: generated.record });
-    return {
-      user: mapSafeUser(user),
-      tokens: generated.tokens,
-      rememberMe: data.rememberMe,
-    };
+    return runIdentityTransaction(
+      this.database,
+      { userIds: [user.id], adminPopulation: false },
+      async (transaction, now) => {
+        const current = await transaction.user.findUnique({
+          where: { id: user.id },
+        });
+        if (
+          current === null ||
+          current.status !== UserStatus.ACTIVE ||
+          current.emailVerifiedAt === null ||
+          current.passwordHash !== user.passwordHash ||
+          (requiredRole !== undefined && current.role !== requiredRole)
+        )
+          throw new UnauthorizedException("Invalid credentials.");
+        const tokens = await this.sessions.createSession(
+          transaction,
+          current,
+          data.rememberMe,
+          now,
+        );
+        return {
+          user: mapSafeUser(current),
+          tokens,
+          rememberMe: data.rememberMe,
+        };
+      },
+    );
   }
 
-  async logout(userId: string, refreshToken: string): Promise<void> {
-    if (refreshToken.length === 0) return;
-    await this.database.refreshToken.deleteMany({
-      where: { userId, tokenHash: sha256(refreshToken) },
-    });
+  async logout(identity: AuthenticatedSession): Promise<void> {
+    await runIdentityTransaction(
+      this.database,
+      { userIds: [identity.userId], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, identity.userId);
+        const now = new Date();
+        await readSessionAuthority(transaction, identity, now);
+        await this.sessions.revokeSession(transaction, identity, now);
+      },
+    );
   }
 
-  async logoutAll(userId: string): Promise<void> {
-    await this.database.refreshToken.deleteMany({ where: { userId } });
+  async logoutAll(identity: AuthenticatedSession): Promise<void> {
+    await runIdentityTransaction(
+      this.database,
+      { userIds: [identity.userId], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, identity.userId);
+        const now = new Date();
+        await readSessionAuthority(transaction, identity, now);
+        await this.sessions.revokeAll(transaction, identity.userId, now);
+      },
+    );
   }
 
   async refresh(refreshToken: string): Promise<AuthResponseWithTokens> {
@@ -277,83 +433,70 @@ export class AuthService {
       throw new UnauthorizedException("Invalid refresh token.");
     }
 
-    const oldTokenHash = sha256(refreshToken);
-    const now = new Date();
-    const oldToken = await this.database.refreshToken.findFirst({
-      where: {
-        id: verified.payload.tokenId,
-        userId: verified.payload.userId,
-        tokenHash: oldTokenHash,
-        expiresAt: { gt: now },
+    const claims = verified.payload;
+    return runIdentityTransaction(
+      this.database,
+      { userIds: [claims.userId], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, claims.userId);
+        const now = new Date();
+        const user = await readSessionAuthority(transaction, claims, now);
+        const tokens = await this.sessions.rotate(transaction, user, {
+          claims,
+          tokenHash: sha256(refreshToken),
+        });
+        return {
+          user: mapSafeUser(user),
+          tokens,
+          rememberMe: claims.rememberMe,
+        };
       },
-      include: { user: true },
-    });
-    if (oldToken === null) {
-      throw new UnauthorizedException("Invalid or expired refresh token.");
-    }
-    this.validateActiveUser(oldToken.user);
-
-    const absoluteExpiry = new Date(verified.payload.expiresAt * 1_000);
-    if (absoluteExpiry <= now) {
-      throw new UnauthorizedException("Refresh token has expired.");
-    }
-    const replacement = this.buildTokenPairWithExpiry(
-      oldToken.user,
-      verified.payload.rememberMe,
-      absoluteExpiry,
     );
-
-    await this.database.$transaction(async (transaction) => {
-      const deleted = await transaction.refreshToken.deleteMany({
-        where: {
-          id: oldToken.id,
-          userId: oldToken.userId,
-          tokenHash: oldTokenHash,
-        },
-      });
-      if (deleted.count !== 1) {
-        throw new UnauthorizedException("Refresh token has already been used.");
-      }
-      await transaction.refreshToken.create({ data: replacement.record });
-    });
-
-    return {
-      user: mapSafeUser(oldToken.user),
-      tokens: replacement.tokens,
-      rememberMe: verified.payload.rememberMe,
-    };
   }
 
   async forgotPassword(
     data: EmailRequestBodyDto,
   ): Promise<typeof FORGOT_PASSWORD_NEUTRAL_RESPONSE> {
-    const user = await this.database.user.findUnique({
+    const candidate = await this.database.user.findUnique({
       where: { email: data.email.trim().toLowerCase() },
+      select: { id: true },
     });
-    if (
-      user === null ||
-      user.status !== UserStatus.ACTIVE ||
-      user.emailVerifiedAt === null
-    ) {
-      return FORGOT_PASSWORD_NEUTRAL_RESPONSE;
-    }
-
-    const token = generateResetToken(user.email);
-    await this.database.user.update({
-      where: { id: user.id },
-      data: {
-        resetTokenHash: sha256(token),
-        resetTokenExpiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    if (candidate === null) return FORGOT_PASSWORD_NEUTRAL_RESPONSE;
+    const issuance = await runIdentityTransaction(
+      this.database,
+      { userIds: [candidate.id], adminPopulation: false },
+      async (transaction, now) => {
+        const user = await transaction.user.findUnique({
+          where: { id: candidate.id },
+        });
+        if (!this.isRecoveryEligible(user)) return null;
+        const expiresAt = new Date(now.getTime() + RESET_TOKEN_TTL_MS);
+        const token = generateResetToken(user.email, user.id, expiresAt);
+        await transaction.user.update({
+          where: { id: user.id },
+          data: {
+            resetTokenHash: sha256(token),
+            resetTokenExpiresAt: expiresAt,
+          },
+        });
+        return { user, token };
       },
-    });
-    void this.emailService
-      .sendPasswordResetEmail(user.fullName, user.email, token)
-      .catch((_error: unknown) => {
+    );
+    if (issuance !== null) {
+      try {
+        await this.emailService.sendPasswordResetEmail(
+          issuance.user.fullName,
+          issuance.user.email,
+          issuance.token,
+        );
+      } catch {
+        // Public recovery stays neutral; the committed credential can be replaced.
         logger.error(
-          { userId: user.id, outcome: "password_reset_email_failed" },
+          { outcome: "password_reset_email_failed" },
           "Failed to send password reset email.",
         );
-      });
+      }
+    }
     return FORGOT_PASSWORD_NEUTRAL_RESPONSE;
   }
 
@@ -361,81 +504,57 @@ export class AuthService {
     data: ResetPasswordBodyDto,
     token: string,
   ): Promise<AuthResponseWithoutTokens> {
-    const verified = verifyResetToken(token);
-    if (!verified.valid) {
-      throw new UnauthorizedException("Invalid or expired reset token.");
-    }
-
-    const tokenHash = sha256(token);
-    const now = new Date();
-    const user = await this.database.user.findFirst({
-      where: {
-        email: verified.payload.email.trim().toLowerCase(),
-        resetTokenHash: tokenHash,
-        resetTokenExpiresAt: { gt: now },
-      },
-    });
-    if (user === null) {
-      throw new UnauthorizedException("Invalid or expired reset token.");
-    }
-    this.validateActiveUser(user);
+    const user = await this.findUserByResetToken(token);
     await this.assertNewPasswordDiffers(data.newPassword, user.passwordHash);
     const passwordHash = await generateHash(data.newPassword);
 
-    const updated = await this.database.$transaction(async (transaction) => {
-      const consumed = await transaction.user.updateMany({
-        where: {
-          id: user.id,
-          status: UserStatus.ACTIVE,
-          emailVerifiedAt: { not: null },
-          resetTokenHash: tokenHash,
-          resetTokenExpiresAt: { gt: now },
-        },
-        data: {
-          passwordHash,
-          resetTokenHash: null,
-          resetTokenExpiresAt: null,
-        },
-      });
-      if (consumed.count !== 1) {
-        throw new UnauthorizedException("Invalid or expired reset token.");
-      }
-      await transaction.refreshToken.deleteMany({
-        where: { userId: user.id },
-      });
-      const safeUser = await transaction.user.findUnique({
-        where: { id: user.id },
-        select: SAFE_USER_SELECT,
-      });
-      if (safeUser === null) {
-        throw new UnauthorizedException("Invalid or expired reset token.");
-      }
-      return safeUser;
-    });
+    const updated = await runIdentityTransaction(
+      this.database,
+      { userIds: [user.id], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, user.id);
+        const now = new Date();
+        const current = await transaction.user.findUnique({
+          where: { id: user.id },
+        });
+        this.assertResetCredential(current, token, now);
+        assertCurrentPasswordHash(current, user.passwordHash);
+        return this.replacePassword(transaction, current.id, passwordHash, now);
+      },
+    );
     return { user: mapSafeUser(updated) };
   }
 
   async validateResetToken(token: string): Promise<{ valid: true }> {
-    const user = await this.findUserByResetToken(token);
-    this.validateActiveUser(user);
+    await this.findUserByResetToken(token);
     return { valid: true };
   }
 
   async changePassword(
-    userId: string,
+    identity: AuthenticatedSession,
     data: ChangePasswordBodyDto,
   ): Promise<AuthResponseWithoutTokens> {
-    const user = await this.database.user.findUnique({ where: { id: userId } });
+    const user = await this.database.user.findUnique({
+      where: { id: identity.userId },
+    });
     if (user === null) throw new UnauthorizedException("User not found.");
-    this.validateActiveUser(user);
+    if (!this.isRecoveryEligible(user)) throw new UnauthorizedException();
 
     if (!(await compareHash(data.currentPassword, user.passwordHash))) {
       throw new BadRequestException("Current password is not correct.");
     }
     await this.assertNewPasswordDiffers(data.newPassword, user.passwordHash);
-    const updated = await this.updatePasswordAndRevokeTokens(
-      user.id,
-      data.newPassword,
+    const passwordHash = await generateHash(data.newPassword);
+    const updated = await runIdentityTransaction(
+      this.database,
+      { userIds: [user.id], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, user.id);
+        const now = new Date();
+        const current = await readSessionAuthority(transaction, identity, now);
+        assertCurrentPasswordHash(current, user.passwordHash);
+        return this.replacePassword(transaction, current.id, passwordHash, now);
+      },
     );
     return { user: mapSafeUser(updated) };
   }
@@ -445,17 +564,37 @@ export class AuthService {
     if (!verified.valid) {
       throw new UnauthorizedException("Invalid or expired reset token.");
     }
-    const user = await this.database.user.findFirst({
-      where: {
-        email: verified.payload.email.trim().toLowerCase(),
-        resetTokenHash: sha256(token),
-        resetTokenExpiresAt: { gt: new Date() },
-      },
+    const user = await this.database.user.findUnique({
+      where: { id: verified.payload.userId },
     });
-    if (user === null) {
-      throw new UnauthorizedException("Invalid or expired reset token.");
-    }
+    this.assertResetCredential(user, token, new Date());
     return user;
+  }
+
+  private isRecoveryEligible(user: User | null): user is User {
+    return (
+      user !== null &&
+      user.status === UserStatus.ACTIVE &&
+      user.emailVerifiedAt !== null
+    );
+  }
+
+  private assertResetCredential(
+    user: User | null,
+    token: string,
+    now: Date,
+  ): asserts user is User {
+    const verified = verifyResetToken(token);
+    if (
+      !verified.valid ||
+      !this.isRecoveryEligible(user) ||
+      user.id !== verified.payload.userId ||
+      user.email !== verified.payload.email ||
+      user.resetTokenHash !== sha256(token) ||
+      user.resetTokenExpiresAt === null ||
+      now.getTime() >= user.resetTokenExpiresAt.getTime()
+    )
+      throw new UnauthorizedException("Invalid or expired reset token.");
   }
 
   private async assertNewPasswordDiffers(
@@ -469,112 +608,21 @@ export class AuthService {
     }
   }
 
-  private async updatePasswordAndRevokeTokens(
+  private async replacePassword(
+    transaction: Prisma.TransactionClient,
     userId: string,
-    newPassword: string,
+    passwordHash: string,
+    now: Date,
   ): Promise<User> {
-    const passwordHash = await generateHash(newPassword);
-    return this.database.$transaction(async (transaction) => {
-      const updated = await transaction.user.update({
-        where: { id: userId },
-        data: {
-          passwordHash,
-          resetTokenHash: null,
-          resetTokenExpiresAt: null,
-        },
-      });
-      await transaction.refreshToken.deleteMany({ where: { userId } });
-      return updated;
-    });
-  }
-
-  private buildTokenPair(
-    user: User,
-    rememberMe: boolean,
-  ): {
-    tokens: TokenPair;
-    record: Prisma.RefreshTokenUncheckedCreateInput;
-  } {
-    const ttlSeconds = rememberMe
-      ? authConfig.refreshRememberedTtlSeconds
-      : authConfig.refreshFamilyTtlSeconds;
-    return this.buildTokenPairWithExpiry(
-      user,
-      rememberMe,
-      new Date(Date.now() + ttlSeconds * 1_000),
-    );
-  }
-
-  private buildTokenPairWithExpiry(
-    user: User,
-    rememberMe: boolean,
-    expiresAt: Date,
-  ): {
-    tokens: TokenPair;
-    record: Prisma.RefreshTokenUncheckedCreateInput;
-  } {
-    const tokenId = randomUUID();
-    const tokens = generateTokenPair({
-      userId: user.id,
-      tokenId,
-      role: user.role,
-      email: user.email,
-      rememberMe,
-      absoluteExpiresAt: expiresAt,
-    });
-    return {
-      tokens,
-      record: {
-        id: tokenId,
-        userId: user.id,
-        tokenHash: sha256(tokens.refreshToken),
-        expiresAt,
+    const updated = await transaction.user.update({
+      where: { id: userId },
+      data: {
+        passwordHash,
+        resetTokenHash: null,
+        resetTokenExpiresAt: null,
       },
-    };
-  }
-
-  private validateActiveUser(
-    user: Pick<User, "status" | "emailVerifiedAt">,
-  ): void {
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new ForbiddenException("Account is suspended.");
-    }
-    if (user.status !== UserStatus.ACTIVE || user.emailVerifiedAt === null) {
-      throw new BadRequestException("Verify your email before signing in.");
-    }
-  }
-
-  private isUniqueConstraintError(error: unknown): boolean {
-    return (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2002"
-    );
-  }
-
-  private async removeUndeliverablePendingUser(
-    userId: string,
-    verificationTokenHash: string,
-  ): Promise<void> {
-    try {
-      const deleted = await this.database.user.deleteMany({
-        where: {
-          id: userId,
-          status: UserStatus.PENDING_VERIFICATION,
-          emailVerifiedAt: null,
-          verificationTokenHash,
-        },
-      });
-      if (deleted.count !== 1) {
-        logger.error(
-          { userId, outcome: "registration_delivery_rollback_missed" },
-          "Pending registration could not be removed after email delivery failure.",
-        );
-      }
-    } catch {
-      logger.error(
-        { userId, outcome: "registration_delivery_rollback_failed" },
-        "Pending registration cleanup failed after email delivery failure.",
-      );
-    }
+    });
+    await this.sessions.revokeAll(transaction, userId, now);
+    return updated;
   }
 }

@@ -5,6 +5,7 @@ import {
   type DatabaseClient,
   type Wallet,
   UserStatus,
+  UserRole,
 } from "@template/database";
 
 export const fixedFinancialClock = (instant: Date): (() => Date) => {
@@ -25,12 +26,14 @@ export const financialIdentity = (): {
 
 export const createFinancialAccount = async (
   database: DatabaseClient,
+  role: UserRole = UserRole.USER,
 ): Promise<{ ownerUserId: string; wallet: Wallet }> => {
   const owner = await database.user.create({
     data: {
       email: `financial-${randomUUID()}@example.com`,
       fullName: "Financial Fixture Owner",
       passwordHash: "test-only-unused-password-hash",
+      role,
       status: UserStatus.ACTIVE,
       emailVerifiedAt: new Date("2026-10-02T09:00:00.000Z"),
     },

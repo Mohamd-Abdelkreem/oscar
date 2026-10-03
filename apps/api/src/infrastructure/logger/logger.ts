@@ -52,6 +52,25 @@ export type CreateLoggerOptions = Readonly<{
   pretty?: boolean;
 }>;
 
+const safeLogMetadata = (input: unknown, depth = 0): unknown => {
+  if (input instanceof Error || depth >= 8) return "[OMITTED]";
+  if (input === null || typeof input !== "object") return input;
+  if (Array.isArray(input))
+    return input.map((entry: unknown) => safeLogMetadata(entry, depth + 1));
+  return Object.fromEntries(
+    Object.entries(input).map(([key, field]) => [
+      key,
+      /^(?:err|error|cause|stack|message)$/iu.test(key)
+        ? "[OMITTED]"
+        : /password|token|secret|api_?key|private_?key|signing_?payload|signed_?bytes|mnemonic|seed/iu.test(
+              key,
+            )
+          ? "[REDACTED]"
+          : safeLogMetadata(field, depth + 1),
+    ]),
+  );
+};
+
 export const createLogger = (options: CreateLoggerOptions = {}): Logger => {
   const shouldUsePretty =
     options.destination === undefined &&
@@ -59,6 +78,16 @@ export const createLogger = (options: CreateLoggerOptions = {}): Logger => {
 
   const loggerOptions: LoggerOptions = {
     level: options.level ?? loggerConfig.level,
+    formatters: {
+      log: (metadata) => {
+        const sanitized = safeLogMetadata(metadata);
+        return sanitized !== null &&
+          typeof sanitized === "object" &&
+          !Array.isArray(sanitized)
+          ? Object.fromEntries(Object.entries(sanitized))
+          : {};
+      },
+    },
     redact: {
       paths: [...LOGGER_REDACT_PATHS],
       censor: "[REDACTED]",

@@ -30,9 +30,13 @@ describe("fresh authentication and financial migration", () => {
           ORDER BY table_name`,
       );
       expect(tables.rows.map(({ table_name }) => table_name)).toEqual([
+        "admin_invitations",
+        "admin_setup_state",
+        "auth_sessions",
         "financial_audit_records",
         "financial_operations",
         "financial_request_identities",
+        "identity_audit_records",
         "ledger_postings",
         "refresh_tokens",
         "reservation_allocations",
@@ -71,6 +75,11 @@ describe("fresh authentication and financial migration", () => {
         "reset_token_expires_at",
         "created_at",
         "updated_at",
+        "referral_code",
+        "sponsor_user_id",
+        "tasks_blocked",
+        "withdrawals_blocked",
+        "account_version",
       ]);
       expect(refreshTokenColumns).toEqual([
         "id",
@@ -78,6 +87,7 @@ describe("fresh authentication and financial migration", () => {
         "token_hash",
         "expires_at",
         "created_at",
+        "session_id",
       ]);
 
       const indexes = await pool.query<{ indexname: string }>(
@@ -101,7 +111,7 @@ describe("fresh authentication and financial migration", () => {
     }
   });
 
-  it("cascades refresh records and deploys idempotently", async () => {
+  it("retains session ownership while permitting owned empty fixture cleanup and idempotent deployment", async () => {
     const client = createDatabaseClient(databaseUrl());
     try {
       const user = await client.user.create({
@@ -111,13 +121,26 @@ describe("fresh authentication and financial migration", () => {
           passwordHash: "test-only-hash",
         },
       });
+      const session = await client.authSession.create({
+        data: {
+          userId: user.id,
+          rememberMe: false,
+          expiresAt: new Date("2030-01-01T00:00:00Z"),
+        },
+      });
       await client.refreshToken.create({
         data: {
           userId: user.id,
-          tokenHash: randomUUID(),
-          expiresAt: new Date("2027-01-01T00:00:00Z"),
+          sessionId: session.id,
+          tokenHash: "a".repeat(64),
+          expiresAt: session.expiresAt,
         },
       });
+      await expect(
+        client.user.delete({ where: { id: user.id } }),
+      ).rejects.toThrow();
+      await client.refreshToken.deleteMany({ where: { userId: user.id } });
+      await client.authSession.deleteMany({ where: { userId: user.id } });
       await client.user.delete({ where: { id: user.id } });
       expect(
         await client.refreshToken.count({ where: { userId: user.id } }),
@@ -166,7 +189,13 @@ describe("fresh authentication and financial migration", () => {
           ORDER BY conname`,
       );
       expect(constraints.rows.map(({ conname }) => conname)).toEqual([
+        "ck_users_account_version",
+        "ck_users_action_pairs",
+        "ck_users_admin_controls",
         "ck_users_email_normalized",
+        "ck_users_referral_code",
+        "ck_users_role_status",
+        "ck_users_sponsor_not_self",
         "ck_users_status_timestamps_consistent",
       ]);
 

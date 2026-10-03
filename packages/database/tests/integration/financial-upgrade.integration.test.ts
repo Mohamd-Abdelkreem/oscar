@@ -102,8 +102,15 @@ it("upgrades populated legacy auth data and redeploys without inventing financia
         )
       ).rows,
     };
-    await deploy();
-    await deploy();
+    // This regression owns the P01 frontier; P02 deliberately invalidates legacy credentials.
+    const finance = "20261002000000_financial_foundation";
+    await mkdir(join(migrations, finance), { recursive: true });
+    await copyFile(
+      join("prisma/migrations", finance, "migration.sql"),
+      join(migrations, finance, "migration.sql"),
+    );
+    await deploy(config);
+    await deploy(config);
     expect(
       (await upgraded.query(`SELECT * FROM users ORDER BY id`)).rows,
     ).toEqual(before.users);

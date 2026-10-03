@@ -1,55 +1,60 @@
-import type { SafeUser } from "@template/contracts";
-import { UserStatus, type DatabaseClient } from "@template/database";
+import type { IdentityUser } from "@template/contracts";
+import type { DatabaseClient } from "@template/database";
 
-import { ForbiddenException } from "../../core/errors/forbidden.error.js";
-import { UnauthorizedException } from "../../core/errors/unauthorized.error.js";
+import type { AuthenticatedSession } from "../../core/types/request-context.types.js";
+import {
+  readSessionAuthority,
+  runIdentityTransaction,
+} from "../auth/session-authority.js";
 import type { UpdateProfileBodyDto } from "./dto/update-profile.dto.js";
+import { AuthSessionService } from "../auth/auth-session.service.js";
 import { mapSafeUser, SAFE_USER_SELECT } from "./users.mapper.js";
 
 export class UsersService {
+  private readonly sessions = new AuthSessionService();
   constructor(private readonly database: DatabaseClient) {}
 
-  async getCurrentUser(userId: string): Promise<SafeUser> {
-    return mapSafeUser(await this.findActiveUser(userId));
+  async getCurrentUser(identity: AuthenticatedSession): Promise<IdentityUser> {
+    return runIdentityTransaction(
+      this.database,
+      { userIds: [identity.userId], adminPopulation: false },
+      async (transaction, now) =>
+        mapSafeUser(await readSessionAuthority(transaction, identity, now)),
+    );
   }
 
   async updateCurrentUser(
-    userId: string,
+    identity: AuthenticatedSession,
     data: UpdateProfileBodyDto,
-  ): Promise<SafeUser> {
-    const user = await this.findActiveUser(userId);
-    const updates: { fullName?: string; phone?: string | null } = {};
-
-    if (data.fullName !== undefined) updates.fullName = data.fullName.trim();
-    if (data.phone !== undefined) updates.phone = data.phone;
-
-    if (
-      (updates.fullName === undefined || updates.fullName === user.fullName) &&
-      (updates.phone === undefined || updates.phone === user.phone)
-    ) {
-      return mapSafeUser(user);
-    }
-
-    const updated = await this.database.user.update({
-      where: { id: userId },
-      data: updates,
-      select: SAFE_USER_SELECT,
-    });
-    return mapSafeUser(updated);
-  }
-
-  private async findActiveUser(userId: string) {
-    const user = await this.database.user.findUnique({
-      where: { id: userId },
-      select: SAFE_USER_SELECT,
-    });
-    if (user === null) throw new UnauthorizedException("User not found.");
-    if (user.status === UserStatus.SUSPENDED) {
-      throw new ForbiddenException("Account is suspended.");
-    }
-    if (user.status !== UserStatus.ACTIVE || user.emailVerifiedAt === null) {
-      throw new ForbiddenException("Account is not active and verified.");
-    }
-    return user;
+  ): Promise<IdentityUser> {
+    return runIdentityTransaction(
+      this.database,
+      { userIds: [identity.userId], adminPopulation: false },
+      async (transaction) => {
+        await this.sessions.lockSessions(transaction, identity.userId);
+        const user = await readSessionAuthority(
+          transaction,
+          identity,
+          new Date(),
+        );
+        const updates: { fullName?: string; phone?: string | null } = {};
+        if (data.fullName !== undefined)
+          updates.fullName = data.fullName.trim();
+        if (data.phone !== undefined) updates.phone = data.phone;
+        if (
+          (updates.fullName === undefined ||
+            updates.fullName === user.fullName) &&
+          (updates.phone === undefined || updates.phone === user.phone)
+        )
+          return mapSafeUser(user);
+        return mapSafeUser(
+          await transaction.user.update({
+            where: { id: identity.userId },
+            data: updates,
+            select: SAFE_USER_SELECT,
+          }),
+        );
+      },
+    );
   }
 }
