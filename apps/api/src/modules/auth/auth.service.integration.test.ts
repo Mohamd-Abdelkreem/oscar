@@ -32,6 +32,18 @@ const emailService = new EmailService(
   "http://localhost:3000",
 );
 const service = new AuthService(database, emailService);
+const ownedUsers = {
+  email: {
+    in: [
+      "user@example.com",
+      "retry@example.com",
+      "concurrent@example.com",
+      "resend@example.com",
+      "suspended@example.com",
+    ],
+  },
+};
+const ownedRefreshTokens = { user: ownedUsers };
 
 const tokenFromLastEmail = (): string => {
   const html = deliveredHtml.at(-1);
@@ -45,8 +57,8 @@ const tokenFromLastEmail = (): string => {
 describe("AuthService with PostgreSQL", () => {
   beforeEach(async () => {
     deliveredHtml.length = 0;
-    await database.refreshToken.deleteMany();
-    await database.user.deleteMany();
+    await database.refreshToken.deleteMany({ where: ownedRefreshTokens });
+    await database.user.deleteMany({ where: ownedUsers });
   });
 
   afterAll(async () => {
@@ -82,7 +94,9 @@ describe("AuthService with PostgreSQL", () => {
       password: "initial-secure-password",
       rememberMe: false,
     });
-    const beforeRotation = await database.refreshToken.findMany();
+    const beforeRotation = await database.refreshToken.findMany({
+      where: ownedRefreshTokens,
+    });
     expect(beforeRotation).toHaveLength(1);
     expect(beforeRotation[0]?.tokenHash).toBe(
       sha256(login.tokens.refreshToken),
@@ -90,7 +104,9 @@ describe("AuthService with PostgreSQL", () => {
     expect(beforeRotation[0]?.tokenHash).not.toBe(login.tokens.refreshToken);
 
     const rotated = await service.refresh(login.tokens.refreshToken);
-    const afterRotation = await database.refreshToken.findMany();
+    const afterRotation = await database.refreshToken.findMany({
+      where: ownedRefreshTokens,
+    });
     expect(afterRotation).toHaveLength(1);
     expect(afterRotation[0]?.tokenHash).toBe(
       sha256(rotated.tokens.refreshToken),

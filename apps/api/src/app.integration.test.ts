@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- Supertest intentionally exposes response.body as any; boundary assertions validate every consumed field. */
 import pino from "pino";
 import request, { type Response as SupertestResponse } from "supertest";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createDatabaseClient } from "@template/database";
 
 import { createApp } from "./app.js";
+import { createFinancialAccount } from "./modules/ledger/testing/financial-fixtures.js";
 import type {
   EmailDelivery,
   EmailSendRequest,
@@ -41,6 +42,9 @@ const registration = {
   phone: null,
   password: "initial-secure-password",
 };
+const ownedUsers = { email: "http.user@example.com" };
+const ownedRefreshTokens = { user: ownedUsers };
+let retainedFinancialOwnerId: string;
 
 const tokenFromLastEmail = (): string => {
   const html = delivered.at(-1)?.html;
@@ -109,15 +113,32 @@ const loginSession = async (
 };
 
 describe("real HTTP authentication boundary", () => {
+  beforeAll(async () => {
+    const financialAccount = await createFinancialAccount(database);
+    retainedFinancialOwnerId = financialAccount.ownerUserId;
+  });
   beforeEach(async () => {
     delivered.length = 0;
     deliveryFailure = undefined;
-    await database.refreshToken.deleteMany();
-    await database.user.deleteMany();
+    await database.refreshToken.deleteMany({ where: ownedRefreshTokens });
+    await database.user.deleteMany({ where: ownedUsers });
   });
 
   afterAll(async () => {
     await database.$disconnect();
+  });
+
+  it("retains another suite's financial owner and wallet during auth cleanup", async () => {
+    await expect(
+      database.wallet.findUnique({
+        where: { ownerUserId: retainedFinancialOwnerId },
+      }),
+    ).resolves.toMatchObject({ ownerUserId: retainedFinancialOwnerId });
+    await expect(
+      database.user.findUnique({
+        where: { id: retainedFinancialOwnerId },
+      }),
+    ).resolves.toMatchObject({ id: retainedFinancialOwnerId });
   });
 
   it("allows credentialed CORS preflight headers and rejects unknown origins", async () => {
@@ -213,7 +234,11 @@ describe("real HTTP authentication boundary", () => {
     expect(results.map(({ status }) => status).sort()).toEqual([200, 400]);
     await expect(
       database.user.count({
-        where: { status: "ACTIVE", emailVerifiedAt: { not: null } },
+        where: {
+          ...ownedUsers,
+          status: "ACTIVE",
+          emailVerifiedAt: { not: null },
+        },
       }),
     ).resolves.toBe(1);
     await expect(
@@ -243,7 +268,7 @@ describe("real HTTP authentication boundary", () => {
       message: "Registration is temporarily unavailable. Please try again.",
     });
     expect(JSON.stringify(failed.body)).not.toContain(providerDetail);
-    await expect(database.user.count()).resolves.toBe(0);
+    await expect(database.user.count({ where: ownedUsers })).resolves.toBe(0);
   });
 
   it("protects current-user reads and profile writes with bearer and CSRF", async () => {
@@ -324,7 +349,9 @@ describe("real HTTP authentication boundary", () => {
     const sessionB = await loginSession(agentB);
     const refreshCookieA = cookiePair(sessionA.response, "refreshToken");
     const csrfCookieA = cookiePair(sessionA.response, "csrfToken");
-    expect(await database.refreshToken.count()).toBe(2);
+    expect(
+      await database.refreshToken.count({ where: ownedRefreshTokens }),
+    ).toBe(2);
 
     const logout = await agentA
       .post("/api/v1/auth/logout")
@@ -332,7 +359,9 @@ describe("real HTTP authentication boundary", () => {
       .set("x-csrf-token", sessionA.csrfToken)
       .send({});
     expect(logout.status).toBe(200);
-    expect(await database.refreshToken.count()).toBe(1);
+    expect(
+      await database.refreshToken.count({ where: ownedRefreshTokens }),
+    ).toBe(1);
     await request(app)
       .post("/api/v1/auth/refresh")
       .set("Cookie", `${refreshCookieA}; ${csrfCookieA}`)
@@ -352,7 +381,9 @@ describe("real HTTP authentication boundary", () => {
     const agentB = request.agent(app);
     const sessionA = await loginSession(agentA);
     const sessionB = await loginSession(agentB);
-    expect(await database.refreshToken.count()).toBe(2);
+    expect(
+      await database.refreshToken.count({ where: ownedRefreshTokens }),
+    ).toBe(2);
 
     const logoutAll = await agentA
       .post("/api/v1/auth/logout-all")
@@ -360,7 +391,9 @@ describe("real HTTP authentication boundary", () => {
       .set("x-csrf-token", sessionA.csrfToken)
       .send({});
     expect(logoutAll.status).toBe(200);
-    expect(await database.refreshToken.count()).toBe(0);
+    expect(
+      await database.refreshToken.count({ where: ownedRefreshTokens }),
+    ).toBe(0);
     await agentB
       .post("/api/v1/auth/refresh")
       .set("x-csrf-token", sessionB.csrfToken)
@@ -383,7 +416,9 @@ describe("real HTTP authentication boundary", () => {
         passwordConfirmation: "changed-secure-password",
       });
     expect(changed.status).toBe(200);
-    expect(await database.refreshToken.count()).toBe(0);
+    expect(
+      await database.refreshToken.count({ where: ownedRefreshTokens }),
+    ).toBe(0);
     await request(app)
       .post("/api/v1/auth/login")
       .send({

@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   reactCompiler: true,
   transpilePackages: ["@template/contracts"],
+  experimental: {
+    // Bound prerender concurrency on memory-constrained build hosts.
+    cpus: 2,
+  },
   turbopack: {
     root: path.resolve(import.meta.dirname, "../.."),
   },

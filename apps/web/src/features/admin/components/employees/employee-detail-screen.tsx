@@ -406,11 +406,6 @@ export function EmployeeDetailScreen({
         }
         confirmLabel="تأكيد الحذف والأرشفة"
         variant="destructive"
-        affectedRecord={{
-          id: employee.id,
-          label: employee.name,
-          subtitle: `البريد: ${employee.email} | الرصيد: ${employee.balance.toFixed(2)} USDT`,
-        }}
         requireReason
         reasonLabel="سبب أرشفة الحساب الإلزامي"
         onConfirm={(reason) => {

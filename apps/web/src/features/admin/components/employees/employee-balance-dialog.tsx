@@ -53,7 +53,7 @@ export function EmployeeBalanceDialog({
             <div className="flex justify-between text-xs text-slate-600">
               <span>الرصيد الحالي:</span>
               <span className="font-mono font-bold text-slate-900">
-                {employee.balance.toFixed(2)} USDT
+                {employee.balance.total.toFixed(2)} USDT
               </span>
             </div>
             {parseFloat(balanceAmount) > 0 && (
@@ -63,8 +63,11 @@ export function EmployeeBalanceDialog({
                   className={`font-mono ${balanceDirection === "credit" ? "text-emerald-700" : "text-rose-700"}`}
                 >
                   {(balanceDirection === "credit"
-                    ? employee.balance + parseFloat(balanceAmount)
-                    : Math.max(0, employee.balance - parseFloat(balanceAmount))
+                    ? employee.balance.total + parseFloat(balanceAmount)
+                    : Math.max(
+                        0,
+                        employee.balance.total - parseFloat(balanceAmount),
+                      )
                   ).toFixed(2)}{" "}
                   USDT
                 </span>

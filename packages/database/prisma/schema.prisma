@@ -38,7 +38,10 @@ model User {
   createdAt                  DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                  DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  refreshTokens RefreshToken[]
+  refreshTokens       RefreshToken[]
+  wallet              Wallet?
+  financialOperations FinancialOperation[] @relation("FinancialActor")
+  financialAudits     AuditRecord[]        @relation("AuditActor")
 
   @@index([status, role], map: "users_status_role_idx")
   @@map("users")
@@ -56,4 +59,166 @@ model RefreshToken {
   @@index([userId], map: "refresh_tokens_user_idx")
   @@index([expiresAt], map: "refresh_tokens_expiry_idx")
   @@map("refresh_tokens")
+}
+
+enum FinancialOperationKind {
+  CREDIT
+  PURCHASE_DEBIT
+  RESERVE
+  RELEASE
+  CORRECTION
+
+  @@map("financial_operation_kind")
+}
+
+enum FinancialOrigin {
+  DEPOSIT
+  TASK_REWARD
+  REFERRAL_COMMISSION
+  PACKAGE_PURCHASE
+  WITHDRAWAL_RESERVATION
+  RESERVATION_RELEASE
+  ADMIN_ADJUSTMENT
+
+  @@map("financial_origin")
+}
+
+enum FinancialActorType {
+  USER
+  PROCESS
+
+  @@map("financial_actor_type")
+}
+
+enum FundSource {
+  NON_REFERRAL
+  REFERRAL
+
+  @@map("fund_source")
+}
+
+enum ReservationState {
+  ACTIVE
+  RELEASED
+
+  @@map("reservation_state")
+}
+
+model Wallet {
+  id                        String   @id @default(uuid()) @db.Uuid
+  ownerUserId               String   @unique @map("owner_user_id") @db.Uuid
+  availableNonReferralUnits BigInt   @default(0) @map("available_non_referral_units")
+  reservedNonReferralUnits  BigInt   @default(0) @map("reserved_non_referral_units")
+  availableReferralUnits    BigInt   @default(0) @map("available_referral_units")
+  reservedReferralUnits     BigInt   @default(0) @map("reserved_referral_units")
+  createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner       User                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  operations  FinancialOperation[]
+  allocations ReservationAllocation[]
+
+  @@map("wallets")
+}
+
+model FinancialOperation {
+  id                String                 @id @default(uuid()) @db.Uuid
+  walletId          String                 @map("wallet_id") @db.Uuid
+  kind              FinancialOperationKind
+  businessNamespace String                 @map("business_namespace") @db.VarChar(64)
+  businessKey       String                 @map("business_key") @db.VarChar(256)
+  intentHash        String                 @map("intent_hash") @db.Char(64)
+  magnitudeUnits    BigInt                 @map("magnitude_units")
+  origin            FinancialOrigin
+  actorType         FinancialActorType     @map("actor_type")
+  actorUserId       String?                @map("actor_user_id") @db.Uuid
+  actorProcessId    String?                @map("actor_process_id") @db.VarChar(64)
+  acceptedTerms     Json                   @map("accepted_terms")
+  outcome           Json
+  createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  wallet             Wallet                 @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor              User?                  @relation("FinancialActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  requestIdentities  RequestIdentity[]
+  postings           LedgerPosting[]
+  openingAllocation  ReservationAllocation? @relation("ReservationOpening")
+  releaseAllocation  ReservationAllocation? @relation("ReservationRelease")
+  audit              AuditRecord?           @relation("OperationAudit")
+  referencedByAudits AuditRecord[]          @relation("CorrectionReference")
+
+  @@unique([id, walletId])
+  @@unique([kind, businessNamespace, businessKey], map: "financial_operations_business_key")
+  @@index([walletId], map: "financial_operations_wallet_idx")
+  @@map("financial_operations")
+}
+
+model RequestIdentity {
+  id          String                 @id @default(uuid()) @db.Uuid
+  operationId String                 @map("operation_id") @db.Uuid
+  actorScope  String                 @map("actor_scope") @db.VarChar(72)
+  kind        FinancialOperationKind
+  requestKey  String                 @map("request_key") @db.VarChar(128)
+  intentHash  String                 @map("intent_hash") @db.Char(64)
+  createdAt   DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  operation FinancialOperation @relation(fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([actorScope, kind, requestKey], map: "financial_request_identities_scope_key")
+  @@map("financial_request_identities")
+}
+
+model LedgerPosting {
+  id                  String     @id @default(uuid()) @db.Uuid
+  operationId         String     @map("operation_id") @db.Uuid
+  walletId            String     @map("wallet_id") @db.Uuid
+  source              FundSource
+  availableDeltaUnits BigInt     @map("available_delta_units")
+  reservedDeltaUnits  BigInt     @map("reserved_delta_units")
+  createdAt           DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  operation FinancialOperation @relation(fields: [operationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([operationId, source], map: "ledger_postings_operation_source_key")
+  @@index([walletId], map: "ledger_postings_wallet_idx")
+  @@map("ledger_postings")
+}
+
+model ReservationAllocation {
+  id                 String           @id @default(uuid()) @db.Uuid
+  walletId           String           @map("wallet_id") @db.Uuid
+  openingOperationId String           @unique @map("opening_operation_id") @db.Uuid
+  grossUnits         BigInt           @map("gross_units")
+  nonReferralUnits   BigInt           @map("non_referral_units")
+  referralUnits      BigInt           @map("referral_units")
+  state              ReservationState @default(ACTIVE)
+  releaseOperationId String?          @unique @map("release_operation_id") @db.Uuid
+  releasedAt         DateTime?        @map("released_at") @db.Timestamptz(6)
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  wallet           Wallet              @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  openingOperation FinancialOperation  @relation("ReservationOpening", fields: [openingOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  releaseOperation FinancialOperation? @relation("ReservationRelease", fields: [releaseOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([openingOperationId, walletId])
+  @@unique([releaseOperationId, walletId])
+  @@index([walletId, state], map: "reservation_allocations_wallet_state_idx")
+  @@map("reservation_allocations")
+}
+
+model AuditRecord {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  operationId          String                 @unique @map("operation_id") @db.Uuid
+  actorType            FinancialActorType     @map("actor_type")
+  actorUserId          String?                @map("actor_user_id") @db.Uuid
+  actorProcessId       String?                @map("actor_process_id") @db.VarChar(64)
+  action               FinancialOperationKind
+  reason               String?                @db.VarChar(500)
+  referenceOperationId String?                @map("reference_operation_id") @db.Uuid
+  createdAt            DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  operation          FinancialOperation  @relation("OperationAudit", fields: [operationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor              User?               @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  referenceOperation FinancialOperation? @relation("CorrectionReference", fields: [referenceOperationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("financial_audit_records")
 }

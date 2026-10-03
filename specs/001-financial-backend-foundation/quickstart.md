@@ -1,29 +1,64 @@
 # P01 Validation Guide
 
-**Status**: Future implementation validation, not an executed result or permission to implement. **Feature**: [spec.md](spec.md). **Design**: [plan.md](plan.md), [data-model.md](data-model.md), [financial boundary](contracts/financial-boundary.md), [internal service](contracts/ledger-service.md).
+**Status**: Validation procedures for the implemented P01 foundation; commands and expected outcomes below are not recorded passes. **Feature**: [spec.md](spec.md). **Design**: [plan.md](plan.md), [data-model.md](data-model.md), [financial boundary](contracts/financial-boundary.md), [internal service](contracts/ledger-service.md).
 
-Run from the repository root after authorized P01 implementation creates the proposed files below. Package scripts exist now; those file filters do not establish that the tests/services already exist. P01 has no financial HTTP workflow, so validation exercises the real internal service and persistence, not invented curl endpoints or browser controls.
+Run from the repository root. The entrypoints and test files below exist in the current implementation. P01 has no financial HTTP workflow; validation exercises the internal service and disposable persistence.
+
+## Implemented entrypoints and ownership
+
+| Owner                    | Entrypoints / files                                                                                                                                                                                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Shared contracts         | `packages/contracts/src/financial/financial.schema.ts`, exported through `packages/contracts/src/index.ts`: amount/rate/source/date/result schemas, `positiveCountedHoursSchema` and `countedHoursToMilliseconds`.                                                                                                       |
+| Exact arithmetic         | `apps/api/src/core/financial/money.ts`: `parseUsdtAmount`, `parseSignedUsdtDelta`, `formatUsdtAmount`, `formatSignedUsdtDelta`, `addUnits`, `subtractUnits`, `totalUnits`, `percentageUnits` and `feeAndNetUnits`.                                                                                                       |
+| Baghdad calendar         | `apps/api/src/core/business-calendar/business-clock.ts`: injected-clock `BusinessClock`, with `now`, `businessDate`, `isTaskWindowOpen`, `subscriptionTerm`, `isSubscriptionActive`, `initialWithdrawalDeadline`, `extendDeadline` and `normalizeNewDispatch`.                                                           |
+| Internal accounting      | `apps/api/src/modules/ledger/ledger.service.ts`: `LedgerService.execute`, `recoverOperation`, `runInTransaction` and `reconcileWallet`. `runInTransaction` supplies the same transaction client and a handle exposing `credit`, `debitForPurchase`, `reserveForWithdrawal`, `releaseReservation` and `correctAvailable`. |
+| Accounting collaborators | `ledger.types.ts`, `ledger.effects.ts`, `ledger.transaction.ts`, `ledger.mapper.ts` and `ledger.errors.ts` in the ledger module; read-only checks in `ledger-reconciliation.ts` and `ledger-reconciliation.evidence.ts`.                                                                                                 |
+| Persistence              | Six financial models in `packages/database/prisma/schema.prisma`; forward migration `packages/database/prisma/migrations/20261002000000_financial_foundation/migration.sql`, following the retained authentication migration.                                                                                            |
+
+Trusted composition supplies the allowlisted business namespaces/process IDs, actor, participant wallets, clock, observation/mutation guards and action-specific eligibility/release-safety callbacks. These are server-only inputs; an ID or schema-valid intent does not grant authority. Database-only dependent writes use the same transaction. Authorized replay returns the original result and skips dependent writes. Standalone recovery returns `null` when no committed identity is found; it does not infer success or safe release.
+
+Amount/calendar validation raises bounded `RangeError` messages. Ledger failures use `LedgerError` from `ledger.errors.ts`, including `LEDGER_FORBIDDEN`, `LEDGER_IDENTITY_CONFLICT`, `LEDGER_INSUFFICIENT_FUNDS`, `LEDGER_RESERVATION_CLOSED` and `LEDGER_UNRESOLVED`. Guards must reject intentional denials with `new LedgerError("LEDGER_FORBIDDEN")`; unexpected faults become sanitized `LEDGER_INTERNAL` errors. Their original `cause` is retained as a non-enumerable field for protected diagnosis. The existing HTTP boundary logs only the safe code, request ID, status and message for these errors; never log the error/cause object directly or expose its private payload. Recognized transient Prisma conflicts retain bounded retry handling. Treat unresolved operations as requiring identity recovery; do not infer a refund or blindly repeat a transfer. These are internal codes, not a newly registered HTTP contract.
+
+Each `runInTransaction` attempt becomes rollback-only after any transaction-bound primitive fails. Catching a child error cannot permit commit or further primitives, including after an earlier child succeeded. A retry starts a fresh scope; authorized replay still skips dependent writes.
 
 ## Prerequisites
 
-- Node 24 and pnpm 11.17.0, existing workspace installation, deliberately updated/pinned Luxon dependency and lockfile from implementation.
+- Node 24 and pnpm 11.17.0 with the existing workspace installation. The API pins runtime `luxon` 3.7.2 and development `@types/luxon` 3.7.6; the lockfile contains these additions.
 - Available Docker-compatible runtime and image access for existing Testcontainers `postgres:18.4` integration suites. They override DATABASE_URL with disposable databases and run migrations; never substitute a live/developer database or mocked Prisma.
 - Existing local-only configuration required by the database CLI/build and API test setup. Keep secrets out of command arguments/output; no provider, Redis, signing credentials, testnet or mainnet funds are required for P01.
-- Scope auth fixture cleanup before combined suites; financial history must survive until container teardown. Preserve unrelated working-tree changes.
+- The app/auth suites scope fixture cleanup, refresh reads and counts to their owned accounts. Financial fixtures in `apps/api/src/modules/ledger/testing/financial-fixtures.ts` retain history until container teardown. Preserve unrelated working-tree changes.
 
-## Build prerequisite packages and inspect the baseline
+## Build prerequisite packages
 
 The generated Prisma client may be absent. Existing database build runs generation; direct API checks require workspace dependency artifacts.
 
 ```sh
 pnpm --filter @template/contracts build
 pnpm --filter @template/database build
-pnpm --filter @template/contracts test
-pnpm --filter @template/database test
-pnpm --filter @template/api test
 ```
 
-At implementation start, run relevant existing suites before changes to distinguish existing failures from new ones; repeat affected checks after the work. These commands are instructions, not baseline evidence recorded by PLAN.
+Run these builds sequentially before direct API checks. Historical baseline assessment belongs to T002; the acceptance commands below validate the current foundation and do not reconstruct a pre-change baseline.
+
+`packages/database/prisma.config.ts` requires `DATABASE_URL` even for generation. If local CLI configuration is absent, use this PowerShell procedure for these builds, or for the `pnpm check-types` / `pnpm build` commands below. The placeholder is test-only and these commands do not migrate or connect to that database; integration global setups replace it with their disposable container URL.
+
+```powershell
+$p01PreviousDatabaseUrl = $env:DATABASE_URL
+try {
+  if ([string]::IsNullOrWhiteSpace($env:DATABASE_URL)) {
+    $env:DATABASE_URL = 'postgresql://p01_test:p01_test@127.0.0.1:1/p01_codegen_only'
+  }
+  pnpm --filter @template/contracts build
+  if ($LASTEXITCODE -ne 0) { throw 'Contracts build failed.' }
+  pnpm --filter @template/database build
+  if ($LASTEXITCODE -ne 0) { throw 'Database build failed.' }
+} finally {
+  if ($null -eq $p01PreviousDatabaseUrl) {
+    Remove-Item Env:DATABASE_URL -ErrorAction SilentlyContinue
+  } else {
+    $env:DATABASE_URL = $p01PreviousDatabaseUrl
+  }
+}
+```
 
 ## Validate contracts, arithmetic and calendar
 
@@ -34,7 +69,7 @@ pnpm --filter @template/api test src/core/financial/money.test.ts src/core/busin
 
 Expected: micro/max amounts retain exact units; invalid/noncanonical inputs fail; full-range percentage multiplication floors without floating-point error; gross equals fee+net. Strict output shapes contain canonical strings and no private fields. All approved calendar cutoffs match the spec.
 
-Validate CHK010 through the shared schema/converter and the real proposed calendar; these are expected outcomes, not results already executed:
+Validate the accepted CHK010 precision contract through the shared schema/converter and calendar; these are expected outcomes:
 
 | Input hours                                                                      | Expected duration/outcome                                                            |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
@@ -110,8 +145,48 @@ pnpm verify:build-output
 git diff --check
 ```
 
-Add existing Prisma-error-mapper tests to the focused API run only if that mapper changes. Run artifact formatting with the current Prettier script/CLI on the owned paths, without rewriting unrelated files. Root `pnpm verify` includes schema-writing db:format and full suites; it is not a read-only PLAN check. Full regressions remain required at P05/P09/P12/P14/P15 and release.
+The web build requires a valid `NEXT_PUBLIC_API_URL`; a localhost URL is sufficient for this build-only check. `apps/web/next.config.ts` caps prerender workers at two, and `turbo.json` excludes development-server output from the production build cache. On a memory-constrained host, use this serial build procedure. Loose environment mode passes the temporary native thread limit through Turbo; all three process environment values are restored afterward:
+
+```powershell
+$p01BuildEnvironment = @{}
+foreach ($p01Key in @('DATABASE_URL', 'NEXT_PUBLIC_API_URL', 'RAYON_NUM_THREADS')) {
+  $p01BuildEnvironment[$p01Key] = [Environment]::GetEnvironmentVariable($p01Key, 'Process')
+}
+try {
+  if ([string]::IsNullOrWhiteSpace($env:DATABASE_URL)) {
+    $env:DATABASE_URL = 'postgresql://p01_test:p01_test@127.0.0.1:1/p01_codegen_only'
+  }
+  if ([string]::IsNullOrWhiteSpace($env:NEXT_PUBLIC_API_URL)) {
+    $env:NEXT_PUBLIC_API_URL = 'http://localhost:5000/api/v1'
+  }
+  $env:RAYON_NUM_THREADS = '2'
+  pnpm build --concurrency=1 --env-mode=loose
+  if ($LASTEXITCODE -ne 0) { throw 'Workspace build failed.' }
+} finally {
+  foreach ($p01Key in $p01BuildEnvironment.Keys) {
+    [Environment]::SetEnvironmentVariable($p01Key, $p01BuildEnvironment[$p01Key], 'Process')
+  }
+}
+```
+
+After the build, verify the ledger fixture directory is absent from emitted output. The root build-output checker rejects test filenames but does not detect helper names:
+
+```powershell
+if (Test-Path -LiteralPath 'apps/api/dist/modules/ledger/testing') {
+  throw 'Ledger test helpers were emitted into production output.'
+}
+```
+
+Check owned source/config/test/docs formatting without rewriting unrelated files. Generated Prisma files and migration SQL are excluded by `.prettierignore`:
+
+```sh
+pnpm exec prettier --check packages/contracts/src/financial packages/database apps/api/src/core/financial apps/api/src/core/business-calendar apps/api/src/modules/ledger specs/001-financial-backend-foundation/quickstart.md
+```
+
+Add `src/infrastructure/database/prisma-error.mapper.test.ts` to the focused API run only if its production mapper changes. Root `pnpm verify` includes schema-writing `db:format` and full suites; it is broader than this P01 gate. Full regressions remain required at P05/P09/P12/P14/P15 and release. Root Turbo types/build runs may reuse cached results; report cache status separately from freshly executed package tests.
 
 ## Report the actual gate
 
-Before implementation, review the existing custom requirements checklist and align all affected shared-contract, ledger-snapshot, calendar and reconciliation tasks (including T007/T009/T011, T025-T027 and T033-T035) with this amended design through the separately selected TASKS stage, preserving existing task IDs, then rerun ANALYZE. This guide changes no approval/task markers. Record exact commands, fresh/cached results, failed checks and unavailable services in the implementation result. Baseline, dependency compatibility, SC-001-SC-007 including CHK010/CHK035 acceptance, migrated PostgreSQL checks, affected auth/shared regressions and relevant static/build checks must pass to close P01. Missing Docker/image/database execution leaves the gate incomplete; do not claim provider/deployment/recovery readiness from P01. No tasks, implementation, next phase or real-money operation is authorized by this guide.
+The requirement checklists record written-evidence reviews, not runtime passes. Preserve their approval markers. Review SC-001-SC-007 against the actual schema/money/calendar, real PostgreSQL service/race/reconciliation, fresh/populated/repeated migration and affected auth/shared results. Record exact commands, fresh/cached outcomes, failed checks and unavailable services in the implementation result; task markers alone are not execution evidence.
+
+Missing required persistence evidence or failed static/build checks leaves P01 incomplete. P01 acceptance covers internal primitives; it does not establish provider confirmation, production session hardening, signing, settlement, recovery or live-money readiness. Stop at the selected task scope; this guide authorizes no subsequent workflow stage, deployment or real-money operation.

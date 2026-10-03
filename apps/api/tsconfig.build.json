@@ -13,6 +13,7 @@
     "dist",
     "coverage",
     "tests",
+    "src/modules/ledger/testing/**",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]

@@ -31,6 +31,12 @@ HOW THE OWNER USES THIS PACK
    then CONVERGE again. Never execute the next roadmap phase automatically.
 6. Repeat steps 2-5 for the next roadmap phase after its prerequisites pass.
 
+IMPLEMENT is one owner request: first review existing incomplete requirements
+checklists with explicit authorization, then invoke the installed implement skill
+only if the required checklist gates pass. This is not an extra Spec Kit command
+or a separate named workflow stage. During implementation, approval markers stay
+read-only. Checklist approval is not evidence that code/tests are complete.
+
 If IMPLEMENT is scoped to a batch, repeat it for remaining dependency-safe batches
 until this phase's implementation tasks finish before claiming full convergence.
 Incomplete batches are not complete roadmap phases.
@@ -500,20 +506,64 @@ constitution, mark checklists or execute implementation automatically.
 
 PROMPT: IMPLEMENT
 
-$speckit-implement
-
 PHASE_ID = <selected OSCAR roadmap phase>
 TASK_SCOPE = <explicit task IDs, an approved bounded batch,
               NEXT_DEPENDENCY_SAFE_BATCH, or ALL_ACTIVE_PHASE_TASKS>
+
+This is one owner-authorized request with a review preflight followed by the
+installed implementation command. Do not invoke $speckit-implement before the
+review preflight below is complete. This preflight is ordinary evidence review,
+not a new Spec Kit command or permission to approve unsupported requirements.
+
+Apply the operating contract and verify the active feature belongs to PHASE_ID.
+Read its current spec.md, plan.md, tasks.md, contracts, checklists, constitution,
+PLAN.md, available analysis findings, and all eight engineering guides before
+reviewing. Check the working tree and preserve unrelated edits. Inspect the
+existing feature pointer directly; do not change it or supply a differing feature
+override. Do not modify another phase.
+
+Pre-implementation checklist review - explicitly authorized by this request:
+1. Inspect EVERY checklist file/item in the selected feature's checklists/
+   directory, including requirements.md and custom checklists. The installed
+   skill scans every checklist file, not merely a selected "required" subset.
+   Do not invoke checklist generation or append another checklist just to review.
+2. Review unchecked items against the actual requirements/design evidence. A
+   checked requirements-quality item means complete, clear, consistent and
+   testable requirements; it does not mean implementation exists or an acceptance
+   test passed. Items of another kind retain their own evidence criteria; do not
+   reinterpret implementation-verification items as requirements-quality items.
+3. Mark [x] only for supported items, with concise evidence references. Preserve
+   checklist questions, IDs and existing unrelated content. Update review status
+   and notes truthfully. Use docs-guard for these documentation-only edits.
+4. Do not mark unsupported items, weaken requirements, change application code,
+   rewrite spec/plan/constitution or treat execution of tasks as checklist approval.
+   For already reviewed items, reuse recorded approval unless relevant evidence
+   changed; reassess affected items when it did and keep unsupported ones unchecked.
+5. If genuine gaps, analysis blockers or unmet predecessor gates remain, report
+   their evidence and owning artifact, then stop before invoking implementation.
+   Do not bypass the installed checklist gate or infer permission to continue
+   despite incomplete items. Requirements changes need the appropriate owner
+   decision/artifact correction, not a fictional approved checklist.
+
+When every checklist scanned by the skill has zero incomplete items and the
+other prerequisite gates pass, invoke:
+$speckit-implement
+
+Pass PHASE_ID and TASK_SCOPE above as its natural-language scope and follow the
+implementation instructions below. If its own check still detects an incomplete
+checklist, obey its STOP/confirmation behavior; do not silently override the skill.
 
 Implement ONLY this PHASE_ID and TASK_SCOPE. Apply the operating contract.
 The installed command normally executes the active tasks.md, so this scope is
 an explicit restriction. Verify its feature pointer, spec, plan, task IDs,
 constitution, required checklist status, analysis blockers and predecessor gates
-before editing. Do not implement other phases or create a new specification.
+before application/task implementation edits. Do not implement other phases or
+create a new specification.
 Out-of-scope task lines are read-only. For this invocation, the installed skill's
 global completion condition is narrowed to TASK_SCOPE, not every tasks.md item.
 Report both batch completion and whole-phase status without conflating them.
+ALL_ACTIVE_PHASE_TASKS covers remaining approved tasks in this phase. Preserve
+completed tasks and their evidence; do not repeat them or start the next phase.
 
 Read all eight engineering guides at phase start, then relevant sections/source
 for each batch. Read and apply applicable skills. Reuse current modules, schemas,
@@ -539,7 +589,8 @@ playwright for required browser checks and docs-guard for technical docs.
 Review against the engineering guides after edits and fix in-scope findings.
 
 Checklist approval markers are read-only during implementation; do not mark
-requirements reviewed to bypass gates. Update task completion only after its
+requirements reviewed to bypass gates. The permission above applies only to the
+pre-implementation evidence review. Update task completion only after its
 implementation and required verification pass. Do not weaken tests/checks or
 mark unavailable integration/financial validation as complete.
 

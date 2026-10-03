@@ -49,3 +49,33 @@ export type {
   PaginationMeta,
   SuccessEnvelope,
 } from "./http/http.schema.ts";
+export {
+  basisPointsSchema,
+  businessDateSchema,
+  countedHoursToMilliseconds,
+  financialInstantSchema,
+  financialOperationResultSchema,
+  financialRequestKeySchema,
+  fundSourceSchema,
+  MAX_USDT_AMOUNT,
+  positiveCountedHoursSchema,
+  positiveUsdtAmountSchema,
+  signedUsdtDeltaSchema,
+  sourceAllocationSchema,
+  usdtAmountSchema,
+  walletComponentsSchema,
+} from "./financial/financial.schema.ts";
+export type {
+  BasisPoints,
+  BusinessDate,
+  FinancialInstant,
+  FinancialOperationResult,
+  FinancialRequestKey,
+  FundSource,
+  PositiveCountedHours,
+  PositiveUsdtAmount,
+  SignedUsdtDelta,
+  SourceAllocation,
+  UsdtAmount,
+  WalletComponents,
+} from "./financial/financial.schema.ts";

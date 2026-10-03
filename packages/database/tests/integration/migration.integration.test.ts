@@ -1,5 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { randomUUID } from "node:crypto";
+
+import { createDatabaseClient } from "../../src/index.js";
 
 import { Pool } from "pg";
 import { describe, expect, it } from "vitest";
@@ -14,7 +17,7 @@ const databaseUrl = (): string => {
   return value;
 };
 
-describe("fresh authentication migration", () => {
+describe("fresh authentication and financial migration", () => {
   it("creates exactly the required application tables, columns, and indexes", async () => {
     const pool = new Pool({ connectionString: databaseUrl() });
     try {
@@ -27,8 +30,14 @@ describe("fresh authentication migration", () => {
           ORDER BY table_name`,
       );
       expect(tables.rows.map(({ table_name }) => table_name)).toEqual([
+        "financial_audit_records",
+        "financial_operations",
+        "financial_request_identities",
+        "ledger_postings",
         "refresh_tokens",
+        "reservation_allocations",
         "users",
+        "wallets",
       ]);
 
       const columns = await pool.query<{
@@ -93,6 +102,29 @@ describe("fresh authentication migration", () => {
   });
 
   it("cascades refresh records and deploys idempotently", async () => {
+    const client = createDatabaseClient(databaseUrl());
+    try {
+      const user = await client.user.create({
+        data: {
+          email: `cascade-${randomUUID()}@example.com`,
+          fullName: "Cascade Fixture",
+          passwordHash: "test-only-hash",
+        },
+      });
+      await client.refreshToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: randomUUID(),
+          expiresAt: new Date("2027-01-01T00:00:00Z"),
+        },
+      });
+      await client.user.delete({ where: { id: user.id } });
+      expect(
+        await client.refreshToken.count({ where: { userId: user.id } }),
+      ).toBe(0);
+    } finally {
+      await client.$disconnect();
+    }
     const pool = new Pool({ connectionString: databaseUrl() });
     try {
       const deleteRule = await pool.query<{ delete_rule: string }>(

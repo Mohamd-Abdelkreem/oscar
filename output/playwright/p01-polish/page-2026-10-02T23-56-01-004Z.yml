@@ -1,0 +1,180 @@
+- generic [ref=e1]:
+  - generic [ref=e12]:
+    - complementary [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - link "أ أوسكار | الإدارة لوحة العمليات والرقابة" [ref=e16] [cursor=pointer]:
+            - /url: /admin
+            - generic [ref=e17]: أ
+            - generic [ref=e18]:
+              - generic [ref=e19]: أوسكار | الإدارة
+              - generic [ref=e20]: لوحة العمليات والرقابة
+          - button "إغلاق القائمة الجانبية" [ref=e21] [cursor=pointer]
+        - navigation "قائمة التنقل الرئيسية" [ref=e25]:
+          - generic [ref=e26]:
+            - heading "الرئيسية" [level=2] [ref=e27]
+            - list [ref=e28]:
+              - listitem [ref=e29]:
+                - link "نظرة عامة" [ref=e30] [cursor=pointer]:
+                  - /url: /admin
+          - generic [ref=e37]:
+            - heading "الموظفون والمناصب" [level=2] [ref=e38]
+            - list [ref=e39]:
+              - listitem [ref=e40]:
+                - link "إدارة الموظفين" [ref=e41] [cursor=pointer]:
+                  - /url: /admin/employees
+              - listitem [ref=e48]:
+                - link "الباقات والمناصب" [ref=e49] [cursor=pointer]:
+                  - /url: /admin/packages
+          - generic [ref=e55]:
+            - heading "المهام والرموز" [level=2] [ref=e56]
+            - list [ref=e57]:
+              - listitem [ref=e58]:
+                - link "إدارة المهام" [ref=e59] [cursor=pointer]:
+                  - /url: /admin/tasks
+              - listitem [ref=e64]:
+                - link "رموز فتح المهام" [ref=e65] [cursor=pointer]:
+                  - /url: /admin/codes
+              - listitem [ref=e70]:
+                - link "مراجعة التنفيذ" [ref=e71] [cursor=pointer]:
+                  - /url: /admin/submissions
+          - generic [ref=e77]:
+            - heading "العمليات المالية" [level=2] [ref=e78]
+            - list [ref=e79]:
+              - listitem [ref=e80]:
+                - link "الإيداعات" [ref=e81] [cursor=pointer]:
+                  - /url: /admin/deposits
+              - listitem [ref=e85]:
+                - link "طلبات السحب" [ref=e86] [cursor=pointer]:
+                  - /url: /admin/withdrawals
+              - listitem [ref=e90]:
+                - link "السجل المالي" [ref=e91] [cursor=pointer]:
+                  - /url: /admin/finance
+          - generic [ref=e96]:
+            - heading "الشبكة والعمولات" [level=2] [ref=e97]
+            - list [ref=e98]:
+              - listitem [ref=e99]:
+                - link "شبكة الإحالات" [ref=e100] [cursor=pointer]:
+                  - /url: /admin/referrals
+          - generic [ref=e107]:
+            - heading "النظام والرقابة" [level=2] [ref=e108]
+            - list [ref=e109]:
+              - listitem [ref=e110]:
+                - link "سجل التدقيق والرقابة" [ref=e111] [cursor=pointer]:
+                  - /url: /admin/audit-log
+              - listitem [ref=e116]:
+                - link "إعدادات المنصة" [ref=e117] [cursor=pointer]:
+                  - /url: /admin/settings
+              - listitem [ref=e122]:
+                - link "مدراء النظام" [ref=e123] [cursor=pointer]:
+                  - /url: /admin/settings/admins
+        - link "واجهة الموظفين (معاينة)" [ref=e129] [cursor=pointer]:
+          - /url: /employee/tasks
+    - generic [ref=e134]:
+      - banner [ref=e135]:
+        - generic [ref=e136]:
+          - button "فتح القائمة الجانبية" [ref=e137] [cursor=pointer]
+          - button "طي القائمة الجانبية" [ref=e139] [cursor=pointer]
+          - generic [ref=e143]: منظومة العمليات التشغيلية والرقابة الفورية
+        - generic [ref=e146]:
+          - link "واجهة الموظف التجريبية" [ref=e147] [cursor=pointer]:
+            - /url: /employee/tasks
+          - generic [ref=e153]:
+            - generic [ref=e154]: م
+            - generic [ref=e155]:
+              - generic [ref=e156]: محمد عبد الكريم
+              - generic [ref=e157]: مسؤول النظام (ADMIN)
+      - main [ref=e161]:
+        - generic [ref=e163]:
+          - generic [ref=e164]:
+            - navigation "مسار التنقل" [ref=e165]:
+              - list [ref=e166]:
+                - listitem [ref=e167]:
+                  - link "لوحة الإدارة" [ref=e168] [cursor=pointer]:
+                    - /url: /admin
+                - listitem [ref=e173]:
+                  - link "الموظفون" [ref=e176] [cursor=pointer]:
+                    - /url: /admin/employees
+                - listitem [ref=e177]:
+                  - generic [ref=e180]: محمود حسن
+            - generic [ref=e181]:
+              - generic [ref=e182]:
+                - 'heading "ملف الموظف: محمود حسن" [level=1] [ref=e183]'
+                - paragraph [ref=e184]: "المعرف: usr_1003 — المسجل بتاريخ 2026-06-10 14:00"
+              - generic [ref=e186]:
+                - button "تسوية الرصيد" [ref=e187] [cursor=pointer]
+                - button "تعديل عنوان السحب" [ref=e193] [cursor=pointer]
+                - button "أرشفة الحساب" [active] [ref=e199] [cursor=pointer]
+          - generic [ref=e206]:
+            - generic [ref=e207]:
+              - heading "التحكم التشغيلي والقيود الإدارية المستقلة" [level=2] [ref=e208]
+              - paragraph [ref=e209]: كل قيد إداري مستقل تماماً عن الآخر ويتم تسجيله في سجل التدقيق فوراً
+            - generic [ref=e210]:
+              - button "تعليق الحساب" [ref=e211] [cursor=pointer]
+              - button "حظر تنفيذ المهام" [ref=e217] [cursor=pointer]
+              - button "حظر طلبات السحب" [ref=e222] [cursor=pointer]
+          - navigation "أقسام ملف الموظف" [ref=e228]:
+            - button "نظرة عامة والحساب" [ref=e229] [cursor=pointer]
+            - button "المنصب والباقة" [ref=e231] [cursor=pointer]
+            - button "السجل المالي 1" [ref=e233] [cursor=pointer]:
+              - generic [ref=e234]: السجل المالي
+              - generic [ref=e235]: "1"
+            - button "المهام والمشاركات 1" [ref=e236] [cursor=pointer]:
+              - generic [ref=e237]: المهام والمشاركات
+              - generic [ref=e238]: "1"
+            - button "الإيداعات 0" [ref=e239] [cursor=pointer]:
+              - generic [ref=e240]: الإيداعات
+              - generic [ref=e241]: "0"
+            - button "طلبات السحب 1" [ref=e242] [cursor=pointer]:
+              - generic [ref=e243]: طلبات السحب
+              - generic [ref=e244]: "1"
+            - button "فريق الإحالات 2" [ref=e245] [cursor=pointer]:
+              - generic [ref=e246]: فريق الإحالات
+              - generic [ref=e247]: "2"
+            - button "سجل استخدام الرموز 1" [ref=e248] [cursor=pointer]:
+              - generic [ref=e249]: سجل استخدام الرموز
+              - generic [ref=e250]: "1"
+            - button "سجل الرقابة والتدقيق 0" [ref=e251] [cursor=pointer]:
+              - generic [ref=e252]: سجل الرقابة والتدقيق
+              - generic [ref=e253]: "0"
+          - generic [ref=e254]:
+            - generic [ref=e255]:
+              - heading "بيانات الحساب الأساسية" [level=2] [ref=e256]
+              - generic [ref=e257]:
+                - generic [ref=e258]:
+                  - text: "الاسم الكامل:"
+                  - paragraph [ref=e259]: محمود حسن
+                - generic [ref=e260]:
+                  - text: "البريد الإلكتروني:"
+                  - paragraph [ref=e261]: mahmoud.hassan@example.com
+                - generic [ref=e262]:
+                  - text: "رمز الدعوة الشخصي:"
+                  - paragraph [ref=e263]: OSCAR-10038
+                - generic [ref=e264]:
+                  - text: "حساب الكفيل / الراعي:"
+                  - paragraph [ref=e265]: سارة كريم
+                - generic [ref=e266]:
+                  - text: "عنوان محفظة السحب (TRC20):"
+                  - paragraph [ref=e267]: TM1n2O3p4Q5r6S7t8U9v0W1x2Y3z4A5b6C
+                - generic [ref=e268]:
+                  - text: "تاريخ التسجيل:"
+                  - paragraph [ref=e269]: 2026-06-10 14:00
+                - generic [ref=e270]:
+                  - text: "آخر ظهور ونشاط:"
+                  - paragraph [ref=e271]: 2026-10-01 14:10
+            - generic [ref=e272]:
+              - heading "ملخص الرصيد المالي" [level=2] [ref=e273]
+              - generic [ref=e274]:
+                - text: الرصيد المتاح للسحب والترقية
+                - generic [ref=e275]: 750.00 USDT
+              - generic [ref=e276]:
+                - generic [ref=e277]:
+                  - generic [ref=e278]: "الرصيد المحجوز (طلبات سحب):"
+                  - generic [ref=e279]: 100.00 USDT
+                - generic [ref=e280]:
+                  - generic [ref=e281]: "إجمالي الرصيد الكلي:"
+                  - generic [ref=e282]: 850.00 USDT
+                - generic [ref=e283]:
+                  - generic [ref=e284]: "المنصب المفعل:"
+                  - generic [ref=e285]: منصب O2
+  - alert [ref=e10]
