@@ -79,8 +79,10 @@ a browser or deployment test. Do not use the root write-format command to rewrit
 unrelated files for a focused change.
 
 Run affected files plus relevant shared regressions after each task batch. Run the
-full current regression at P05, P09, P12, P14, and final P15, as required by the
-roadmap. Newly added worker/signer/E2E gates must be registered and explicitly run;
+full current regression at P04, P07, P09, P10, and final P11, as required by the
+current roadmap. In merged phases, backend acceptance tests must pass before
+dependent frontend integration; original test responsibilities and gates remain.
+Newly added worker/signer/E2E gates must be registered and explicitly run;
 the present aggregate cannot prove unregistered work. Do not rerun every unrelated
 suite after every small edit. See [Vitest CLI](https://vitest.dev/guide/cli.html)
 for verified file filtering and runner options.

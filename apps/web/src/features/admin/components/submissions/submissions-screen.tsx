@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  AlertTriangle,
   CheckCircle2,
   Eye,
   Search,
@@ -12,8 +11,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
+import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
 import { AdminEmptyState } from "../common/admin-empty-state";
+import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
+import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
 import { useAdminState } from "../../context/admin-state.context";
 import type {
@@ -33,8 +35,6 @@ export function SubmissionsScreen() {
 
   // Rejection modal
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [rejectionError, setRejectionError] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const filteredSubmissions = useMemo(() => {
@@ -66,26 +66,7 @@ export function SubmissionsScreen() {
 
   const handleOpenReject = (sub: AdminSubmission) => {
     setSelectedSubmission(sub);
-    setRejectionReason("");
-    setRejectionError(false);
     setRejectModalOpen(true);
-  };
-
-  const handleConfirmReject = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!selectedSubmission) return;
-
-    if (!rejectionReason.trim()) {
-      setRejectionError(true);
-      return;
-    }
-
-    const res = rejectSubmission(selectedSubmission.id, rejectionReason.trim());
-    if (res.success) {
-      setFeedback(res.message);
-      setRejectModalOpen(false);
-      setSelectedSubmission(null);
-    }
   };
 
   const statusBadgeMap: Record<
@@ -124,48 +105,41 @@ export function SubmissionsScreen() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
+          <div>
+            <AdminInput
+              icon={Search}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
               }}
               placeholder="بحث بالموظف، البريد، أو عنوان المهمة..."
-              className="w-full rounded-md border border-slate-300 bg-white py-2 pr-9 pl-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none sm:text-sm"
+              aria-label="بحث في التسليمات"
             />
           </div>
 
           <div>
-            <select
+            <AdminSelect
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-              }}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none sm:text-sm"
-              aria-label="تصفية حسب حالة التسليم"
-            >
-              <option value="all">كل الحالات ({submissions.length})</option>
-              <option value="pending">
-                قيد المراجعة (
-                {submissions.filter((s) => s.status === "pending").length})
-              </option>
-              <option value="approved">
-                المعتمدة (
-                {submissions.filter((s) => s.status === "approved").length})
-              </option>
-              <option value="rejected">
-                المرفوضة (
-                {submissions.filter((s) => s.status === "rejected").length})
-              </option>
-            </select>
+              onValueChange={setStatusFilter}
+              options={[
+                { value: "all", label: `كل الحالات (${String(submissions.length)})` },
+                {
+                  value: "pending",
+                  label: `قيد المراجعة (${String(submissions.filter((s) => s.status === "pending").length)})`,
+                },
+                {
+                  value: "approved",
+                  label: `المعتمدة (${String(submissions.filter((s) => s.status === "approved").length)})`,
+                },
+                {
+                  value: "rejected",
+                  label: `المرفوضة (${String(submissions.filter((s) => s.status === "rejected").length)})`,
+                },
+              ]}
+              ariaLabel="تصفية حسب حالة التسليم"
+            />
           </div>
         </div>
       </div>
@@ -449,87 +423,47 @@ export function SubmissionsScreen() {
         </div>
       )}
 
-      {/* Reject Modal with Required Reason */}
-      {rejectModalOpen && selectedSubmission && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-[2px]"
-        >
-          <div className="w-full max-w-md overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-            <div className="flex items-center justify-between border-b border-slate-100 p-4">
-              <div className="flex items-center gap-2 font-bold text-rose-700">
-                <AlertTriangle size={18} aria-hidden="true" />
-                <span>رفض تسليم المهمة وعكس المكافأة</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setRejectModalOpen(false);
-                }}
-                className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleConfirmReject}
-              className="space-y-4 p-4 text-xs sm:text-sm"
-            >
-              <p className="text-xs leading-relaxed text-slate-600">
+      {/* Reject Confirmation Dialog */}
+      {selectedSubmission && (
+        <AdminConfirmDialog
+          isOpen={rejectModalOpen}
+          title="رفض تسليم المهمة وعكس المكافأة"
+          description={
+            <div className="space-y-2">
+              <p>
                 سيؤدي الرفض إلى خصم مكافأة المهمة (
                 <strong className="font-mono text-rose-700">
                   {selectedSubmission.rewardAmount.toFixed(2)} USDT
                 </strong>
-                ) من رصيد الموظف{" "}
-                <strong>{selectedSubmission.employeeName}</strong> وتسجيل قيد
-                عكسي في السجل المالي وسجل التدقيق لمرة واحدة فقط.
+                ) من رصيد الموظف <strong>{selectedSubmission.employeeName}</strong> وتسجيل قيد عكسي في السجل المالي وسجل التدقيق لمرة واحدة فقط.
               </p>
-
-              <div>
-                <label className="mb-1 block text-xs font-bold text-slate-700">
-                  سبب الرفض الإلزامي: <span className="text-rose-600">*</span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={rejectionReason}
-                  onChange={(e) => {
-                    setRejectionReason(e.target.value);
-                    if (e.target.value.trim()) setRejectionError(false);
-                  }}
-                  placeholder="مثال: لقطة الشاشة غير واضحة ولا تثبت التقييم على منصة الشريك..."
-                  className={`w-full rounded-md border p-2 text-xs text-slate-900 ${
-                    rejectionError
-                      ? "border-rose-400 focus:border-rose-600"
-                      : "border-slate-300 focus:border-emerald-600"
-                  }`}
-                  required
-                />
-                {rejectionError && (
-                  <p className="mt-1 text-xs text-rose-600">
-                    يرجى توضيح سبب الرفض لحفظه وإبلاغ الموظف.
-                  </p>
-                )}
-              </div>
-
-              <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
-                <AdminButton
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setRejectModalOpen(false);
-                  }}
-                >
-                  إلغاء
-                </AdminButton>
-                <AdminButton type="submit" variant="destructive" size="sm">
-                  تأكيد الرفض وعكس المكافأة
-                </AdminButton>
-              </div>
-            </form>
-          </div>
-        </div>
+              <p className="text-slate-500">
+                الموظف: {selectedSubmission.employeeEmail} | المهمة: {selectedSubmission.taskTitle}
+              </p>
+            </div>
+          }
+          confirmLabel="تأكيد الرفض وعكس المكافأة"
+          variant="destructive"
+          affectedRecord={{
+            id: selectedSubmission.id,
+            label: selectedSubmission.employeeName,
+            subtitle: `المهمة: ${selectedSubmission.taskTitle} | المكافأة: ${selectedSubmission.rewardAmount.toFixed(2)} USDT`,
+          }}
+          requireReason={true}
+          reasonLabel="سبب الرفض الإلزامي لسجل التدقيق"
+          onConfirm={(reason) => {
+            if (!reason) return;
+            const res = rejectSubmission(selectedSubmission.id, reason);
+            if (res.success) {
+              setFeedback(res.message);
+              setRejectModalOpen(false);
+              setSelectedSubmission(null);
+            }
+          }}
+          onClose={() => {
+            setRejectModalOpen(false);
+          }}
+        />
       )}
     </div>
   );

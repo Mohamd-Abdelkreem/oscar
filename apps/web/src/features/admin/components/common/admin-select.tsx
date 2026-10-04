@@ -16,6 +16,7 @@ export interface AdminSelectProps {
   readonly options: readonly AdminSelectOption[];
   readonly placeholder?: string | undefined;
   readonly "aria-label"?: string | undefined;
+  readonly ariaLabel?: string | undefined;
   readonly id?: string | undefined;
   readonly disabled?: boolean | undefined;
   readonly className?: string | undefined;
@@ -28,13 +29,15 @@ export function AdminSelect({
   onValueChange,
   options,
   placeholder = "اختر...",
-  "aria-label": ariaLabel,
+  "aria-label": ariaLabelAttr,
+  ariaLabel: ariaLabelProp,
   id,
   disabled = false,
   className = "",
   triggerClassName = "",
   icon,
 }: AdminSelectProps) {
+  const effectiveAriaLabel = ariaLabelProp ?? ariaLabelAttr;
   const selectedOption = options.find((opt) => opt.value === value);
 
   return (
@@ -47,7 +50,7 @@ export function AdminSelect({
       >
         <Select.Trigger
           id={id}
-          aria-label={ariaLabel ?? placeholder}
+          aria-label={effectiveAriaLabel ?? placeholder}
           className={`flex h-11 w-full items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-xs text-slate-900 shadow-xs transition-colors hover:border-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none disabled:cursor-not-allowed disabled:bg-slate-50 disabled:opacity-60 sm:text-sm ${triggerClassName}`}
         >
           <div className="flex min-w-0 items-center gap-2 truncate text-start">

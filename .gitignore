@@ -46,3 +46,6 @@ tas3er-pro/
 # Operating systems
 .DS_Store
 Thumbs.db
+
+# P03 credential-safe browser output (historical captures remain tracked)
+/output/playwright/p03/

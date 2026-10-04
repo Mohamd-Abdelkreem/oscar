@@ -1,9 +1,13 @@
 "use client";
 
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
+import { changePasswordBodySchema } from "@template/contracts";
+import { useChangePassword } from "@/features/auth/hooks/auth.hooks";
+import { useCredentialFieldCleanup } from "@/features/auth/hooks/credential-commands.hooks";
+import { getApiError } from "@/services/api/api-client";
+import Link from "next/link";
 
 import { CheckCircle2, KeyRound } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PasswordVisibilityToggle } from "@/features/employee/components/common/password-visibility-toggle";
 import { Button } from "../common/button";
 import { ConfirmationSheet } from "../common/confirmation-sheet";
@@ -17,56 +21,76 @@ export function ChangePasswordModal({
   isOpen,
   onClose,
 }: ChangePasswordModalProps) {
-  const scheduleTimeout = useManagedTimeout();
+  const command = useChangePassword();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
+  const clear = () => {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+  };
+  useCredentialFieldCleanup(clear, command.isCurrentFlow);
+  useEffect(
+    () => () => {
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    },
+    [isOpen],
+  );
+  const close = () => {
+    clear();
     setError(null);
-
-    // Validation (15-128 chars as per repository standard)
-    if (newPassword.length < 15) {
-      setError("يجب أن تتكون كلمة المرور الجديدة من 15 حرفاً على الأقل.");
+    command.reset();
+    onClose();
+  };
+  const handleSubmit = async (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    if (!isOpen || command.isPending || command.uncertain) return;
+    const parsed = changePasswordBodySchema.safeParse({
+      currentPassword,
+      newPassword,
+      passwordConfirmation: confirmPassword,
+    });
+    if (!parsed.success) {
+      setError(
+        "راجع كلمة المرور الحالية واختر كلمة جديدة مختلفة من 15 إلى 128 حرفاً مع تأكيد مطابق.",
+      );
       return;
     }
-    if (newPassword.length > 128) {
-      setError("يجب ألا تتجاوز كلمة المرور 128 حرفاً.");
-      return;
+    setError(null);
+    try {
+      await command.mutateAsync(parsed.data);
+      clear();
+    } catch (failure: unknown) {
+      const safe = getApiError(failure);
+      if (safe.category === "obsolete") return;
+      if (
+        ["transient", "uncertain", "contract", "coordination"].includes(
+          safe.category,
+        )
+      )
+        clear();
+      setError(safe.message);
     }
-    if (newPassword !== confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    scheduleTimeout(() => {
-      setIsSubmitting(false);
-      setSuccess(true);
-      scheduleTimeout(() => {
-        setSuccess(false);
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-        onClose();
-      }, 1500);
-    }, 500);
   };
 
   return (
     <ConfirmationSheet
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={close}
       title="تغيير كلمة المرور"
       description="تحديث كلمة المرور لحساب الموظف (المعيار: 15 - 128 حرفاً)"
     >
-      {success ? (
+      {command.isSuccess ? (
         <div className="space-y-2 py-6 text-center">
           <CheckCircle2
             size={40}
@@ -77,11 +101,18 @@ export function ChangePasswordModal({
             تم تحديث كلمة المرور بنجاح
           </h3>
           <p className="text-xs text-slate-500">
-            تم حفظ كلمة المرور الجديدة في بيئة المعاينة المحلية.
+            سجل الدخول من جديد بكلمة المرور الجديدة.
           </p>
+          <Link href="/employee/auth/login">تسجيل الدخول من جديد</Link>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          noValidate
+          onSubmit={(event) => {
+            void handleSubmit(event);
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-1">
             <label
               className="block text-xs font-semibold text-slate-700"
@@ -92,6 +123,8 @@ export function ChangePasswordModal({
             <div className="relative">
               <input
                 id="current-pass"
+                maxLength={128}
+                autoComplete="current-password"
                 type={showCurrentPassword ? "text" : "password"}
                 value={currentPassword}
                 onChange={(e) => {
@@ -124,6 +157,7 @@ export function ChangePasswordModal({
                 onChange={(e) => {
                   setNewPassword(e.target.value);
                 }}
+                autoComplete="new-password"
                 minLength={15}
                 maxLength={128}
                 className="min-h-[48px] w-full rounded-md border border-slate-300 px-3.5 py-2 pl-12 text-base focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
@@ -155,6 +189,7 @@ export function ChangePasswordModal({
               onChange={(e) => {
                 setConfirmPassword(e.target.value);
               }}
+              autoComplete="new-password"
               minLength={15}
               maxLength={128}
               className="min-h-[48px] w-full rounded-md border border-slate-300 px-3.5 py-2 text-base focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
@@ -162,9 +197,9 @@ export function ChangePasswordModal({
             />
           </div>
 
-          {error && (
+          {(error ?? command.error?.message) && (
             <p className="text-xs font-medium text-rose-600" role="alert">
-              {error}
+              {error ?? command.error?.message}
             </p>
           )}
 
@@ -174,17 +209,13 @@ export function ChangePasswordModal({
               variant="primary"
               size="default"
               fullWidth
-              loading={isSubmitting}
+              loading={command.isPending}
+              disabled={command.uncertain}
               icon={KeyRound}
             >
               حفظ كلمة المرور الجديدة
             </Button>
-            <Button
-              variant="outline"
-              size="default"
-              fullWidth
-              onClick={onClose}
-            >
+            <Button variant="outline" size="default" fullWidth onClick={close}>
               إلغاء
             </Button>
           </div>

@@ -1,21 +1,22 @@
 # OSCAR MVP: Lean Spec Kit Implementation Plan
 
-**Decision baseline:** October 2, 2026  
-**Repository:** `D:\MINE\Software Engineering\Projects\Mostaql\oscar`  
-**Structure:** 15 implementation phases; backend first, then frontend for each domain group.  
-**Status:** Planning only. Financial backend implementation and test execution have not been performed by writing this document.
+- **Decision baseline:** October 2, 2026.
+- **Roadmap regrouping:** October 4, 2026; business rules unchanged.
+- **Repository:** `D:\MINE\Software Engineering\Projects\Mostaql\oscar`.
+- **Structure:** 11 implementation phases: preserve P01-P03, then eight remaining phases; backend first, then frontend for each domain group.
+- **Status:** The owner reports P01-P03 complete. This revision reorganizes the remaining roadmap only; it does not independently verify completion, implement code, or run application tests.
 
 ## 1. Instructions for the Implementing AI
 
 The owner will install and configure Spec Kit, prepare the constitution, and provide the project ready for development. **There is no Spec Kit installation, initialization, or constitution-writing phase in this plan.** Read the supplied constitution and repository instructions; do not reinstall the toolkit, overwrite the constitution, or ask for a redundant setup approval.
 
-Start with P01, which implements actual financial backend code. A quick check of the existing build/test baseline is a task within implementation, not a new setup phase. Report missing prerequisites instead of pretending they exist.
+For this project's continuation, resume at P04 after confirming the existing P01-P03 completion evidence. Do not rerun their Spec Kit workflows, recreate their artifacts, or renumber their existing tasks. P01 retains the original financial foundation starting instructions for a fresh project only. A quick check of the existing build/test baseline is a task within implementation, not a new setup phase. Report missing prerequisites instead of pretending they exist.
 
 Use this file as the latest business-rule baseline. It supersedes older PDFs, prompts, and fixture assumptions for deposits, upgrades, task rewards, referrals, subscription duration, and withdrawal cooldowns. Existing approved screens must be preserved. No customer-facing feature is removed by this simplification.
 
 Implement one selected phase, using small dependency-ordered task batches. A batch is not another formal phase and needs no separate specification, constitution, approval, or report framework. Stop after the selected phase and report changed files, actual tests run, results, and remaining blockers. If a phase is too large for one turn, execute a bounded task range and do not claim the whole phase passed early.
 
-Complete the backend phase or phases for a group before connecting that group's frontend. Backend completion includes applicable migrations, validated contracts, authorization, services, endpoints, workers, failure handling, and actual test files. Do not connect a money-changing screen to a partially implemented service or a mock success action.
+Complete the entire backend group before connecting that group's frontend. P04, P05, and P10 contain backend delivery followed by frontend integration within one selected phase; their backend gates must pass before any dependent frontend wiring. Backend completion includes applicable migrations, validated contracts, authorization, services, endpoints, workers, failure handling, and actual test files. Do not connect a money-changing screen to a partially implemented service or a mock success action.
 
 Keep the existing monorepo and boilerplate patterns. Do not introduce an event bus, general outbox framework, microservices per module, generic accounting product, complex version registry, or unnecessary abstraction. Preserve unrelated working-tree edits and the existing Next.js App Router.
 
@@ -34,6 +35,8 @@ Keep the existing monorepo and boilerplate patterns. Do not introduce an event b
 Use a short phase report: phase ID, scope completed, changed files, tests added/changed, commands actually run, pass/fail results, and unresolved risk. A phase with missing required infrastructure or unexecuted financial tests remains incomplete. Owner approval is needed for actual deployment spending and real-money launch, not for routine task paperwork.
 
 ## 2. Verified Starting Point
+
+This section records the original pre-P01 repository snapshot, not a fresh inventory of the now owner-reported completed P01-P03. Inspect current source and their existing artifacts before continuing; do not recreate capabilities merely because the original snapshot describes them as missing.
 
 The repository is a pnpm/Turborepo workspace with Next.js 16, React 19, Tailwind CSS 4, Express 5, Prisma 7/PostgreSQL, and TypeScript. Preserve the installed versions and lockfile; resolve additional package versions against the repository's Node 24 and pnpm 11 constraints rather than blindly upgrading existing dependencies.
 
@@ -304,27 +307,29 @@ The owner chose one-admin authority and no admin 2FA. An audit trail does not gu
 
 Recover database commits, private assets where required, custody records, and immutable signing attempts. Backups must include tested off-VPS PostgreSQL WAL/point-in-time recovery for post-snapshot off-chain purchases/rewards/adjustments, not only blockchain history. Fence financial writes/dispatch during restore and reconcile chain activity before resuming. An unresolved recovery gap cannot be repaired by guessing balances.
 
-## 6. Fifteen-Phase Map
+## 6. Eleven-Phase Map and Legacy Crosswalk
 
-| Phase | Scope | Layer / Gate |
-| --- | --- | --- |
-| P01 | Money, Baghdad calendar, foundation schema, ledger/source/idempotency | Backend foundation |
-| P02 | Identity, role/status enforcement, admin email/password login and account lifecycle | Backend foundation |
-| P03 | Real auth, dedicated admin login, account basics, protected layouts | Frontend after P01-P02 |
-| P04 | Packages, purchases, referrals, wallet/ledger projections | Backend |
-| P05 | Packages/team/wallet and admin package/referral/finance views | Frontend after P04 |
-| P06 | Private proof files, daily tasks/codes, final review/reward | Backend |
-| P07 | Employee tasks and admin task/code/submission workflows | Frontend after P06 |
-| P08 | Protected custody, assigned addresses, deposits, operator treasury tools | Backend |
-| P09 | Employee deposit and admin deposit history | Frontend after P08 |
-| P10 | Withdrawal address/quotes/reservations/calendar/DB scheduling | Backend |
-| P11 | Payout signing/broadcast/confirmation/recovery | Backend |
-| P12 | Employee/admin withdrawals and initial address flow | Frontend after P10-P11 |
-| P13 | Cross-domain employee administration, settings, aggregates, policy APIs | Backend |
-| P14 | Final admin/home/account/policy integrations | Frontend after P13 |
-| P15 | Integrated verification, Linux/Docker deployment, restore, testnet/UAT, release | Final verification and operations |
+| Current Phase | Original Phase(s) | Scope | Layer / Gate |
+| --- | --- | --- | --- |
+| P01 | P01 | Money, Baghdad calendar, foundation schema, ledger/source/idempotency | Backend foundation; owner-reported complete |
+| P02 | P02 | Identity, role/status enforcement, admin email/password login and account lifecycle | Backend foundation; owner-reported complete |
+| P03 | P03 | Real auth, dedicated admin login, account basics, protected layouts | Frontend after P01-P02; owner-reported complete |
+| P04 | P04 + P05 | Packages, purchases, referrals, wallet/ledger, employee/admin finance views | Entire backend gate, then frontend gate |
+| P05 | P06 + P07 | Private proofs, tasks/codes, final review/reward, employee/admin workflows | Entire backend gate, then frontend gate |
+| P06 | P08 | Protected custody, assigned addresses, deposits, operator treasury tools | Backend; controlled testnet/recovery gate |
+| P07 | P09 | Employee deposit and admin deposit history | Frontend after P06 |
+| P08 | P10 + P11 | Withdrawal reservations/scheduling and automatic signing/payout/recovery | Two ordered backend delivery groups; both gates required |
+| P09 | P12 | Employee/admin withdrawals and initial address flow | Frontend after all of P08 |
+| P10 | P13 + P14 | Cross-domain administration/settings/aggregates and final admin/home/account/policy integrations | Entire backend gate, then frontend gate |
+| P11 | P15 | Integrated verification, Linux/Docker deployment, restore, testnet/UAT, release | Final verification and operations |
 
-Execute P01-P15 in order. A later phase cannot bypass its preceding gates just because one of its modules could technically start earlier. Small independent tasks inside a phase may run in parallel when file ownership/dependencies make that safe.
+Continue with P04-P11 in order, preserving the completed P01-P03 and their feature directories, task IDs, and evidence. All phase references below use the current IDs unless explicitly labeled original/legacy. Original P04-P15 references in historical artifacts must be interpreted through this crosswalk, not by matching the same number to the new scope. Do not rewrite completed specifications, the constitution, or `.specify/feature.json` as part of this regrouping.
+
+For each new merged phase, use one selected feature specification, technical plan, and task list for its complete scope. Preserve existing accepted artifacts if present; do not create duplicates or restart completed work. Organize execution into small dependency-safe batches with the internal acceptance gates defined below. These delivery groups are not additional formal phases and do not require another Spec Kit workflow. In P04/P05/P10, a batch stopping at the backend gate does not complete the phase; its frontend gate must also pass. P08 stays backend-only and is incomplete until both backend delivery groups and their gates pass.
+
+No deliverable, actual test file responsibility, failure case, or acceptance gate from the original 15-phase roadmap is removed. Full current regression checkpoints remain after package/wallet integration (P04), deposit integration (P07), withdrawal integration (P09), final administration integration (P10), and release verification (P11). Reducing workflow repetition does not justify bulk-marking tasks, skipping tests, or starting frontend work early.
+
+A later phase cannot bypass its preceding gates just because one of its modules could technically start earlier. Small independent tasks inside a phase may run in parallel when file ownership/dependencies make that safe.
 
 ## 7. Detailed Implementation Phases
 
@@ -354,7 +359,7 @@ Harden production auth configuration rather than merely preserving its current l
 
 **Required assertions:** Link/invite replay, invalid/cyclic/self-ID sponsor, mass assignment, anonymous/admin API access, cross-user data access, suspended sessions, reset/logout and admin lifecycle; valid admin email/password login, wrong credentials, employee credentials at the admin entry, disabled admin access, and absence of public admin registration; production rejects missing/placeholder/reused auth keys and accepts strong correctly separated keys without secret exposure.
 
-**Gate:** All identity/admin contracts needed for P03 exist and are authorized. Withdrawal-specific restriction cancellation will be completed with P10-P11 before that financial workflow is connected.
+**Gate:** All identity/admin contracts needed for P03 exist and are authorized. Withdrawal-specific restriction cancellation will be completed with P08 before that financial workflow is connected.
 
 ### P03 - Authentication and Account Frontend
 
@@ -366,7 +371,11 @@ Introduce a real Playwright config/script if absent. Replace simulated auth and 
 
 **Gate:** Admin email/password sign-in, logout, reload, and recovery work; employee/anonymous/disabled-admin sessions cannot access dashboard data. Real sessions survive reload; banned/deactivated access fails; private caches do not leak between accounts; auth/account screens pass focused mobile/accessibility checks.
 
-### P04 - Packages, Referrals, and Wallet Backend
+### P04 - Packages, Referrals, Wallet, and Finance
+
+Combines original P04 and P05. Finish and test the entire backend delivery group before frontend integration; use one phase's artifacts and bounded task batches.
+
+#### Backend Delivery
 
 Implement current package/settings records with version counters and immutable operation snapshots, not separate version-registry tables. Add catalog/admin edits, fixed sponsor tree, purchase quotes, transactional full-price purchase/upgrade, fresh work-date expiry, and event-time referral awards/skipped eligibility decisions.
 
@@ -378,9 +387,9 @@ Add employee/admin wallet, ledger, subscription, and relative-root referral proj
 
 **Required assertions:** Full debit versus difference commission; referral-first spending while expired; snapshots after edits; recipient eligibility; no compression/backfill; concurrent spend/activation; atomic rollback; source locks; owner/admin DTO separation.
 
-**Gate:** Backend catalog/purchase/referral/wallet services and views are complete and tested before P05.
+**Backend gate:** Backend catalog/purchase/referral/wallet services and views are complete and tested before starting this phase's frontend integration. This checkpoint alone does not complete P04.
 
-### P05 - Packages, Team, Wallet, and Finance Frontend
+#### Frontend Integration
 
 Connect employee packages/team/wallet and admin packages/referrals/finance. Display server-generated price/top-up/source allocation, exact expiry, conditional gross total, current withdrawal eligibility, reservations, and retained referral funds. Levels are relative to the selected root.
 
@@ -390,7 +399,11 @@ Use runtime-validated shared response schemas, feature API adapters/hooks, reusa
 
 **Gate:** Persisted server behavior, stale/conflict handling, source restrictions, and responsive views pass. Run the first full current regression checkpoint.
 
-### P06 - Private Proofs, Tasks, Codes, and Review Backend
+### P05 - Private Proofs, Tasks, Codes, and Review
+
+Combines original P06 and P07. Finish and test the entire proof/task/code/review backend before connecting employee or admin task workflows.
+
+#### Backend Delivery
 
 Implement safe server-local image upload/storage/access and cleanup, daily task publication/eligibility, task codes/unlocks, screenshot/declaration submission, pending evidence replacement, admin review, and approved reward posting.
 
@@ -400,9 +413,9 @@ Use a database claim unique by employee + Baghdad business date, independent of 
 
 **Required assertions:** Weekday/time/package restrictions; daily claim across upgrades/devices; required declaration/owned image; no pending credit; approve/reject race; repeated approval; reward snapshot after edits/expiry/ban; final rejection; paused code retained unlock; private 5 MB files and retention.
 
-**Gate:** Entire proof/task/code/review backend works before P07; no rewarded duplicate or public proof access.
+**Backend gate:** Entire proof/task/code/review backend works before this phase's frontend integration; no rewarded duplicate or public proof access. This checkpoint alone does not complete P05.
 
-### P07 - Tasks, Codes, and Review Frontend
+#### Frontend Integration
 
 Connect employee tasks and admin task list/new/detail/edit, code list/new/detail, and submissions. Remove employee task components' imports from admin fixture state; employee entitlement comes from the employee API.
 
@@ -412,13 +425,13 @@ Upload actual files and store returned asset IDs; blob previews are temporary. R
 
 **Gate:** Upload/review persists, code behavior matches the backend, one approval adds one captured reward, and mobile review/dialog flows work.
 
-### P08 - TRON Custody, Deposits, and Basic Treasury Backend
+### P06 - TRON Custody, Deposits, and Basic Treasury Backend
 
 Implement the protected custody/signer process, unique address provisioning, encryption/recovery records, and immutable signing-attempt primitives. Publish an address only after its key/assignment has acknowledged encrypted off-VPS recovery. Handle concurrent provisioning/lost replies without address reuse or key exposure.
 
 Implement bounded TronGrid detection with durable cursors, pagination/replay windows, canonical finality verification, network/token/recipient/receipt validation, and transaction-log deduplication. Receipt and exact ledger credit commit together. Credit 24/7 after verification, with no deposit delay/rejection. Runtime scans repair missed work directly from persisted records.
 
-Deliver employee assigned-address/history DTO endpoints and authorized paginated admin deposit-history endpoints. Deliver the ADMIN-only manual-credit endpoint needed by P09, reusing the ledger primitives with exact amounts, reason/reference, payload-bound idempotency, source classification, and server-derived audit. Label manual credits separately; never fabricate or edit a chain receipt.
+Deliver employee assigned-address/history DTO endpoints and authorized paginated admin deposit-history endpoints. Deliver the ADMIN-only manual-credit endpoint needed by P07, reusing the ledger primitives with exact amounts, reason/reference, payload-bound idempotency, source classification, and server-derived audit. Label manual credits separately; never fabricate or edit a chain receipt.
 
 Add a protected operator-triggered fixed-treasury sweep tool, safe resource-funding instructions/caps, and basic reconciliation. No automatic energy trading, complex sweep batching, or automatic top-up engine. Sweeps do not change employee balances. Treasury funding is an operator responsibility; employee payout scheduling will remain automatic.
 
@@ -426,9 +439,9 @@ Add a protected operator-triggered fixed-treasury sweep tool, safe resource-fund
 
 **Required assertions:** Fresh key recovery after VPS loss; no secret leak; duplicate/multiple logs; wrong token/network/recipient; unfinalized/disappearing candidate; fractional amount; pagination/restart; weekend credit; safe sweep/lost acknowledgement; no second employee credit; owner/admin DTO separation and manual-credit role, reason/reference, duplicate/payload-conflict, source, and audit enforcement.
 
-**Gate:** Real controlled testnet provisioning/deposit/sweep evidence and isolated tests pass before P09. Missing testnet prerequisites mean this gate remains incomplete.
+**Gate:** Real controlled testnet provisioning/deposit/sweep evidence and isolated tests pass before P07. Missing testnet prerequisites mean this gate remains incomplete.
 
-### P09 - Deposit Frontend
+### P07 - Deposit Frontend
 
 Connect employee deposit and admin history. Show the assigned public address/QR/copy, configured token/network, truthful detection state, persisted amount/history, and optional configured explorer links. User input/TxID never authorizes a credit.
 
@@ -438,7 +451,11 @@ Remove deposit 72-hour/rejection UI. Admin manual credit is distinctly labeled a
 
 **Gate:** Correct account/address/amount persists after reload, duplicates never appear as extra credits, and network-delay/error/phone QR/address states work. Run the second full current regression checkpoint.
 
-### P10 - Withdrawal Reservation and Weekday Scheduling Backend
+### P08 - Withdrawal Reservation, Automatic Payout, and Recovery Backend
+
+Combines original P10 and P11. Complete reservation/scheduling and its acceptance gate first, then automatic payout/recovery. Both groups remain backend-only; no withdrawal frontend integration is authorized until the entire P08 gate passes.
+
+#### Reservation and Weekday Scheduling
 
 Implement initial employee address confirmation through a user/address-bound single-use email link. Implement server quote/acceptance with applicable fee snapshot (initially 21%), bounds, net, destination/version, source allocation, entitlement, deadline, and idempotency. Reserve gross atomically and enforce one active request in PostgreSQL across every scheduled/signing/submitted/unknown state.
 
@@ -450,9 +467,9 @@ Implement safe rejection/cancellation services, exact source release, account-ba
 
 **Required assertions:** One active request across devices; mixed source locks/refunds; concurrent purchase; fee snapshots; Friday/weekend/cutoff rules; expiry continuation; stale extension jobs; repeated rejection; lost wakeup/Redis restart; cancellation-versus-claim race.
 
-**Gate:** Durable reservations/scheduling and all active-state constraints pass. Admin address-replacement endpoint/UI is finalized in P13/P14; never redirect a live request.
+**Reservation/scheduling gate:** Durable reservations/scheduling and all active-state constraints pass before the automatic payout/recovery group starts. Admin address-replacement endpoint/UI is finalized in P10; never redirect a live request. This checkpoint alone does not complete P08 or authorize withdrawal frontend integration.
 
-### P11 - Automatic Payout and Recovery Backend
+#### Automatic Payout and Recovery
 
 Extend protected signer policies for fixed USDT treasury payouts. Validate durable request/network/token/source/recipient/net and independent resource/treasury limits. Persist signed attempts, TxID, and broadcast intent before broadcast; retries reuse the same attempt.
 
@@ -462,19 +479,23 @@ Complete worker claims/cancellation race handling, basic liquidity/resource aler
 
 **Test files:** `signer-security.test.ts`, `payout-recovery.integration.test.ts`, `withdrawal-settlement.integration.test.ts`, `worker-restart.integration.test.ts`, and opted-in `payouts.testnet.test.ts`.
 
-**Gate:** Testnet payout, finality, lost-ack/crash/retry, and source settlement evidence pass. Both P10 and P11 must pass before P12.
+**Gate:** Testnet payout, finality, lost-ack/crash/retry, and source settlement evidence pass. Both P08 backend delivery groups and their required tests must pass before P09. Neither mock payout success nor passing reservation tests alone satisfies this gate.
 
-### P12 - Withdrawal Frontend
+### P09 - Withdrawal Frontend
 
 Connect employee withdrawal/account initial destination and admin withdrawals. Display server gross/rate/fee/net, eligibility, fixed destination, state, calculated due date, and remaining counted hours. Disable creation for all active states, including UNKNOWN, and allow it after safe terminal completion/rejection.
 
-Use confirmation for requests/rejections/extensions and the initial address flow. Replace hold with a positive-hours extension dialog. Handle expiry continuation, stale/refetch/cross-tab conflicts, and uncertain payout status without claiming refund/failure. Admin address replacement waits for P14.
+Use confirmation for requests/rejections/extensions and the initial address flow. Replace hold with a positive-hours extension dialog. Handle expiry continuation, stale/refetch/cross-tab conflicts, and uncertain payout status without claiming refund/failure. Admin address replacement waits for P10's tested backend and subsequent frontend integration.
 
 **Test files:** `withdrawal-form.test.tsx`, `withdrawal-status-card.test.tsx`, `withdrawals-screen.test.tsx`, extension/address/adapters, and `withdrawals.spec.ts`.
 
 **Gate:** Real reservation/lifecycle persists, concurrent attempts create one request, weekend countdown is accurate, and mobile tables/dialogs work. Run the third full current regression checkpoint.
 
-### P13 - Cross-Domain Administration Backend
+### P10 - Cross-Domain Administration and Final Frontend Integration
+
+Combines original P13 and P14. Complete and test all administration/settings/summary APIs before binding the remaining admin, home, account, and policy screens.
+
+#### Backend Delivery
 
 Finish employee indexed search/detail across account, subscriptions, finance, tasks/evidence, deposits, withdrawals, referrals, codes, sessions, and audit. Reuse established services for restrictions, source-preserving adjustments/manual credits, and destination replacement with safely unsent cancellation.
 
@@ -482,19 +503,19 @@ Add deactivation/soft deletion without financial/sponsor/address/audit cascades 
 
 **Test files:** `employee-administration.integration.test.ts`, `settings-api.integration.test.ts`, `audit-log.integration.test.ts`, `dashboard-projections.integration.test.ts`.
 
-**Gate:** Every operation needed by final admin/home/account/policy screens is authorized and tested, including restriction/address races and financial history preservation.
+**Backend gate:** Every operation needed by final admin/home/account/policy screens is authorized and tested, including restriction/address races and financial history preservation. This checkpoint must pass before this phase's frontend integration and alone does not complete P10.
 
-### P14 - Final Admin, Home, Account, and Policy Frontend
+#### Frontend Integration
 
-Connect employee home/account completion/support/FAQ/terms/privacy and admin home/employees/detail/settings/admins/audit. Bind all detail tabs and existing confirmations to real APIs. Complete admin address-replacement/adjustment/restriction/deletion workflows here, after P13.
+Connect employee home/account completion/support/FAQ/terms/privacy and admin home/employees/detail/settings/admins/audit. Bind all detail tabs and existing confirmations to real APIs. Complete admin address-replacement/adjustment/restriction/deletion workflows here, after this phase's backend gate passes.
 
 Use real company email when configured; do not invent a contact address. Update approved Arabic copy to all latest rules. Complete cross-domain query refresh and remove production fixture authority, global AdminStateProvider, hard-coded CURRENT_ADMIN, and fake mutation actions. Keep only UI input/filter/dialog/preview state and isolated test fixtures.
 
 **Test files:** `employee-detail-screen.test.tsx`, admin action dialog tests, home/settings/audit tests, policy assertions, `employee-administration.spec.ts`, `summaries-settings-and-policy.spec.ts`.
 
-**Gate:** All 36 existing OSCAR routes plus the new admin sign-in route (37 total) and required popups are connected, policies are truthful, and no production mock can alter financial truth. Run full functional/security regression before deployment work.
+**Gate:** All 37 approved OSCAR routes, including the admin sign-in route delivered in P03, and required popups are connected, policies are truthful, and no production mock can alter financial truth. Run full functional/security regression before deployment work.
 
-### P15 - Integrated Verification, Deployment, Restore, and Release
+### P11 - Integrated Verification, Deployment, Restore, and Release
 
 Finish the cross-domain security/money/route review using existing phase tests, adding only missing regression cases. Run controlled failure injection for mixed spending/rewards/deposits/payouts, role/resource abuse, uploads, stale credentials, and secret exposure. Do not recreate identical acceptance suites just for paperwork.
 
@@ -510,24 +531,24 @@ Run one representative capacity check on the actual staging VPS; the target is 1
 
 ## 8. Route Coverage Register
 
-The existing OSCAR scope is 17 employee routes and 19 admin dashboard routes, 36 total. The explicit administrator email/password requirement adds the proposed `/admin/auth/login` route, for 37 covered routes. Other generic boilerplate/entry routes are not additional OSCAR product pages. The admin login route is new planned work, not a claim that it exists in the current repository.
+The original OSCAR scope is 17 employee routes and 19 admin dashboard routes, 36 total. The explicit administrator email/password requirement added `/admin/auth/login` to the original P03 scope, for 37 covered routes. Other generic boilerplate/entry routes are not additional OSCAR product pages. P03 is owner-reported complete; preserve its admin sign-in implementation rather than creating it again. The tables map existing responsibilities to the current phase IDs, not authorization to add or redesign routes.
 
 ### Employee Routes
 
 | Route | Responsibility | Frontend Phase |
 | --- | --- | --- |
-| `/employee` | Personal summary, task/subscription/wallet status | P14 |
-| `/employee/tasks` | Daily availability, code unlock, screenshot/declaration, submission status | P07 |
-| `/employee/packages` | Catalog, quote, purchase/upgrade, subscription terms | P05 |
-| `/employee/team` | Fixed invite identity, relative team levels, commissions | P05 |
-| `/employee/wallet` | Server balances, source restrictions, reservations, history/detail | P05 |
-| `/employee/deposit` | Assigned address/QR/copy and verified history | P09 |
-| `/employee/withdraw` | Eligible funds, fixed destination, quote/request/lifecycle | P12 |
-| `/employee/account` | Profile/password/logout, subscription/wallet links, address | P03; domain sections P05/P12/P14 |
-| `/employee/support` | Company email contact | P14 |
-| `/employee/faq` | Approved current business-rule answers | P14 |
-| `/employee/terms` | Approved current terms | P14 |
-| `/employee/privacy` | Approved retention/privacy policy | P14 |
+| `/employee` | Personal summary, task/subscription/wallet status | P10 |
+| `/employee/tasks` | Daily availability, code unlock, screenshot/declaration, submission status | P05 |
+| `/employee/packages` | Catalog, quote, purchase/upgrade, subscription terms | P04 |
+| `/employee/team` | Fixed invite identity, relative team levels, commissions | P04 |
+| `/employee/wallet` | Server balances, source restrictions, reservations, history/detail | P04 |
+| `/employee/deposit` | Assigned address/QR/copy and verified history | P07 |
+| `/employee/withdraw` | Eligible funds, fixed destination, quote/request/lifecycle | P09 |
+| `/employee/account` | Profile/password/logout, subscription/wallet links, address | P03; domain sections P04/P09/P10 |
+| `/employee/support` | Company email contact | P10 |
+| `/employee/faq` | Approved current business-rule answers | P10 |
+| `/employee/terms` | Approved current terms | P10 |
+| `/employee/privacy` | Approved retention/privacy policy | P10 |
 | `/employee/auth/login` | Real login and role-aware destination | P03 |
 | `/employee/auth/register` | Email/password, optional sponsor | P03 |
 | `/employee/auth/verify-email` | Single-use verification link result/resend | P03 |
@@ -538,32 +559,32 @@ The existing OSCAR scope is 17 employee routes and 19 admin dashboard routes, 36
 
 | Route | Responsibility | Frontend Phase |
 | --- | --- | --- |
-| `/admin/auth/login` (proposed) | Dedicated email/password admin sign-in; shared auth; no public admin signup | P03 |
-| `/admin` | Authoritative operational/financial summary | P14 |
-| `/admin/employees` | Indexed search/filter/paginated list | P14 |
-| `/admin/employees/[employeeId]` | Full authorized detail/actions/history | P14 |
-| `/admin/packages` | Package configuration with saved purchase terms | P05 |
-| `/admin/tasks` | Daily task list/publication | P07 |
-| `/admin/tasks/new` | Create task | P07 |
-| `/admin/tasks/[taskId]` | Details, codes, submissions | P07 |
-| `/admin/tasks/[taskId]/edit` | Edit permitted future/current content safely | P07 |
-| `/admin/submissions` | Private evidence review/final decisions | P07 |
-| `/admin/codes` | Codes, states, usage summaries | P07 |
-| `/admin/codes/new` | Create task code | P07 |
-| `/admin/codes/[codeId]` | Successful usages/accounts/times | P07 |
-| `/admin/deposits` | Verified deposit history and separately labeled manual credits | P09 |
-| `/admin/withdrawals` | Scheduled/in-flight history, remaining time, rejection/extension | P12 |
-| `/admin/finance` | Added/deducted/reserved entries and detail | P05 |
-| `/admin/referrals` | Root-relative tree/commission history | P05 |
-| `/admin/audit-log` | Server actor/action/time/reason changes | P14 |
-| `/admin/settings` | Allowed settings with saved operation terms | P14 |
-| `/admin/settings/admins` | ADMIN invitations and lifecycle | P03; final integration P14 |
+| `/admin/auth/login` | Dedicated email/password admin sign-in; shared auth; no public admin signup | P03 |
+| `/admin` | Authoritative operational/financial summary | P10 |
+| `/admin/employees` | Indexed search/filter/paginated list | P10 |
+| `/admin/employees/[employeeId]` | Full authorized detail/actions/history | P10 |
+| `/admin/packages` | Package configuration with saved purchase terms | P04 |
+| `/admin/tasks` | Daily task list/publication | P05 |
+| `/admin/tasks/new` | Create task | P05 |
+| `/admin/tasks/[taskId]` | Details, codes, submissions | P05 |
+| `/admin/tasks/[taskId]/edit` | Edit permitted future/current content safely | P05 |
+| `/admin/submissions` | Private evidence review/final decisions | P05 |
+| `/admin/codes` | Codes, states, usage summaries | P05 |
+| `/admin/codes/new` | Create task code | P05 |
+| `/admin/codes/[codeId]` | Successful usages/accounts/times | P05 |
+| `/admin/deposits` | Verified deposit history and separately labeled manual credits | P07 |
+| `/admin/withdrawals` | Scheduled/in-flight history, remaining time, rejection/extension | P09 |
+| `/admin/finance` | Added/deducted/reserved entries and detail | P04 |
+| `/admin/referrals` | Root-relative tree/commission history | P04 |
+| `/admin/audit-log` | Server actor/action/time/reason changes | P10 |
+| `/admin/settings` | Allowed settings with saved operation terms | P10 |
+| `/admin/settings/admins` | ADMIN invitations and lifecycle | P03; final integration P10 |
 
 Required popup/dialog coverage includes purchase quote confirmation; password change; initial withdrawal address confirmation; ledger details; withdrawal confirmation; schedule extension; rejection; employee ban/task/withdraw restrictions; admin address change; balance adjustment/manual credit; deletion; code enable/pause; final task review; and admin invitation/deactivation as applicable to existing screens. Reuse existing dialog primitives instead of duplicating modal code.
 
 ## 9. Focused Testing and Verification
 
-Every implementation phase adds or extends actual automated test files for its behavior. Tests are not postponed to P15. Names in phase descriptions are responsibilities, not an instruction to create one tiny file per assertion; combine overlapping cases and follow existing colocated test patterns.
+Every implementation phase adds or extends actual automated test files for its behavior. Tests are not postponed to P11. In merged phases, execute backend tests at the internal backend gate before frontend work, then frontend/E2E and affected regressions at the final phase gate. Names in phase descriptions are responsibilities, not an instruction to create one tiny file per assertion; combine overlapping cases and follow existing colocated test patterns.
 
 Use real migrated PostgreSQL for balances/constraints/transactions/concurrency, real test Redis for worker scheduling, actual isolated file storage for upload/access, and network-boundary doubles for provider/email behavior. Fixed clocks and explicit concurrent connection barriers are required for financial races. Test user-visible results and persisted state, not internal helper calls.
 
@@ -585,27 +606,23 @@ pnpm verify:build-output
 pnpm verify
 ```
 
-Do not run every command after every small edit. Full current regression checkpoints are P05, P09, P12, P14, and final P15; intermediate phases run affected suites and relevant shared regressions. All money/security requirements remain tested. Review command formatting scope before touching unrelated dirty files.
+Do not run every command after every small edit. Full current regression checkpoints are P04, P07, P09, P10, and final P11; these retain the original package, deposit, withdrawal, final administration, and release checkpoints. Intermediate phases and internal backend gates run affected suites and relevant shared regressions. All money/security requirements remain tested. Review command formatting scope before touching unrelated dirty files.
 
-Add an actual web Playwright script/config in P03 if absent. Proposed `test:e2e` maps to the configured runner; a group invocation is `pnpm --filter @template/web test:e2e e2e/<group>.spec.ts`. Add a separately gated API `test:testnet` profile in P08 and verify its actual invocation before documenting success. Neither command is claimed to exist now. Worker/signer builds and tests use their registered existing-package profiles; do not create another test framework.
+P03 owns the web Playwright script/config; reuse its existing implementation and verify the actual manifest command before running it. The intended `test:e2e` maps to the configured runner; a group invocation is `pnpm --filter @template/web test:e2e e2e/<group>.spec.ts`. Add a separately gated API `test:testnet` profile in P06 and verify its actual invocation before documenting success. Testnet configuration remains a future deliverable, not a claim that it exists now. Worker/signer builds and tests use their registered existing-package profiles; do not create another test framework.
 
 | Phase | Primary Proposed Test Ownership | Services / Evidence |
 | --- | --- | --- |
 | P01 | `apps/api/src/core/financial/money.test.ts`; `apps/api/src/modules/ledger/ledger.service.integration.test.ts`; `packages/contracts/src/financial/financial.schema.test.ts` | Real migrated Postgres; money/calendar/source/concurrency outcomes |
 | P02 | `apps/api/src/modules/auth/oscar-auth.integration.test.ts`; `apps/api/src/modules/admins/admin-invites.integration.test.ts` | Test auth/DB; email boundary double; admin password sign-in, role/link/session results |
 | P03 | Employee/admin auth colocated component/adapter tests; `apps/web/e2e/identity-and-admin-access.spec.ts` | Real test web/API/DB; dedicated admin sign-in and responsive authenticated behavior |
-| P04 | `apps/api/src/modules/subscriptions/subscription-purchase.integration.test.ts`; referral/wallet colocated integration tests | Real Postgres; atomic purchase/award/source outcomes |
-| P05 | Employee/admin package/team/wallet/finance tests; package/wallet/referral E2E suites | Real test app; first full regression checkpoint |
-| P06 | Asset/task/code/review colocated integration tests | Real files/Postgres, fixed clock; approval/claim/retention races |
-| P07 | Task/code/review component/adapters; `apps/web/e2e/tasks-codes-and-review.spec.ts` | Real test app and private file fixtures |
-| P08 | Custody/deposit/treasury integration tests; `apps/api/testnet/*.testnet.test.ts` | Protected test custody/recovery store; opted-in testnet evidence |
-| P09 | Deposit adapters/components; `apps/web/e2e/deposits.spec.ts` | Real test app; credit/address behavior; full regression checkpoint |
-| P10 | `apps/api/src/modules/withdrawals/withdrawal-reservation.integration.test.ts`; scheduler/cancellation tests | Real Postgres/Redis, fixed clock; lost wakeup/concurrency/source outcomes |
-| P11 | Signer/payout/recovery colocated tests; opted-in payout testnet suite | Protected test signer; durable attempts/finality/restore outcomes |
-| P12 | Withdrawal components/adapters; `apps/web/e2e/withdrawals.spec.ts` | Real test app; active state/refund/deadline behavior; full checkpoint |
-| P13 | Employee/admin/settings/audit colocated integration tests | Real DB; cross-domain authority/action/history results |
-| P14 | Admin/home/policy component tests; admin/policy E2E suites | All 37 routes, including dedicated admin sign-in, and full current regression |
-| P15 | Cross-domain/security/deployment/restore tests plus `apps/web/e2e/release-acceptance.spec.ts` | Production-like staging, restored state, testnet/UAT, basic capacity result |
+| P04 | `apps/api/src/modules/subscriptions/subscription-purchase.integration.test.ts`; referral/wallet integration tests; employee/admin package/team/wallet/finance tests and E2E suites | Real Postgres backend gate, then real test app; first full regression checkpoint |
+| P05 | Asset/task/code/review integration tests; task/code/review component/adapters; `apps/web/e2e/tasks-codes-and-review.spec.ts` | Real files/Postgres and fixed clock backend gate, then real test app/private fixtures; approval/claim/retention races |
+| P06 | Custody/deposit/treasury integration tests; `apps/api/testnet/*.testnet.test.ts` | Protected test custody/recovery store; opted-in provisioning/deposit/sweep testnet evidence |
+| P07 | Deposit adapters/components; `apps/web/e2e/deposits.spec.ts` | Real test app; credit/address behavior; full regression checkpoint |
+| P08 | `apps/api/src/modules/withdrawals/withdrawal-reservation.integration.test.ts`; scheduler/cancellation tests; signer/payout/recovery tests; opted-in payout testnet suite | Real Postgres/Redis reservation gate, then protected test signer; durable attempts/finality/restore outcomes |
+| P09 | Withdrawal components/adapters; `apps/web/e2e/withdrawals.spec.ts` | Real test app; active state/refund/deadline behavior; full checkpoint |
+| P10 | Employee/admin/settings/audit integration tests; admin/home/policy component tests and E2E suites | Real DB backend gate, then all 37 routes and full current regression; cross-domain authority/action/history results |
+| P11 | Cross-domain/security/deployment/restore tests plus `apps/web/e2e/release-acceptance.spec.ts` | Production-like staging, restored state, testnet/UAT, basic capacity result |
 
 Paths above are proposed and repository-relative. Put sibling named tests from each phase beside the actual module/component they test, and identify exact paths in that phase's task list. Extend existing database inventory/auth regression files rather than replacing them. Preserve production incident regressions.
 
@@ -649,6 +666,8 @@ Controlled testnet runs require an explicit network/token, fresh test-only crede
 Spec Kit installation, initialization, and constitution preparation are owner-owned prerequisites and are intentionally absent from the phases. Use the existing supplied artifacts and registered command form; do not create a setup phase or repeat constitution approval.
 
 Keep one shared decision baseline and grouped tasks. Generate/update only the specification/technical tasks needed for the selected domain, using the owner's workflow. Avoid repeating the same requirements across separate artifacts for every tiny step. Resolve a genuine new conflict, but do not reopen already approved fees, duration, no 2FA, or payment formulas.
+
+P01-P03 retain their existing feature artifacts and implementation history. Start the next authorized workflow at P04, using the current IDs in Section 6. Each merged phase uses one feature/spec/plan/task set, with ordered internal delivery groups and required gates; do not rerun specify/clarify/plan merely to move from its tested backend to its frontend tasks. Repeat bounded implement batches as needed. If a genuine requirement/design gap is discovered, amend only its owning artifact through the appropriate workflow rather than skipping clarification or recreating the whole feature. No constitution amendment or feature-pointer rewrite is authorized by this roadmap regrouping.
 
 The documented notation below is illustrative; use the actual installed integration form. Spec Kit supports bounded task/phase implementation, which is appropriate here. [Spec Kit workflow](https://github.github.com/spec-kit/reference/agentic-sdd.html), [bounded implementation](https://github.github.com/spec-kit/concepts/complex-features.html).
 

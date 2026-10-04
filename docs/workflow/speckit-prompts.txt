@@ -1,6 +1,7 @@
 OSCAR SPEC KIT PROMPT PACK
-Reusable across roadmap phases P01-P15
+Reusable across roadmap phases P01-P11
 Prepared against the repository and installed Codex skills on 2026-10-02
+Roadmap references regrouped on 2026-10-04; P01-P03 and their artifacts preserved.
 
 PURPOSE
 
@@ -21,8 +22,9 @@ HOW THE OWNER USES THIS PACK
 
 1. Run CONSTITUTION once for the project. Amend it only for an explicitly
    approved project-wide policy change. Do not run it again for each phase.
-2. Select PHASE_ID, for example P01. It refers to the OSCAR roadmap, not to a
-   numbered section inside generated tasks.md.
+2. Select the current PHASE_ID from PLAN.md; the next phase after the
+   owner-reported completed P01-P03 is P04. It refers to the OSCAR roadmap, not
+   to a numbered section inside generated tasks.md.
 3. For that phase, run SPECIFY, CLARIFY, PLAN, CHECKLIST, TASKS, ANALYZE,
    IMPLEMENT, and CONVERGE in that order.
 4. Review findings and fix the owning specification or design artifact before
@@ -40,6 +42,16 @@ read-only. Checklist approval is not evidence that code/tests are complete.
 If IMPLEMENT is scoped to a batch, repeat it for remaining dependency-safe batches
 until this phase's implementation tasks finish before claiming full convergence.
 Incomplete batches are not complete roadmap phases.
+
+Merged P04, P05, and P10 use one feature/spec/plan/task set per selected phase:
+complete and test the entire backend delivery group before frontend integration.
+Merged P08 has two ordered backend groups: reservation/scheduling first, then
+payout/recovery; both gates must pass before P09. Internal groups are not new
+roadmap phases and do not require another Spec Kit workflow. Keep every original
+test/acceptance gate. The legacy-to-current crosswalk is in PLAN.md Section 6;
+historical phase references must not silently bind to the new same-number scope.
+Do not renumber completed P01-P03 task IDs, recreate their accepted artifacts,
+or amend the constitution/change the feature pointer just for this regrouping.
 
 PHASE_ID is a natural-language prompt binding, not a Spec Kit CLI flag.
 The Codex integration installed here exposes $speckit-* skills. Other tools may
@@ -76,7 +88,7 @@ A. Establish the correct context
   A policy change needing a constitution amendment must be handled explicitly;
   a routine phase prompt cannot silently amend or weaken the constitution.
 - Identify the selected phase's deliverables, exclusions, predecessor gates and
-  acceptance tests. Do not expand to all P01-P15. Do not reimplement completed
+  acceptance tests. Do not expand to all P01-P11. Do not reimplement completed
   phases. A necessary correction to shared code must be scoped and justified.
 - Read the whole roadmap for cross-cutting rules, dependencies and conflicts,
   but create/update artifacts only for PHASE_ID. Do not rewrite PLAN.md or produce
@@ -103,6 +115,10 @@ B. Bind one phase to the correct feature artifacts
 - Roadmap phase IDs and Spec Kit internal task-group numbers are different.
   A generated "Phase N: Convergence" is a remediation task group within PHASE_ID,
   not a new roadmap phase or permission to start the next phase.
+- For a merged phase, bind its entire current scope to the same selected feature.
+  Use ordered task groups for backend delivery and frontend integration, not a
+  duplicate feature per group. Reuse existing accepted artifacts if present and
+  preserve their IDs/progress; consult PLAN.md's legacy crosswalk for old scopes.
 - A completed, non-placeholder constitution is required before phase execution.
   Do not silently accept skipped constitution checks or write it during a phase.
 
@@ -230,10 +246,14 @@ G. Tests and truthful completion
   without execution evidence. Add missing infrastructure only when this phase
   explicitly owns it. Keep tests focused on risk, not arbitrary coverage targets.
 - Run focused tests and affected shared regressions for bounded batches. Run
-  full current regressions at roadmap checkpoints P05/P09/P12/P14/P15 and before
+  full current regressions at roadmap checkpoints P04/P07/P09/P10/P11 and before
   release, as specified in PLAN.md. Do not rerun every unrelated suite per edit.
 - Backend groups must be complete and tested before frontend integration.
   Do not connect money-changing controls to incomplete services or mock success.
+- In a merged phase, backend gate evidence is required before its frontend tasks
+  start, even for ALL_ACTIVE_PHASE_TASKS. In P08, pass reservation/scheduling
+  before payout/recovery; both must pass before P09. Keep all original tests and
+  internal gates. A passed internal gate alone does not complete the phase.
 - Required financial/integration checks that cannot run leave the relevant gate
   incomplete. Distinguish actual failures, existing failures and unavailable
   services/tools. Never mark a task complete based on optimism.
@@ -321,6 +341,10 @@ Include actors, current capability, in/out of scope, prerequisites, user scenari
 testable requirements, entities, failure cases and measurable acceptance outcomes.
 Translate relevant roadmap invariants into behavior, not implementation guesses.
 Keep backend-only phases backend-only; frontend phases only integrate frozen UI.
+For merged phases, cover both approved delivery groups in one specification and
+make the backend-before-frontend acceptance dependency explicit. P08 specifies
+both ordered backend groups, not withdrawal UI. Do not drop original failure
+cases or acceptance gates to shorten the workflow.
 
 Cover applicable identity/ownership/state checks, safe repeat requests, concurrent
 actions, unavailable providers, boundary dates and uncertain financial outcomes.
@@ -394,7 +418,10 @@ concurrent conflicts, retries, failures, audit and observability where applicabl
 Do not rely on browser state or a queue lock for financial integrity.
 
 Use backend-first ordering. A frontend integration phase requires evidence that
-its backend group is complete and tested. Specify minimal changes to existing
+its backend group is complete and tested; the same rule applies to frontend
+groups inside merged P04/P05/P10. Keep one phase plan with internal gate criteria
+and bounded batches. P08's reservation/scheduling gate precedes payout/recovery,
+and its final gate precedes P09. Specify minimal changes to existing
 adapters/hooks/components without altering approved rendering, static copy,
 routes or popups. A missing required surface is an owner decision, not a design
 task the model can add to this phase automatically.
@@ -461,6 +488,10 @@ Order contracts/schema/migrations/domain/authorization/provider/backend tests
 before integration that depends on them. Preserve phase boundaries: backend
 phases do not acquire frontend design work; frontend phases do not bypass an
 incomplete backend group. Include minimal approved-UI wiring only when in scope.
+For merged phases, include explicit backend acceptance tasks before any dependent
+frontend task, all in the same tasks.md. In P08, reservation/scheduling acceptance
+precedes payout/recovery tasks, then the complete payout/testnet/recovery gate.
+These groups must not generate extra formal phases or repeat specification work.
 
 Include applicable code-quality/security review, test-guard, docs-guard and UI
 preservation checks inside meaningful tasks, not one ritual task per rule/file.
@@ -657,7 +688,7 @@ create specifications, modify code, run tests or enter other phases.
   difference-based commission remain distinct; source ordering/tests are included.
 - Edge P03: absent admin login UI plus freeze yields OWNER DECISION REQUIRED;
   no route/screen is created and no auth requirement is silently discarded.
-- Failure P08/P11: missing provider/testnet access, resources or funding leaves
+- Failure P06/P08: missing provider/testnet access, resources or funding leaves
   the relevant gate incomplete; no mainnet fallback or fabricated confirmation.
 - Converge gap: a missing source-preserving cancellation race test produces a
   concrete traceable appended task only; existing tasks/code stay unchanged.

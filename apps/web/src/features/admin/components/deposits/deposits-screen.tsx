@@ -2,14 +2,17 @@
 
 import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
-import { Check, Copy, Plus, Search } from "lucide-react";
+import { Banknote, Check, Copy, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
+import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
 import { AdminEmptyState } from "../common/admin-empty-state";
+import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminPagination } from "../common/admin-pagination";
+import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
 import { useAdminState } from "../../context/admin-state.context";
 import type { AdminDepositStatus } from "../../types/admin.types";
@@ -29,6 +32,7 @@ export function DepositsScreen() {
 
   // Manual deposit modal
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmDepositOpen, setConfirmDepositOpen] = useState(false);
   const [selectedEmpId, setSelectedEmpId] = useState<string>(
     employees[0]?.id ?? "",
   );
@@ -76,8 +80,21 @@ export function DepositsScreen() {
     }, 1500);
   };
 
-  const handleManualDeposit = (e: React.SyntheticEvent) => {
+  const selectedEmployee = useMemo(
+    () => employees.find((e) => e.id === selectedEmpId),
+    [employees, selectedEmpId],
+  );
+
+  const handleOpenConfirmDeposit = (e: React.SyntheticEvent) => {
     e.preventDefault();
+    const amount = parseFloat(depositAmount);
+    if (isNaN(amount) || amount <= 0 || !depositReference.trim() || !depositReason.trim()) {
+      return;
+    }
+    setConfirmDepositOpen(true);
+  };
+
+  const handleExecuteManualDeposit = () => {
     const amount = parseFloat(depositAmount);
     if (isNaN(amount) || amount <= 0) return;
 
@@ -90,6 +107,7 @@ export function DepositsScreen() {
 
     setFeedback(res);
     if (res.success) {
+      setConfirmDepositOpen(false);
       setModalOpen(false);
       setDepositAmount("");
       setDepositReference("");
@@ -153,41 +171,36 @@ export function DepositsScreen() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
+          <div>
+            <AdminInput
+              icon={Search}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
               placeholder="بحث بالموظف، البريد، TxID، أو المرجع..."
-              className="w-full rounded-md border border-slate-300 bg-white py-2 pr-9 pl-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none sm:text-sm"
+              aria-label="بحث في الإيداعات"
             />
           </div>
 
           <div>
-            <select
+            <AdminSelect
               value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
+              onValueChange={(val) => {
+                setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none sm:text-sm"
-              aria-label="تصفية حسب حالة الإيداع"
-            >
-              <option value="all">كل حالات الإيداع</option>
-              <option value="confirmed">مؤكد</option>
-              <option value="verifying">قيد التحقق</option>
-              <option value="rejected">مرفوض</option>
-            </select>
+              options={[
+                { value: "all", label: "كل حالات الإيداع" },
+                { value: "confirmed", label: "مؤكد" },
+                { value: "verifying", label: "قيد التحقق" },
+                { value: "rejected", label: "مرفوض" },
+              ]}
+              ariaLabel="تصفية حسب حالة الإيداع"
+            />
           </div>
         </div>
       </div>
@@ -344,61 +357,56 @@ export function DepositsScreen() {
             </div>
 
             <form
-              onSubmit={handleManualDeposit}
-              className="space-y-4 p-4 text-xs sm:text-sm"
+              onSubmit={handleOpenConfirmDeposit}
+              className="space-y-4 p-5 text-xs sm:text-sm"
             >
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1.5 block font-bold text-slate-700">
                   الموظف المستفيد: <span className="text-rose-600">*</span>
                 </label>
-                <select
+                <AdminSelect
                   value={selectedEmpId}
-                  onChange={(e) => {
-                    setSelectedEmpId(e.target.value);
-                  }}
-                  className="w-full rounded-md border border-slate-300 p-2 text-xs text-slate-900"
-                  required
-                >
-                  {employees
+                  onValueChange={setSelectedEmpId}
+                  options={employees
                     .filter((e) => !e.isDeleted)
-                    .map((emp) => (
-                      <option key={emp.id} value={emp.id}>
-                        {emp.name} ({emp.email})
-                      </option>
-                    ))}
-                </select>
+                    .map((emp) => ({
+                      value: emp.id,
+                      label: `${emp.name} (${emp.email})`,
+                    }))}
+                  ariaLabel="الموظف المستفيد"
+                />
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1.5 block font-bold text-slate-700">
                   المبلغ (USDT): <span className="text-rose-600">*</span>
                 </label>
-                <input
+                <AdminInput
                   type="number"
                   step="0.01"
                   min="0.01"
+                  icon={Banknote}
                   value={depositAmount}
                   onChange={(e) => {
                     setDepositAmount(e.target.value);
                   }}
                   placeholder="0.00"
-                  className="w-full rounded-md border border-slate-300 p-2 font-mono text-sm"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1.5 block font-bold text-slate-700">
                   الرقم المرجعي الفريد: <span className="text-rose-600">*</span>
                 </label>
-                <input
+                <AdminInput
                   type="text"
                   dir="ltr"
                   value={depositReference}
                   onChange={(e) => {
                     setDepositReference(e.target.value);
                   }}
-                  className="w-full rounded-md border border-slate-300 p-2 font-mono text-xs"
+                  placeholder="MAN-DEP-..."
                   required
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
@@ -407,7 +415,7 @@ export function DepositsScreen() {
               </div>
 
               <div>
-                <label className="mb-1 block font-bold text-slate-700">
+                <label className="mb-1.5 block font-bold text-slate-700">
                   سبب الإيداع اليدوي الإلزامي:{" "}
                   <span className="text-rose-600">*</span>
                 </label>
@@ -418,7 +426,7 @@ export function DepositsScreen() {
                     setDepositReason(e.target.value);
                   }}
                   placeholder="مثال: تسوية تحويل بنكي خارجي مؤكد أو مطابقة يدوية لإيداع شبكة..."
-                  className="w-full rounded-md border border-slate-300 p-2 text-xs"
+                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
                   required
                 />
               </div>
@@ -426,21 +434,52 @@ export function DepositsScreen() {
               <div className="flex justify-end gap-2 border-t border-slate-100 pt-3">
                 <AdminButton
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => {
                     setModalOpen(false);
                   }}
                 >
                   إلغاء
                 </AdminButton>
-                <AdminButton type="submit" variant="primary" size="sm">
-                  تأكيد الإيداع وإضافة الرصيد
+                <AdminButton type="submit" variant="primary" size="default">
+                  مراجعة وتأكيد الإيداع
                 </AdminButton>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Confirm Manual Deposit Dialog */}
+      <AdminConfirmDialog
+        isOpen={confirmDepositOpen}
+        title="تأكيد إضافة الإيداع اليدوي الاستثنائي"
+        description={
+          <div className="space-y-2">
+            <p>
+              أنت على وشك إضافة رصيد يدوي معتمد بقيمة{" "}
+              <strong className="font-mono text-emerald-700">
+                {parseFloat(depositAmount || "0").toFixed(2)} USDT
+              </strong>{" "}
+              إلى حساب الموظف <strong>{selectedEmployee?.name}</strong>.
+            </p>
+            <p className="text-slate-500">
+              المرجع: <bdi dir="ltr">{depositReference}</bdi> | سيتم تسجيل القيد فوراً في السجل المالي وسجل التدقيق.
+            </p>
+          </div>
+        }
+        confirmLabel="تأكيد إضافة الرصيد"
+        variant="primary"
+        affectedRecord={{
+          id: selectedEmpId,
+          label: selectedEmployee?.name ?? "موظف",
+          subtitle: `المبلغ: ${depositAmount} USDT | المرجع: ${depositReference}`,
+        }}
+        onConfirm={handleExecuteManualDeposit}
+        onClose={() => {
+          setConfirmDepositOpen(false);
+        }}
+      />
     </div>
   );
 }

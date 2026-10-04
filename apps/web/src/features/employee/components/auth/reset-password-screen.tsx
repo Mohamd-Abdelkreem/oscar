@@ -1,9 +1,8 @@
 "use client";
 
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
+import { usePasswordReset } from "@/features/auth/hooks/password-recovery.hooks";
 
 import { AlertCircle, CheckCircle2, KeyRound } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { PasswordVisibilityToggle } from "@/features/employee/components/common/password-visibility-toggle";
 import {
@@ -12,45 +11,17 @@ import {
 } from "@/features/employee/components/common/button";
 
 export function EmployeeResetPasswordScreen() {
-  const scheduleTimeout = useManagedTimeout();
-  const searchParams = useSearchParams();
-
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const flow = usePasswordReset();
+  const {
+    newPassword,
+    setNewPassword,
+    confirmation: confirmPassword,
+    setConfirmation: setConfirmPassword,
+    error,
+  } = flow;
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Check if link is simulated as expired via query param ?state=expired
-  const isExpired = searchParams.get("state") === "expired";
-
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    // Repository standard password validation (15 - 128 characters)
-    if (newPassword.length < 15) {
-      setError("كلمة المرور الجديدة يجب أن تتكون من 15 حرفاً على الأقل.");
-      return;
-    }
-    if (newPassword.length > 128) {
-      setError("كلمة المرور يجب ألا تتجاوز 128 حرفاً.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("كلمتا المرور غير متطابقتين.");
-      return;
-    }
-
-    setIsLoading(true);
-    scheduleTimeout(() => {
-      setIsLoading(false);
-      setIsSuccess(true);
-    }, 400);
-  };
-
-  if (isExpired) {
+  if (flow.stage === "invalid") {
     return (
       <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600">
@@ -62,8 +33,8 @@ export function EmployeeResetPasswordScreen() {
             رابط إعادة التعيين غير صالح أو منتهي
           </h1>
           <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            الرابط الذي تحاول استخدامه قد انتهت صلاحيته (المدة القصوى ساعتان).
-            يرجى تقديم طلب استعادة جديد.
+            الرابط مفقود أو غير صالح أو انتهت صلاحيته أو تم استخدامه. يرجى تقديم
+            طلب استعادة جديد.
           </p>
         </div>
 
@@ -81,7 +52,7 @@ export function EmployeeResetPasswordScreen() {
     );
   }
 
-  if (isSuccess) {
+  if (flow.stage === "success") {
     return (
       <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-100 text-emerald-800">
@@ -93,8 +64,7 @@ export function EmployeeResetPasswordScreen() {
             تم تعيين كلمة المرور الجديدة بنجاح
           </h1>
           <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-            يمكنك الآن استخدام كلمة المرور الجديدة لتسجيل الدخول إلى حساب الموظف
-            الخاص بك.
+            سجل الدخول من جديد بكلمة المرور الجديدة إلى حسابك.
           </p>
         </div>
 
@@ -105,7 +75,10 @@ export function EmployeeResetPasswordScreen() {
             size="default"
             fullWidth
           >
-            الانتقال لتسجيل الدخول
+            تسجيل دخول الموظف
+          </ButtonLink>
+          <ButtonLink href="/admin/auth/login" variant="outline" fullWidth>
+            تسجيل دخول المسؤول
           </ButtonLink>
         </div>
       </div>
@@ -123,7 +96,26 @@ export function EmployeeResetPasswordScreen() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {flow.stage === "checking" && (
+        <p role="status">جارٍ التحقق من الرابط...</p>
+      )}
+      {flow.stage === "unavailable" && (
+        <Button
+          variant="outline"
+          onClick={() => {
+            void flow.preview();
+          }}
+        >
+          إعادة التحقق من الرابط
+        </Button>
+      )}
+      <form
+        noValidate
+        onSubmit={(event) => {
+          void flow.submit(event);
+        }}
+        className="space-y-4"
+      >
         <div className="space-y-1">
           <label
             htmlFor="new-pass"
@@ -139,6 +131,7 @@ export function EmployeeResetPasswordScreen() {
               onChange={(e) => {
                 setNewPassword(e.target.value);
               }}
+              autoComplete="new-password"
               minLength={15}
               maxLength={128}
               className="min-h-[48px] w-full rounded-md border border-slate-300 px-3.5 py-2.5 pl-12 text-base focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
@@ -167,6 +160,7 @@ export function EmployeeResetPasswordScreen() {
             onChange={(e) => {
               setConfirmPassword(e.target.value);
             }}
+            autoComplete="new-password"
             minLength={15}
             maxLength={128}
             className="min-h-[48px] w-full rounded-md border border-slate-300 px-3.5 py-2.5 text-base focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
@@ -189,7 +183,8 @@ export function EmployeeResetPasswordScreen() {
           variant="primary"
           size="default"
           fullWidth
-          loading={isLoading}
+          loading={flow.pending}
+          disabled={flow.stage !== "ready"}
           icon={KeyRound}
         >
           حفظ كلمة المرور الجديدة

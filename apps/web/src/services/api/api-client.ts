@@ -1,306 +1,263 @@
-import axios, {
-  type AxiosError,
-  type AxiosInstance,
-  type AxiosResponse,
-} from "axios";
-
-import type { SuccessEnvelope } from "@template/contracts";
+import axios, { type AxiosInstance, type AxiosResponse } from "axios";
+import {
+  identitySessionDataSchema,
+  successEnvelopeSchema,
+  type IdentityUserData,
+} from "@template/contracts";
+import type { z } from "zod";
 
 import { publicEnvironment } from "@/config/public-environment";
 
-import { assignBrowserLocation, getBrowserLocation } from "./browser-location";
+import { getApiError, safeApiError } from "./safe-error";
+import { getSessionRuntime, type SessionScope } from "./session-runtime";
 
-export type ApiResponse<T> = Omit<SuccessEnvelope<T>, "data"> & {
-  readonly data: T;
-};
-
-export type ApiError = Readonly<{
-  message: string;
+export { getApiError } from "./safe-error";
+export type { ApiError } from "./safe-error";
+export type ApiResponse<T> = Readonly<{
+  success: true;
   statusCode: number;
-  code: string;
-  requestId: string;
-  fieldErrors: Readonly<Record<string, readonly string[]>>;
+  data: T;
 }>;
-
 export type ValueState<T> =
   { readonly kind: "missing" } | { readonly kind: "value"; readonly value: T };
 
-type ParsedErrorEnvelope = Readonly<{
-  message: string;
-  statusCode: number;
-  requestId: string;
-  code: string;
-  errors: unknown;
-}>;
-
-const STATUS_MESSAGES: Readonly<Record<number, string>> = Object.freeze({
-  0: "Unable to reach the server. Check your connection and try again.",
-  400: "The request contains invalid data. Review it and try again.",
-  401: "Your session has expired. Sign in again to continue.",
-  403: "You do not have permission to perform this action.",
-  404: "The requested resource could not be found.",
-  409: "The request conflicts with the current resource state.",
-  422: "Some submitted values are invalid.",
-  429: "Too many requests. Wait a moment and try again.",
-  500: "The server encountered an unexpected error.",
-  501: "The requested operation is not available.",
-  502: "The upstream service returned an invalid response.",
-  503: "The service is temporarily unavailable.",
-  504: "The upstream service took too long to respond.",
-});
-
-const CSRF_COOKIE_NAME = "csrfToken";
-const CSRF_HEADER_NAME = "x-csrf-token";
-const UNSAFE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-const PUBLIC_AUTH_PATHS = new Set([
+const baseURL = publicEnvironment.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
+const basePath = new URL(baseURL).pathname.replace(/\/+$/, "");
+const publicPaths = new Set([
   "/auth/register",
+  "/auth/login",
+  "/auth/admin/login",
+  "/auth/refresh",
   "/auth/verify-email",
   "/auth/resend-verification",
-  "/auth/login",
-  "/auth/refresh",
   "/auth/forgot-password",
   "/auth/reset-password",
   "/auth/validate-reset-token",
+  "/auth/validate-verification-token",
+  "/auth/validate-admin-invitation",
+  "/auth/admin-invitations/accept",
 ]);
-const CREDENTIAL_QUERY_KEYS = new Set([
-  "token",
-  "access_token",
-  "refresh_token",
-  "id_token",
-  "code",
-  "secret",
-  "password",
+const cookiePaths = new Set([
+  "/auth/login",
+  "/auth/admin/login",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/logout-all",
+  "/auth/reset-password",
+  "/auth/change-password",
 ]);
-
-const baseURL = publicEnvironment.NEXT_PUBLIC_API_URL.replace(/\/+$/, "");
-const basePath = new URL(baseURL).pathname.replace(/\/+$/, "");
-
+const preExecutionAuthPaths = [
+  /^\/users\/me$/u,
+  /^\/auth\/(?:logout|logout-all|change-password)$/u,
+  /^\/admin\/(?:admins|invitations)(?:\/[^/]+(?:\/(?:status|reissue|revoke))?)?$/u,
+];
 let accessToken: ValueState<string> = { kind: "missing" };
-let refreshPromise: ValueState<Promise<string>> = { kind: "missing" };
+let refreshPromise: Promise<ApiResponse<IdentityUserData>> | undefined;
+let subscribedRuntime: ReturnType<typeof getSessionRuntime> | undefined;
+const runtime = () => {
+  const current = getSessionRuntime();
+  if (subscribedRuntime !== current) {
+    current.onRetire(clearAccessToken);
+    subscribedRuntime = current;
+  }
+  return current;
+};
 
 declare module "axios" {
   interface AxiosRequestConfig {
     _templateRetried?: boolean;
+    _sessionScope?: SessionScope;
   }
 }
-
 export const apiClient: AxiosInstance = axios.create({
   baseURL,
   withCredentials: true,
 });
-
-export const setAccessToken = (token: string): void => {
-  accessToken = { kind: "value", value: token };
-};
-
-export const getAccessToken = (): ValueState<string> => accessToken;
-
 export const clearAccessToken = (): void => {
   accessToken = { kind: "missing" };
 };
+export const setAccessToken = (token: string): void => {
+  if (typeof window === "undefined")
+    throw safeApiError("coordination", "COORDINATION_UNAVAILABLE");
+  runtime();
+  accessToken = { kind: "value", value: token };
+};
+export const getAccessToken = (): ValueState<string> => accessToken;
 
-const readBrowserCookie = (name: string): ValueState<string> => {
-  if (typeof document === "undefined") return { kind: "missing" };
-  const prefix = `${encodeURIComponent(name)}=`;
+const requestPath = (url: string): string => {
+  try {
+    const parsed = new URL(url, baseURL);
+    return parsed.pathname.startsWith(`${basePath}/`)
+      ? parsed.pathname.slice(basePath.length)
+      : parsed.pathname;
+  } catch {
+    return "";
+  }
+};
+export const isPublicAuthRequest = (url: string): boolean =>
+  publicPaths.has(requestPath(url));
+const csrfCookie = (): string | undefined => {
+  if (typeof document === "undefined") return undefined;
   const cookie = document.cookie
     .split(";")
-    .map((value) => value.trim())
-    .find((value) => value.startsWith(prefix));
-  if (cookie === undefined) return { kind: "missing" };
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("csrfToken="));
   try {
-    return {
-      kind: "value",
-      value: decodeURIComponent(cookie.slice(prefix.length)),
-    };
+    return cookie === undefined
+      ? undefined
+      : decodeURIComponent(cookie.slice(10));
   } catch {
-    return { kind: "missing" };
+    return undefined;
   }
 };
 
-const getRequestPath = (url: string): string => {
-  try {
-    const pathname = new URL(url, baseURL).pathname;
-    return pathname.startsWith(basePath)
-      ? pathname.slice(basePath.length) || "/"
-      : pathname;
-  } catch {
-    return url.split("?")[0] ?? url;
-  }
+export const parseApiResponse = <T>(
+  response: AxiosResponse<unknown>,
+  schema: z.ZodType<T>,
+  expectedStatus: number,
+): ApiResponse<T> => {
+  const envelope = successEnvelopeSchema.safeParse(response.data);
+  if (
+    !envelope.success ||
+    response.status !== expectedStatus ||
+    envelope.data.statusCode !== response.status
+  )
+    throw safeApiError("contract", "CONTRACT_ERROR");
+  const payload = schema.safeParse(envelope.data.data);
+  if (!payload.success) throw safeApiError("contract", "CONTRACT_ERROR");
+  return { success: true, statusCode: expectedStatus, data: payload.data };
 };
 
-export const isPublicAuthRequest = (url: string): boolean =>
-  PUBLIC_AUTH_PATHS.has(getRequestPath(url));
-
-const isUnsafeMethod = (method: string): boolean =>
-  UNSAFE_METHODS.has(method.toUpperCase());
-
-const safeCurrentPath = (): string | null => {
-  const location = getBrowserLocation();
-  if (location === null) return null;
-  const value = `${location.pathname}${location.search}`;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  if (location.pathname.startsWith("/auth/")) return null;
-  const parsed = new URL(value, "https://template.invalid");
-  for (const key of parsed.searchParams.keys()) {
-    if (CREDENTIAL_QUERY_KEYS.has(key.toLowerCase())) return null;
-  }
-  return `${parsed.pathname}${parsed.search}`;
-};
-
-const redirectToLogin = (): void => {
-  const location = getBrowserLocation();
-  if (location === null || location.pathname.startsWith("/auth/")) return;
-  const returnTo = safeCurrentPath();
-  assignBrowserLocation(
-    returnTo === null
-      ? "/auth/login"
-      : `/auth/login?returnTo=${encodeURIComponent(returnTo)}`,
-  );
-};
-
-const refreshAccessToken = (): Promise<string> => {
-  if (refreshPromise.kind === "value") return refreshPromise.value;
-  const promise = apiClient
-    .post<ApiResponse<{ tokens: { accessToken: string } }>>("/auth/refresh", {})
+export const refreshSession = (): Promise<ApiResponse<IdentityUserData>> => {
+  if (refreshPromise !== undefined) return refreshPromise;
+  const scope = runtime().scope();
+  const pending = apiClient
+    .post<unknown>("/auth/refresh", {})
     .then((response) => {
-      const token = response.data.data.tokens.accessToken;
-      setAccessToken(token);
-      return token;
+      const parsed = parseApiResponse(response, identitySessionDataSchema, 200);
+      runtime().assertCurrent(scope);
+      if (
+        parsed.data.user.status !== "ACTIVE" ||
+        parsed.data.user.emailVerifiedAt === null
+      )
+        throw safeApiError("contract", "CONTRACT_ERROR");
+      runtime().admitIdentity(scope, parsed.data.user);
+      setAccessToken(parsed.data.tokens.accessToken);
+      return { ...parsed, data: { user: parsed.data.user } };
+    })
+    .catch((failure: unknown) => {
+      clearAccessToken();
+      throw getApiError(failure);
     })
     .finally(() => {
-      refreshPromise = { kind: "missing" };
+      if (refreshPromise === pending) refreshPromise = undefined;
     });
-  refreshPromise = { kind: "value", value: promise };
-  return promise;
-};
-
-const isExpectedAnonymousRefreshFailure = (error: unknown): boolean => {
-  const apiError = getApiError(error);
-
-  return (
-    (apiError.statusCode === 400 && apiError.code === "BAD_REQUEST") ||
-    (apiError.statusCode === 401 && apiError.code === "UNAUTHORIZED")
-  );
+  refreshPromise = pending;
+  return pending;
 };
 
 apiClient.interceptors.request.use((config) => {
-  if (accessToken.kind === "value") {
+  const current = runtime();
+  const scope = config._sessionScope ?? current.scope();
+  current.assertCurrent(scope);
+  config._sessionScope = scope;
+  const route = requestPath(config.url ?? "");
+  if (new URL(config.url ?? "", baseURL).origin !== new URL(baseURL).origin)
+    throw safeApiError("request", "REQUEST_ERROR");
+  const cookieWrite =
+    cookiePaths.has(route) && (config.method ?? "get").toLowerCase() !== "get";
+  if (
+    !isPublicAuthRequest(config.url ?? "") &&
+    !cookieWrite &&
+    !current.coordinationAvailable()
+  )
+    throw safeApiError("coordination", "COORDINATION_UNAVAILABLE");
+  if (accessToken.kind === "value" && !isPublicAuthRequest(config.url ?? ""))
     config.headers.set("Authorization", `Bearer ${accessToken.value}`);
+  else if (!cookiePaths.has(route)) config.headers.delete("Authorization");
+  if (
+    ["post", "patch", "put", "delete"].includes(
+      (config.method ?? "get").toLowerCase(),
+    )
+  ) {
+    const csrf = csrfCookie();
+    if (csrf !== undefined) config.headers.set("x-csrf-token", csrf);
   }
-  if (isUnsafeMethod(config.method ?? "GET")) {
-    const csrfToken = readBrowserCookie(CSRF_COOKIE_NAME);
-    if (csrfToken.kind === "value") {
-      config.headers.set(CSRF_HEADER_NAME, csrfToken.value);
-    }
+  if (cookieWrite) {
+    const adapter = axios.getAdapter(
+      config.adapter ?? apiClient.defaults.adapter,
+    );
+    delete config.signal;
+    delete config.cancelToken;
+    config.timeout = 0;
+    config.adapter = (request) =>
+      current.cookieWrite(async (observeTerminal) => {
+        current.assertCurrent(scope);
+        try {
+          const response = await adapter(request);
+          observeTerminal();
+          return response;
+        } catch (failure: unknown) {
+          if (axios.isAxiosError(failure) && failure.response !== undefined)
+            observeTerminal();
+          throw failure;
+        }
+      }, scope);
   }
   return config;
 });
 
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error: unknown) => {
-    if (!axios.isAxiosError(error)) throw error;
-    const config = error.config;
-    const requestUrl = config?.url;
+  (response) => {
+    if (response.config._sessionScope !== undefined)
+      runtime().assertCurrent(response.config._sessionScope);
+    return response;
+  },
+  async (failure: unknown) => {
+    const projection = getApiError(failure);
+    if (!axios.isAxiosError(failure)) throw projection;
+    if (
+      projection.category === "transient" &&
+      cookiePaths.has(requestPath(failure.config?.url ?? "")) &&
+      !runtime().coordinationAvailable()
+    )
+      throw safeApiError("coordination", "COORDINATION_UNAVAILABLE");
+    const read =
+      ["get", "head"].includes(
+        (failure.config?.method ?? "get").toLowerCase(),
+      ) && !isPublicAuthRequest(failure.config?.url ?? "");
+    const safe =
+      projection.category === "transient" && !read
+        ? safeApiError("uncertain", projection.code, projection.statusCode)
+        : projection;
+    const config = failure.config;
+    if (config?._sessionScope !== undefined)
+      runtime().assertCurrent(config._sessionScope);
+    const route = requestPath(config?.url ?? "");
+    if (safe.statusCode === 403 && !isPublicAuthRequest(config?.url ?? ""))
+      runtime().beginCheck();
     if (
       config === undefined ||
-      typeof requestUrl !== "string" ||
-      error.response?.status !== 401 ||
-      isPublicAuthRequest(requestUrl) ||
-      config._templateRetried === true
-    ) {
-      throw error;
-    }
+      safe.statusCode !== 401 ||
+      isPublicAuthRequest(config.url ?? "") ||
+      config._templateRetried === true ||
+      !preExecutionAuthPaths.some((pattern) => pattern.test(route))
+    )
+      throw safe;
     config._templateRetried = true;
+    // Cookie-writing commands must not reacquire their previous wrapper on replay.
+    delete config.adapter;
     try {
-      await refreshAccessToken();
-    } catch (refreshError: unknown) {
-      clearAccessToken();
-
-      if (isExpectedAnonymousRefreshFailure(refreshError)) {
-        redirectToLogin();
-      }
-
-      throw refreshError;
+      await refreshSession();
+    } catch (refreshFailure: unknown) {
+      const error = getApiError(refreshFailure);
+      if (
+        error.category === "denied" ||
+        (error.statusCode === 400 && error.code === "BAD_REQUEST")
+      )
+        runtime().retire();
+      throw error;
     }
     return apiClient.request(config);
   },
 );
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === "object" && !Array.isArray(value);
-
-const readFieldErrors = (value: unknown): Record<string, string[]> => {
-  if (!Array.isArray(value)) return {};
-  const grouped = new Map<string, string[]>();
-  for (const item of value) {
-    if (!isRecord(item)) continue;
-    const field = item["field"];
-    const message = item["message"];
-    if (typeof field !== "string" || typeof message !== "string") continue;
-    grouped.set(field, [...(grouped.get(field) ?? []), message]);
-  }
-  return Object.fromEntries(grouped);
-};
-
-const readErrorEnvelope = (value: unknown): ValueState<ParsedErrorEnvelope> => {
-  if (!isRecord(value) || value["success"] !== false)
-    return { kind: "missing" };
-  const message = value["message"];
-  const statusCode = value["statusCode"];
-  const requestId = value["requestId"];
-  const code = value["code"];
-  if (
-    typeof message !== "string" ||
-    typeof statusCode !== "number" ||
-    typeof requestId !== "string" ||
-    typeof code !== "string"
-  ) {
-    return { kind: "missing" };
-  }
-  return {
-    kind: "value",
-    value: { message, statusCode, requestId, code, errors: value["errors"] },
-  };
-};
-
-const readHeaderRequestId = (
-  response: AxiosResponse<unknown> | undefined,
-): string => {
-  const value: unknown = response?.headers["x-request-id"] as unknown;
-  return typeof value === "string" ? value : "";
-};
-
-export function getApiError(error: unknown): ApiError {
-  const axiosError: AxiosError | undefined = axios.isAxiosError(error)
-    ? error
-    : undefined;
-  const envelope = readErrorEnvelope(axiosError?.response?.data);
-  const responseStatus = axiosError?.response?.status ?? 0;
-  const statusCode =
-    envelope.kind === "value" ? envelope.value.statusCode : responseStatus;
-  const isTimeout =
-    axiosError?.code === "ECONNABORTED" || axiosError?.code === "ETIMEDOUT";
-  return {
-    message:
-      envelope.kind === "value"
-        ? envelope.value.message
-        : isTimeout
-          ? "The request timed out. Try again."
-          : (STATUS_MESSAGES[statusCode] ??
-            "The request could not be completed."),
-    statusCode,
-    code:
-      envelope.kind === "value"
-        ? envelope.value.code
-        : statusCode === 0
-          ? "NETWORK_ERROR"
-          : "HTTP_ERROR",
-    requestId:
-      envelope.kind === "value"
-        ? envelope.value.requestId
-        : readHeaderRequestId(axiosError?.response),
-    fieldErrors:
-      envelope.kind === "value" ? readFieldErrors(envelope.value.errors) : {},
-  };
-}

@@ -61,6 +61,7 @@ export function EditAdminDialog({
             </label>
             <input
               type="text"
+              disabled
               required
               value={editName}
               onChange={(e) => {
@@ -76,6 +77,7 @@ export function EditAdminDialog({
             </label>
             <input
               type="email"
+              disabled
               required
               dir="ltr"
               value={editEmail}
@@ -96,7 +98,7 @@ export function EditAdminDialog({
             >
               إلغاء
             </AdminButton>
-            <AdminButton type="submit" variant="primary">
+            <AdminButton type="submit" variant="primary" disabled>
               حفظ التعديلات
             </AdminButton>
           </div>

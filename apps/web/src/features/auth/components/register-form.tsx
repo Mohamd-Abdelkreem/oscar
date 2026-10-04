@@ -13,6 +13,7 @@ import type { z } from "zod";
 
 import { FormField } from "@/components/forms/form-field";
 import { useRegister } from "@/features/auth/hooks/auth.hooks";
+import { useCredentialFieldCleanup } from "@/features/auth/hooks/credential-commands.hooks";
 import { applyApiFormError } from "@/shared/forms/form";
 
 type RegisterInput = z.input<typeof registerBodySchema>;
@@ -26,16 +27,22 @@ export function RegisterForm() {
     handleSubmit,
     getValues,
     register,
+    resetField,
     setError,
   } = useForm<RegisterInput, unknown, RegisterBody>({
     resolver: zodResolver(registerBodySchema),
     defaultValues: { fullName: "", email: "", phone: null, password: "" },
   });
 
+  useCredentialFieldCleanup(() => {
+    resetField("password");
+  }, registerAccount.isCurrentFlow);
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
       const result = await registerAccount.mutateAsync(values);
+      resetField("password");
       setSubmittedEmail(result.data.user.email);
     } catch (error) {
       setFormError(applyApiFormError(error, { getValues, setError }));

@@ -1,4 +1,9 @@
 export {
+  credentialValidityDataSchema,
+  neutralEmailDataSchema,
+  emptyActionDataSchema,
+} from "./auth/auth-response.schema.ts";
+export {
   accountResponseSchemas,
   ACCOUNT_RESPONSE_FIELD_ALLOWLIST,
   authSessionDataSchema,

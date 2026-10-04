@@ -1,7 +1,13 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useEffectEvent, useRef, type ReactNode } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useId,
+  type ReactNode,
+} from "react";
 
 interface ConfirmationSheetProps {
   readonly isOpen: boolean;
@@ -19,6 +25,8 @@ export function ConfirmationSheet({
   children,
 }: ConfirmationSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const titleId = useId();
+  const descriptionId = useId();
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const closeSheet = useEffectEvent(onClose);
 
@@ -31,10 +39,53 @@ export function ConfirmationSheet({
         ? document.activeElement
         : null;
     const previousOverflow = document.body.style.overflow;
+    const background: { element: HTMLElement; inert: boolean }[] = [];
+    let ancestor: HTMLElement | null = sheetRef.current?.parentElement ?? null;
+    while (ancestor !== null && ancestor !== document.body) {
+      for (const sibling of ancestor.parentElement?.children ?? []) {
+        if (sibling instanceof HTMLElement && sibling !== ancestor) {
+          background.push({
+            element: sibling,
+            inert: sibling.hasAttribute("inert"),
+          });
+          sibling.inert = true;
+        }
+      }
+      ancestor = ancestor.parentElement;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         closeSheet();
+      }
+      if (event.key !== "Tab") return;
+      const controls = [
+        ...(sheetRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), a[href], select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
+        ) ?? []),
+      ];
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (first === undefined || last === undefined) {
+        event.preventDefault();
+        sheetRef.current?.focus();
+        return;
+      }
+      if (
+        event.shiftKey &&
+        (document.activeElement === first ||
+          document.activeElement === sheetRef.current)
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last ||
+          document.activeElement === sheetRef.current)
+      ) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
@@ -47,6 +98,7 @@ export function ConfirmationSheet({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
+      for (const item of background) item.element.inert = item.inert;
 
       // Restore focus
       if (previousActiveElementRef.current) {
@@ -62,8 +114,8 @@ export function ConfirmationSheet({
       className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-0 transition-opacity sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="sheet-title"
-      aria-describedby={description ? "sheet-description" : undefined}
+      aria-labelledby={titleId}
+      aria-describedby={description ? descriptionId : undefined}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -77,14 +129,14 @@ export function ConfirmationSheet({
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-slate-50/70 px-4 py-3.5 sm:px-5">
           <div className="min-w-0 pr-2">
             <h2
-              id="sheet-title"
+              id={titleId}
               className="truncate text-base font-bold text-slate-900 sm:text-lg"
             >
               {title}
             </h2>
             {description && (
               <p
-                id="sheet-description"
+                id={descriptionId}
                 className="mt-0.5 truncate text-xs text-slate-500"
               >
                 {description}

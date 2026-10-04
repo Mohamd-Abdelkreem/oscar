@@ -3,12 +3,14 @@
 import { AlertTriangle, CheckCircle2, X } from "lucide-react";
 import {
   useCallback,
+  useId,
   useEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
 import { AdminButton } from "./admin-button";
+import { useDialogBackground } from "@/shared/hooks/use-dialog-background";
 
 export interface AdminConfirmRecordInfo {
   readonly label: string;
@@ -16,11 +18,18 @@ export interface AdminConfirmRecordInfo {
   readonly secondary?: string | undefined;
 }
 
+export interface AdminConfirmAffectedRecord {
+  readonly id?: string | undefined;
+  readonly label: string;
+  readonly subtitle?: string | undefined;
+}
+
 export interface AdminConfirmDialogProps {
   readonly isOpen: boolean;
   readonly title: string;
   readonly description: ReactNode;
   readonly recordInfo?: AdminConfirmRecordInfo | undefined;
+  readonly affectedRecord?: AdminConfirmAffectedRecord | undefined;
   readonly confirmLabel?: string;
   readonly cancelLabel?: string;
   readonly variant?: "destructive" | "primary" | "warning";
@@ -28,7 +37,9 @@ export interface AdminConfirmDialogProps {
   readonly reasonLabel?: string;
   readonly reasonPlaceholder?: string;
   readonly isLoading?: boolean;
-  readonly onConfirm: (reason?: string) => void | Promise<void>;
+  readonly confirmDisabled?: boolean;
+  readonly error?: string | null;
+  readonly onConfirm: (reason?: string) => unknown;
   readonly onClose: () => void;
 }
 
@@ -37,6 +48,7 @@ export function AdminConfirmDialog({
   title,
   description,
   recordInfo,
+  affectedRecord,
   confirmLabel = "تأكيد الإجراء",
   cancelLabel = "إلغاء",
   variant = "destructive",
@@ -44,16 +56,27 @@ export function AdminConfirmDialog({
   reasonLabel = "سبب الإجراء الإلزامي",
   reasonPlaceholder = "يرجى توضيح سبب الإجراء لحفظه في سجل التدقيق والرقابة...",
   isLoading = false,
+  confirmDisabled = false,
+  error,
   onConfirm,
   onClose,
 }: AdminConfirmDialogProps) {
+  const titleId = useId();
+  const reasonId = useId();
+  const submitting = useRef(false);
   const [reason, setReason] = useState("");
   const [reasonError, setReasonError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isBusy = isLoading || isSubmitting;
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const triggerElementRef = useRef<HTMLElement | null>(null);
+  useDialogBackground(dialogRef, isOpen);
+
+  useEffect(() => {
+    if (isOpen && isBusy) dialogRef.current?.focus();
+  }, [isOpen, isBusy]);
 
   const handleClose = useCallback(() => {
     if (isSubmitting || isLoading) return;
@@ -68,7 +91,10 @@ export function AdminConfirmDialog({
     if (!isOpen) return undefined;
 
     // Capture currently focused element to return focus on close
-    triggerElementRef.current = document.activeElement as HTMLElement | null;
+    triggerElementRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -109,20 +135,30 @@ export function AdminConfirmDialog({
       if (e.key === "Tab" && dialogRef.current) {
         const focusableElements =
           dialogRef.current.querySelectorAll<HTMLElement>(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+            'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
           );
-        if (focusableElements.length === 0) return;
+        if (focusableElements.length === 0) {
+          e.preventDefault();
+          dialogRef.current.focus();
+          return;
+        }
 
         const firstElement = focusableElements[0];
         const lastElement = focusableElements[focusableElements.length - 1];
 
         if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
+          if (
+            document.activeElement === firstElement ||
+            document.activeElement === dialogRef.current
+          ) {
             e.preventDefault();
             lastElement?.focus();
           }
         } else {
-          if (document.activeElement === lastElement) {
+          if (
+            document.activeElement === lastElement ||
+            document.activeElement === dialogRef.current
+          ) {
             e.preventDefault();
             firstElement?.focus();
           }
@@ -139,35 +175,42 @@ export function AdminConfirmDialog({
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
-    if (isSubmitting || isLoading) return;
+    if (submitting.current || isSubmitting || isLoading || confirmDisabled)
+      return;
 
-    if (requireReason && !reason.trim()) {
+    if (
+      requireReason &&
+      (!reason.trim() || reason.trim().length > 500 || reason.includes("\0"))
+    ) {
       setReasonError(true);
       textareaRef.current?.focus();
       return;
     }
 
     const confirmedReason = reason.trim() || undefined;
+    submitting.current = true;
     setIsSubmitting(true);
 
     try {
-      await onConfirm(confirmedReason);
+      const committed = await onConfirm(confirmedReason);
+      if (committed === false) return;
       setReason("");
       setReasonError(false);
       setIsSubmitting(false);
       onClose();
     } catch {
       setIsSubmitting(false);
+    } finally {
+      submitting.current = false;
+      setIsSubmitting(false);
     }
   };
-
-  const isBusy = isLoading || isSubmitting;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-labelledby="dialog-title"
+      aria-labelledby={titleId}
       className="admin-scope fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isBusy) {
@@ -199,7 +242,7 @@ export function AdminConfirmDialog({
               )}
             </div>
             <h2
-              id="dialog-title"
+              id={titleId}
               className="text-base font-bold text-slate-900 sm:text-lg"
             >
               {title}
@@ -220,22 +263,23 @@ export function AdminConfirmDialog({
         {/* Content Body */}
         <div className="flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
           {/* Affected Record Preview Badge/Card */}
-          {recordInfo && (
-            <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
+          {(recordInfo || affectedRecord) && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-slate-500">
-                  {recordInfo.label}:
+                  {recordInfo
+                    ? `${recordInfo.label}:`
+                    : affectedRecord?.id
+                      ? `المعرف: ${affectedRecord.id}`
+                      : "السجل المستهدف:"}
                 </span>
                 <span className="font-bold text-slate-900">
-                  {recordInfo.value}
+                  {recordInfo?.value ?? affectedRecord?.label}
                 </span>
               </div>
-              {recordInfo.secondary && (
-                <div
-                  className="mt-1 text-left font-mono text-[11px] text-slate-500"
-                  dir="ltr"
-                >
-                  {recordInfo.secondary}
+              {(recordInfo?.secondary || affectedRecord?.subtitle) && (
+                <div className="mt-1 text-[11px] text-slate-500">
+                  {recordInfo?.secondary ?? affectedRecord?.subtitle}
                 </div>
               )}
             </div>
@@ -245,18 +289,25 @@ export function AdminConfirmDialog({
             {description}
           </div>
 
+          {error && (
+            <p role="alert" className="text-xs font-medium text-rose-600">
+              {error}
+            </p>
+          )}
+
           {requireReason && (
             <div className="space-y-1.5 pt-1">
               <label
-                htmlFor="dialog-reason"
+                htmlFor={reasonId}
                 className="block text-xs font-bold text-slate-700 sm:text-sm"
               >
                 {reasonLabel} <span className="text-rose-600">*</span>
               </label>
               <textarea
-                id="dialog-reason"
+                id={reasonId}
                 ref={textareaRef}
                 rows={3}
+                maxLength={500}
                 disabled={isBusy}
                 value={reason}
                 onChange={(e) => {
@@ -299,7 +350,7 @@ export function AdminConfirmDialog({
             }
             size="default"
             loading={isBusy}
-            disabled={isBusy}
+            disabled={isBusy || confirmDisabled}
             onClick={() => {
               void handleConfirm();
             }}

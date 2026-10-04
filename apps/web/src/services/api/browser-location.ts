@@ -1,16 +1,25 @@
-export type BrowserLocationSnapshot = Readonly<{
-  pathname: string;
-  search: string;
-}>;
-
-export const getBrowserLocation = (): BrowserLocationSnapshot | null =>
-  typeof window === "undefined"
-    ? null
-    : {
-        pathname: window.location.pathname,
-        search: window.location.search,
-      };
-
-export const assignBrowserLocation = (path: string): void => {
-  if (typeof window !== "undefined") window.location.assign(path);
+// Consumers reconcile through their subscribed App Router lifecycle, without a reload.
+export const createBrowserSessionNotifications = (
+  barrierKey: string,
+  retire: () => void,
+) => {
+  const channel =
+    typeof BroadcastChannel === "undefined"
+      ? undefined
+      : new BroadcastChannel("oscar.session-retirement");
+  const storageChanged = (event: StorageEvent) => {
+    if (event.key === barrierKey || event.key === null) retire();
+  };
+  window.addEventListener("storage", storageChanged);
+  channel?.addEventListener("message", retire);
+  return {
+    notifyRetirement: () => {
+      channel?.postMessage({ version: 1, kind: "retire" });
+    },
+    dispose: () => {
+      window.removeEventListener("storage", storageChanged);
+      channel?.removeEventListener("message", retire);
+      channel?.close();
+    },
+  };
 };

@@ -1,12 +1,14 @@
 "use client";
 import { X } from "lucide-react";
-import type { SyntheticEvent } from "react";
+import { useEffect, useId, useRef, type SyntheticEvent } from "react";
 import { AdminButton } from "../common/admin-button";
+import { useDialogBackground } from "@/shared/hooks/use-dialog-background";
 
 export function CreateAdminDialog({
   form,
   handleCreateAdmin,
   onClose,
+  blocked = false,
 }: {
   readonly form: {
     readonly newName: string;
@@ -17,10 +19,47 @@ export function CreateAdminDialog({
   };
   readonly handleCreateAdmin: (event: SyntheticEvent) => void;
   readonly onClose: () => void;
+  readonly blocked?: boolean;
 }) {
+  const nameId = useId();
+  const emailId = useId();
+  const dialog = useRef<HTMLDivElement>(null);
+  useDialogBackground(dialog, true);
+  useEffect(() => {
+    const trigger = document.activeElement;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialog.current?.querySelector<HTMLInputElement>("input")?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+      if (event.key !== "Tab") return;
+      const controls = dialog.current?.querySelectorAll<HTMLElement>(
+        "button:not(:disabled), input:not(:disabled)",
+      );
+      const first = controls?.[0];
+      const last = controls?.[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    window.addEventListener("keydown", keyboard);
+    return () => {
+      window.removeEventListener("keydown", keyboard);
+      document.body.style.overflow = overflow;
+      if (trigger instanceof HTMLElement) trigger.focus();
+    };
+  }, [onClose]);
   const { newName, newEmail, addError, setNewName, setNewEmail } = form;
   return (
     <div
+      ref={dialog}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
       role="dialog"
       aria-modal="true"
@@ -32,10 +71,11 @@ export function CreateAdminDialog({
             id="add-admin-title"
             className="text-base font-bold text-neutral-900"
           >
-            إضافة مسؤول نظام جديد
+            دعوة مسؤول نظام جديد
           </h2>
           <button
             type="button"
+            aria-label="إغلاق النافذة"
             onClick={() => {
               onClose();
             }}
@@ -47,17 +87,26 @@ export function CreateAdminDialog({
 
         <form onSubmit={handleCreateAdmin} className="mt-4 space-y-4">
           {addError && (
-            <div className="rounded border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700">
+            <div
+              role="alert"
+              className="rounded border border-rose-200 bg-rose-50 p-2.5 text-xs font-semibold text-rose-700"
+            >
               {addError}
             </div>
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-700">
+            <label
+              htmlFor={nameId}
+              className="mb-1 block text-xs font-semibold text-neutral-700"
+            >
               الاسم الكامل <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
+              id={nameId}
+              maxLength={150}
+              disabled={blocked}
               required
               placeholder="مثال: حسام التميمي"
               value={newName}
@@ -69,11 +118,17 @@ export function CreateAdminDialog({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-neutral-700">
+            <label
+              htmlFor={emailId}
+              className="mb-1 block text-xs font-semibold text-neutral-700"
+            >
               البريد الإلكتروني <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
+              id={emailId}
+              maxLength={320}
+              disabled={blocked}
               required
               dir="ltr"
               placeholder="admin@oscar-platform.com"
@@ -103,8 +158,8 @@ export function CreateAdminDialog({
             >
               إلغاء
             </AdminButton>
-            <AdminButton type="submit" variant="primary">
-              إنشاء الحساب
+            <AdminButton type="submit" variant="primary" disabled={blocked}>
+              مراجعة الدعوة
             </AdminButton>
           </div>
         </form>

@@ -14,7 +14,8 @@
     "check-types": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:watch": "vitest --config vitest.config.ts"
+    "test:watch": "vitest --config vitest.config.ts",
+    "check-types:e2e": "tsc --noEmit -p tests/e2e/tsconfig.json"
   },
   "dependencies": {
     "@template/contracts": "workspace:*",

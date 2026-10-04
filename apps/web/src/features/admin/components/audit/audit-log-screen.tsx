@@ -4,8 +4,10 @@ import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminEmptyState } from "../common/admin-empty-state";
+import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminPagination } from "../common/admin-pagination";
+import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
 import { useAdminState } from "../../context/admin-state.context";
 
@@ -62,6 +64,17 @@ export function AuditLogScreen() {
     admin: { label: "مسؤولو النظام", variant: "neutral" },
   };
 
+  const targetOptions = [
+    { value: "all", label: `كل الأهداف والعمليات (${String(auditLogs.length)})` },
+    { value: "code", label: "رموز المهام (Task Codes)" },
+    { value: "employee", label: "حسابات الموظفين (Employees)" },
+    { value: "submission", label: "مراجعة المهام (Submissions)" },
+    { value: "withdrawal", label: "السحوبات (Withdrawals)" },
+    { value: "deposit", label: "الإيداعات (Deposits)" },
+    { value: "task", label: "المهام (Tasks)" },
+    { value: "settings", label: "إعدادات النظام (Settings)" },
+  ];
+
   return (
     <div className="space-y-6">
       <AdminPageHeader
@@ -71,45 +84,31 @@ export function AuditLogScreen() {
       />
 
       {/* Filter and Search Bar */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div className="relative">
-            <Search
-              size={16}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
+          <div>
+            <AdminInput
+              icon={Search}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
               placeholder="بحث بالإجراء، الهدف، المسؤول، أو السبب الموثق..."
-              className="w-full rounded-md border border-slate-300 bg-white py-2 pr-9 pl-3 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 sm:text-sm"
+              aria-label="بحث في سجل التدقيق"
             />
           </div>
 
           <div>
-            <select
+            <AdminSelect
               value={targetFilter}
-              onChange={(e) => {
-                setTargetFilter(e.target.value);
+              onValueChange={(val) => {
+                setTargetFilter(val);
                 setCurrentPage(1);
               }}
-              className="w-full rounded-md border border-slate-300 bg-white py-2 px-3 text-xs text-slate-900 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 sm:text-sm"
-              aria-label="تصفية حسب نوع الهدف"
-            >
-              <option value="all">كل الأهداف والعمليات ({auditLogs.length})</option>
-              <option value="code">رموز المهام (Task Codes)</option>
-              <option value="employee">حسابات الموظفين (Employees)</option>
-              <option value="submission">مراجعة المهام (Submissions)</option>
-              <option value="withdrawal">السحوبات (Withdrawals)</option>
-              <option value="deposit">الإيداعات (Deposits)</option>
-              <option value="task">المهام (Tasks)</option>
-              <option value="settings">إعدادات النظام (Settings)</option>
-            </select>
+              options={targetOptions}
+              ariaLabel="تصفية حسب نوع الهدف"
+            />
           </div>
         </div>
       </div>

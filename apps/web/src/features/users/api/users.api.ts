@@ -1,18 +1,21 @@
-import type { AuthUserData, UpdateProfileBody } from "@template/contracts";
+import {
+  identityUserDataSchema,
+  type IdentityUserData,
+  type UpdateProfileBody,
+} from "@template/contracts";
 
-import { apiClient, type ApiResponse } from "@/services/api/api-client";
+import { apiClient, parseApiResponse } from "@/services/api/api-client";
 
 export const usersApi = {
-  async getMe(): Promise<AuthUserData> {
-    const response =
-      await apiClient.get<ApiResponse<AuthUserData>>("/users/me");
-    return response.data.data;
-  },
-  async updateMe(body: UpdateProfileBody): Promise<AuthUserData> {
-    const response = await apiClient.patch<ApiResponse<AuthUserData>>(
+  async getMe(signal?: AbortSignal): Promise<IdentityUserData> {
+    const response = await apiClient.get<unknown>(
       "/users/me",
-      body,
+      signal === undefined ? {} : { signal },
     );
-    return response.data.data;
+    return parseApiResponse(response, identityUserDataSchema, 200).data;
+  },
+  async updateMe(body: UpdateProfileBody): Promise<IdentityUserData> {
+    const response = await apiClient.patch<unknown>("/users/me", body);
+    return parseApiResponse(response, identityUserDataSchema, 200).data;
   },
 };

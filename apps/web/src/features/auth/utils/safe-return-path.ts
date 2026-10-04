@@ -1,53 +1,75 @@
+import type { UserRole } from "@template/contracts";
 import type { Route } from "next";
+import { roleHomePath } from "./session-navigation";
 
-import { DEFAULT_RETURN_PATH } from "../constants/auth.constants";
-
-const ALLOWED_ROOTS = ["/dashboard", "/settings"] as const;
-const CREDENTIAL_QUERY_KEYS = new Set([
+const credentialKeys = new Set([
   "token",
-  "access_token",
-  "refresh_token",
-  "id_token",
+  "accesstoken",
+  "refreshtoken",
+  "idtoken",
   "code",
   "secret",
   "password",
+  "returnto",
+  "next",
+  "redirect",
+  "redirecturi",
 ]);
-
+const hasUnsafeCharacters = (path: string) =>
+  Array.from(path).some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 32 || code === 127 || code === 92;
+  });
 export const sanitizeReturnPath = (
   value: string | null | undefined,
+  role?: UserRole,
 ): string | null => {
-  if (value === undefined || value === null || value.length === 0) return null;
-  if (!value.startsWith("/") || value.startsWith("//")) return null;
-  if (
-    value.includes("://") ||
-    value.includes(String.fromCharCode(92)) ||
-    Array.from(value).some((character) => {
-      const code = character.charCodeAt(0);
-      return code < 32 || code === 127;
-    })
-  ) {
-    return null;
-  }
+  if (!value || value.length > 2048) return null;
   try {
-    const parsed = new URL(value, "https://template.invalid");
-    if (parsed.origin !== "https://template.invalid") return null;
-    if (
-      !ALLOWED_ROOTS.some(
-        (root) =>
-          parsed.pathname === root || parsed.pathname.startsWith(`${root}/`),
+    let decoded = value;
+    for (let pass = 0; pass < 4; pass++) {
+      if (
+        !decoded.startsWith("/") ||
+        decoded.startsWith("//") ||
+        hasUnsafeCharacters(decoded) ||
+        decoded.includes("://")
       )
-    ) {
-      return null;
+        return null;
+      const parsed = new URL(decoded, "https://oscar.invalid");
+      if (parsed.origin !== "https://oscar.invalid" || parsed.hash.length > 0)
+        return null;
+      const roots =
+        role === "ADMIN"
+          ? ["/admin"]
+          : role === "USER"
+            ? ["/employee", "/dashboard", "/settings"]
+            : ["/employee", "/admin", "/dashboard", "/settings"];
+      if (
+        !roots.some(
+          (root) =>
+            parsed.pathname === root || parsed.pathname.startsWith(`${root}/`),
+        )
+      )
+        return null;
+      if (/\/auth(?:\/|$)/u.test(parsed.pathname)) return null;
+      for (const key of parsed.searchParams.keys()) {
+        if (credentialKeys.has(key.toLowerCase().replace(/[-_]/gu, "")))
+          return null;
+      }
+      const next = decodeURIComponent(decoded);
+      if (next === decoded) {
+        const original = new URL(value, "https://oscar.invalid");
+        if (original.pathname.includes("%")) return null;
+        return `${original.pathname}${original.search}`;
+      }
+      decoded = next;
     }
-    for (const key of parsed.searchParams.keys()) {
-      if (CREDENTIAL_QUERY_KEYS.has(key.toLowerCase())) return null;
-    }
-    return `${parsed.pathname}${parsed.search}`;
+    return null;
   } catch {
     return null;
   }
 };
-
 export const resolvePostLoginPath = (
   value: string | null | undefined,
-): Route => (sanitizeReturnPath(value) ?? DEFAULT_RETURN_PATH) as Route;
+  role: UserRole = "USER",
+): Route => (sanitizeReturnPath(value, role) ?? roleHomePath(role)) as Route;
