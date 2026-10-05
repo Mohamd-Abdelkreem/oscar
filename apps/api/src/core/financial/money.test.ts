@@ -4,6 +4,8 @@ import {
   addUnits,
   feeAndNetUnits,
   formatSignedUsdtDelta,
+  formatAggregateUsdtAmount,
+  formatSignedAggregateUsdtDelta,
   formatUsdtAmount,
   parseSignedUsdtDelta,
   parseUsdtAmount,
@@ -13,6 +15,26 @@ import {
 } from "./money.js";
 
 const maximumUnits = 9223372036854775807n;
+describe("exact read aggregates", () => {
+  it("formats multiple wallet totals without single-wallet bounds or Number", () => {
+    expect(formatAggregateUsdtAmount(maximumUnits * 2n)).toBe(
+      "18446744073709.551614",
+    );
+    expect(formatSignedAggregateUsdtDelta(-maximumUnits * 2n)).toBe(
+      "-18446744073709.551614",
+    );
+    expect(formatAggregateUsdtAmount(10n ** 38n - 1n)).toBe(
+      "99999999999999999999999999999999.999999",
+    );
+    expect(formatSignedAggregateUsdtDelta(0n)).toBe("0");
+    for (const units of [-1n, 10n ** 38n])
+      expect(() => formatAggregateUsdtAmount(units)).toThrow(RangeError);
+    expect(() => formatSignedAggregateUsdtDelta(-(10n ** 38n))).toThrow(
+      RangeError,
+    );
+    expect(() => formatUsdtAmount(maximumUnits * 2n)).toThrow(RangeError);
+  });
+});
 
 describe("exact micro-USDT arithmetic", () => {
   it.each([

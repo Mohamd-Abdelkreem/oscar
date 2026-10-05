@@ -24,4 +24,11 @@ export type {
   AdminInvitation,
   AdminSetupState,
   IdentityAuditRecord,
+  Package,
+  ReferralSettings,
+  ConfigurationChange,
+  PurchaseQuote,
+  Purchase,
+  Subscription,
+  ReferralDecision,
 } from "./generated/prisma/client.js";

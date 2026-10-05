@@ -51,6 +51,8 @@ const preExecutionAuthPaths = [
   /^\/auth\/(?:logout|logout-all|change-password)$/u,
   /^\/admin\/(?:admins|invitations)(?:\/[^/]+(?:\/(?:status|reissue|revoke))?)?$/u,
 ];
+const financialReadPath =
+  /^\/(?:packages|subscriptions|wallet|referrals|admin\/(?:packages|finance|wallets|referrals|referral-settings|configuration-changes))(?:\/|$)/u;
 let accessToken: ValueState<string> = { kind: "missing" };
 let refreshPromise: Promise<ApiResponse<IdentityUserData>> | undefined;
 let subscribedRuntime: ReturnType<typeof getSessionRuntime> | undefined;
@@ -234,7 +236,11 @@ apiClient.interceptors.response.use(
     if (config?._sessionScope !== undefined)
       runtime().assertCurrent(config._sessionScope);
     const route = requestPath(config?.url ?? "");
-    if (safe.statusCode === 403 && !isPublicAuthRequest(config?.url ?? ""))
+    if (
+      safe.statusCode === 403 &&
+      !isPublicAuthRequest(config?.url ?? "") &&
+      !(read && financialReadPath.test(requestPath(config?.url ?? "")))
+    )
       runtime().beginCheck();
     if (
       config === undefined ||

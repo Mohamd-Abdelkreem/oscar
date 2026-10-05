@@ -2,121 +2,81 @@
 
 import { Percent, Search, UserCheck } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { AdminButton } from "../common/admin-button";
+import { useState } from "react";
 import { AdminEmptyState } from "../common/admin-empty-state";
 import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminSelect, type AdminSelectOption } from "../common/admin-select";
-import { useAdminState } from "../../context/admin-state.context";
-import type { AdminReferralMember } from "../../types/admin.types";
+import type { AdminMember } from "@template/contracts";
 import {
-  computeRelativeReferralHierarchy,
-  type RelativeReferralNode,
-} from "../../utils/referral.utils";
+  useReferralRoots,
+  useReferralSummary,
+} from "../../hooks/referrals.hooks";
+import { FinancialFeedback } from "@/features/employee/components/common/financial-feedback";
+import { AdminPagination } from "../common/admin-pagination";
 
 import { ReferralCommissionDetails } from "./referral-commission-details";
 import { ReferralLevel } from "./referral-level";
 
 export function ReferralsScreen() {
-  const { referralMembers, referralCommissions, settings } = useAdminState();
-
-  // Root member state (defaulting to محمد عبد الله usr_1001)
-  const defaultRootId =
-    referralMembers.find((m) => m.id === "usr_1001")?.id ??
-    referralMembers[0]?.id ??
-    "";
-  const [selectedRootId, setSelectedRootId] = useState<string>(defaultRootId);
-
-  // Search/Filter within the selected root's team
+  const [rootQuery, setRootQuery] = useState("");
+  const roots = useReferralRoots(rootQuery.trim());
+  const [rootSelection, setRootSelection] = useState<{
+    id: string;
+    actor: string;
+  } | null>(null);
+  const actor = JSON.stringify([
+    roots.scope.accountId,
+    roots.scope.role,
+    roots.scope.epoch,
+  ]);
+  const selectedRootId = rootSelection?.actor === actor ? rootSelection.id : "";
+  const summary = useReferralSummary(selectedRootId || null);
   const [withinTeamQuery, setWithinTeamQuery] = useState("");
-
-  // Selected descendant for side details
-  const [selectedMember, setSelectedMember] =
-    useState<AdminReferralMember | null>(null);
-
-  // Expanded levels toggles
-  const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
-    {
-      1: true,
-      2: true,
-      3: true,
-      4: true,
-      5: true,
-    },
-  );
-
-  // Calculate Relative Referral Hierarchy using pure BFS utility (Requirement 12)
-  const hierarchy = useMemo(() => {
-    return computeRelativeReferralHierarchy(selectedRootId, referralMembers);
-  }, [selectedRootId, referralMembers]);
-
-  // Options for Root Selector
-  const rootSelectOptions: readonly AdminSelectOption[] = useMemo(() => {
-    return referralMembers.map((m) => ({
-      value: m.id,
-      label: `${m.name} (${m.id}) — ${m.packageId}`,
-    }));
-  }, [referralMembers]);
-
-  const toggleLevel = (lvl: number) => {
-    setExpandedLevels((prev) => ({ ...prev, [lvl]: !prev[lvl] }));
+  const identity = JSON.stringify([
+    roots.scope,
+    selectedRootId,
+    withinTeamQuery,
+  ]);
+  const [memberSelection, setMemberSelection] = useState<{
+    member: AdminMember;
+    identity: string;
+  } | null>(null);
+  const selectedMember =
+    memberSelection?.identity === identity && summary.allowed
+      ? memberSelection.member
+      : null;
+  const setSelectedMember = (member: AdminMember | null) => {
+    setMemberSelection(member ? { member, identity } : null);
   };
-
-  // Filter within displayed team descendants (does NOT change their relative levels)
-  const filteredLevels = useMemo(() => {
-    const q = withinTeamQuery.trim().toLowerCase();
-    const result: Record<1 | 2 | 3 | 4 | 5, readonly RelativeReferralNode[]> = {
-      1: [],
-      2: [],
-      3: [],
-      4: [],
-      5: [],
-    };
-
-    for (let lvl = 1; lvl <= 5; lvl++) {
-      const currentLevelNodes = hierarchy.levels[lvl as 1 | 2 | 3 | 4 | 5];
-      if (!q) {
-        result[lvl as 1 | 2 | 3 | 4 | 5] = currentLevelNodes;
-      } else {
-        result[lvl as 1 | 2 | 3 | 4 | 5] = currentLevelNodes.filter(
-          (n) =>
-            n.member.name.toLowerCase().includes(q) ||
-            n.member.email.toLowerCase().includes(q) ||
-            n.member.id.toLowerCase().includes(q),
-        );
-      }
-    }
-
-    return result;
-  }, [hierarchy, withinTeamQuery]);
-
-  const filteredTotalCount = useMemo(() => {
-    return (
-      filteredLevels[1].length +
-      filteredLevels[2].length +
-      filteredLevels[3].length +
-      filteredLevels[4].length +
-      filteredLevels[5].length
-    );
-  }, [filteredLevels]);
-
-  // Root member's earned commissions (filtered strictly where root is beneficiary/sponsor)
-  const rootCommissions = useMemo(() => {
-    return referralCommissions.filter((c) => c.sponsorId === selectedRootId);
-  }, [referralCommissions, selectedRootId]);
-
-  // Selected descendant member commissions
-  const selectedMemberCommissions = useMemo(() => {
-    if (!selectedMember) return [];
-    return referralCommissions.filter((c) => c.sponsorId === selectedMember.id);
-  }, [referralCommissions, selectedMember]);
+  const setSelectedRootId = (id: string) => {
+    if (roots.allowed) setRootSelection({ id, actor });
+  };
+  const [expandedLevels, setExpandedLevels] = useState<Record<number, boolean>>(
+    { 1: true, 2: true, 3: true, 4: true, 5: true },
+  );
+  const toggleLevel = (level: number) => {
+    setExpandedLevels((previous) => ({
+      ...previous,
+      [level]: !previous[level],
+    }));
+  };
+  const rootSelectOptions: readonly AdminSelectOption[] = [
+    ...(roots.data?.items.map((root) => ({
+      value: root.id,
+      label: root.fullName + " (" + root.email + ")",
+    })) ?? []),
+  ];
+  const totalTeamCount = summary.data?.levelCounts.reduce(
+    (total, count) => total + count.members,
+    0,
+  );
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="شبكة الإحالات والعمولات التراكمية"
-        description="استعراض هيكل الفرق والمستويات النسبية الخمسة (L1: 12%, L2: 6%, L3: 4%, L4: 2%, L5: 2%)، ومتابعة سجلات احتساب العمولات"
+        description="استعراض هيكل الفرق والمستويات النسبية الخمسة ومتابعة النسب الحالية والعمولات المحفوظة"
         breadcrumbs={[{ label: "الإحالات والشبكة" }]}
       />
 
@@ -140,7 +100,7 @@ export function ReferralsScreen() {
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
-          {settings.referralPercentages.map((pct, idx) => (
+          {(summary.data?.currentRates.ratesBps ?? []).map((pct, idx) => (
             <div
               key={idx}
               className="rounded-md border border-slate-200 bg-slate-50/70 p-2.5"
@@ -149,7 +109,7 @@ export function ReferralsScreen() {
                 المستوى L{idx + 1}
               </span>
               <span className="font-mono text-base font-black text-emerald-800">
-                {pct}%
+                {pct / 100}%
               </span>
             </div>
           ))}
@@ -179,35 +139,36 @@ export function ReferralsScreen() {
             />
           </div>
 
-          {/* Quick Presets for Demo (Requirement 12: محمد، أحمد، ياسمين، عمر) */}
-          <div className="flex flex-wrap items-center gap-2 sm:col-span-7 sm:pt-6">
-            <span className="text-xs font-semibold text-slate-500">
-              أمثلة سريعة:
-            </span>
-            {[
-              { id: "usr_1001", label: "محمد عبد الله (الجذر 1)" },
-              { id: "usr_9981", label: "أحمد مروان" },
-              { id: "usr_1006", label: "ياسمين نور" },
-              { id: "usr_1005", label: "عمر خالد (الجذر 2)" },
-            ].map((preset) => (
-              <AdminButton
-                key={preset.id}
-                variant={selectedRootId === preset.id ? "primary" : "outline"}
-                size="sm"
-                onClick={() => {
-                  setSelectedRootId(preset.id);
-                  setSelectedMember(null);
-                  setWithinTeamQuery("");
-                }}
-              >
-                {preset.label}
-              </AdminButton>
-            ))}
+          <div className="sm:col-span-7 sm:pt-6">
+            <AdminInput
+              icon={Search}
+              value={rootQuery}
+              maxLength={200}
+              onChange={(event) => {
+                setRootQuery(event.target.value);
+              }}
+              aria-label="بحث عن الحساب الجذر"
+              placeholder="بحث عن الحساب الجذر..."
+            />
+            <FinancialFeedback
+              pending={roots.isPending}
+              error={roots.error}
+              retry={roots.refetch}
+            />
+            {roots.data && (
+              <AdminPagination
+                currentPage={roots.page}
+                totalPages={roots.data.pagination.totalPages}
+                totalItems={roots.data.pagination.total}
+                pageSize={25}
+                onPageChange={roots.setPage}
+              />
+            )}
           </div>
         </div>
 
         {/* Selected Root Information Banner (Root is shown separately, NOT as L1) */}
-        {hierarchy.root && (
+        {summary.data?.root && (
           <div className="flex flex-col gap-3 rounded-lg border border-emerald-300 bg-emerald-50/60 p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-700 font-bold text-white">
@@ -216,26 +177,16 @@ export function ReferralsScreen() {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-bold text-emerald-950">
-                    الحساب المختار: فريق {hierarchy.root.name}
-                  </span>
-                  <span className="rounded bg-emerald-200/80 px-2 py-0.5 text-[11px] font-bold text-emerald-900">
-                    باقة {hierarchy.root.packageId}
+                    الحساب المختار: فريق {summary.data.root.fullName}
                   </span>
                 </div>
                 <div className="text-xs text-emerald-800">
                   <span>المعرف: </span>
                   <bdi dir="ltr" className="font-mono">
-                    {hierarchy.root.id}
+                    {summary.data.root.id}
                   </bdi>
                   <span> &bull; البريد: </span>
-                  <bdi dir="ltr">{hierarchy.root.email}</bdi>
-                  {hierarchy.root.sponsorName && (
-                    <span>
-                      {" "}
-                      &bull; الكفيل السابق (Ancestor):{" "}
-                      {hierarchy.root.sponsorName}
-                    </span>
-                  )}
+                  <bdi dir="ltr">{summary.data.root.email}</bdi>
                 </div>
               </div>
             </div>
@@ -246,11 +197,11 @@ export function ReferralsScreen() {
                   إجمالي أعضاء الفريق النسبي
                 </span>
                 <span className="font-mono text-lg font-black text-emerald-950">
-                  {hierarchy.totalTeamCount} عضو
+                  {totalTeamCount} عضو
                 </span>
               </div>
               <Link
-                href={`/admin/employees/${hierarchy.root.id}`}
+                href={`/admin/employees/${summary.data.root.id}`}
                 className="shrink-0 text-xs font-bold text-emerald-800 underline hover:text-emerald-950"
               >
                 ملف الحساب &larr;
@@ -271,10 +222,7 @@ export function ReferralsScreen() {
               </h2>
               <p className="text-[11px] text-slate-500">
                 المستويات مشتقة ديناميكياً بالنسبة للحساب المختار (
-                {withinTeamQuery.trim()
-                  ? `${String(filteredTotalCount)} من أصل ${String(hierarchy.totalTeamCount)}`
-                  : `${String(hierarchy.totalTeamCount)} عضو`}
-                )
+                {totalTeamCount ?? "—"} عضو )
               </p>
             </div>
 
@@ -292,34 +240,37 @@ export function ReferralsScreen() {
             </div>
           </div>
 
-          {hierarchy.totalTeamCount === 0 ? (
+          <FinancialFeedback
+            pending={selectedRootId !== "" && summary.isPending}
+            error={summary.error}
+            retry={summary.refetch}
+          />
+          {summary.data && totalTeamCount === 0 ? (
             <AdminEmptyState
               title="لا يوجد أعضاء في فريق هذا الحساب"
               description="هذا الحساب لم يقم بدعوة أعضاء مباشرين بعد، أو لم تتفرع منه شبكة إحالات."
             />
           ) : (
             <div className="space-y-3">
-              {[1, 2, 3, 4, 5].map((lvlNum) => {
-                const lvl = lvlNum as 1 | 2 | 3 | 4 | 5;
-                const membersInLvl = filteredLevels[lvl];
-                const totalInLvl = hierarchy.levelCounts[lvl] || 0;
-                const isExpanded = expandedLevels[lvl];
-
-                return (
+              {summary.data &&
+                ([1, 2, 3, 4, 5] as const).map((level) => (
                   <ReferralLevel
-                    key={lvl}
-                    lvl={lvl}
-                    membersInLvl={membersInLvl}
-                    totalInLvl={totalInLvl}
-                    isExpanded={isExpanded}
-                    withinTeamQuery={withinTeamQuery}
-                    settings={settings}
+                    key={`${String(level)}${identity}`}
+                    lvl={level}
+                    rootId={selectedRootId}
+                    totalInLvl={
+                      summary.data?.levelCounts[level - 1]?.members ?? 0
+                    }
+                    rateBps={
+                      summary.data?.currentRates.ratesBps[level - 1] ?? 0
+                    }
+                    isExpanded={expandedLevels[level]}
+                    withinTeamQuery={withinTeamQuery.trim()}
                     selectedMember={selectedMember}
                     toggleLevel={toggleLevel}
                     setSelectedMember={setSelectedMember}
                   />
-                );
-              })}
+                ))}
             </div>
           )}
         </div>
@@ -328,10 +279,9 @@ export function ReferralsScreen() {
         <div className="space-y-4 lg:col-span-5">
           {/* Selected Member or Root Card */}
           <ReferralCommissionDetails
+            key={identity}
             selectedMember={selectedMember}
-            selectedMemberCommissions={selectedMemberCommissions}
-            root={hierarchy.root}
-            rootCommissions={rootCommissions}
+            rootId={summary.data ? selectedRootId : null}
           />
 
           {/* Leadership Rank Draft Section */}

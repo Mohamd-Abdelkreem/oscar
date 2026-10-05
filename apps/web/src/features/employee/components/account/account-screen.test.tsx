@@ -22,6 +22,11 @@ import {
 } from "@/services/api/api-client";
 import { getSessionRuntime } from "@/services/api/session-runtime";
 import { EmployeeAccountScreen } from "./account-screen";
+import {
+  wallet as persistedWallet,
+  membership as persistedMembership,
+  purchase,
+} from "@/test/p04-network";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ back: vi.fn() }) }));
 
@@ -92,6 +97,35 @@ const open = () =>
 const passwordButton = () =>
   screen.getByRole("button", { name: /تغيير كلمة المرور/u });
 
+it("the account retains accepted financial terms and exact work dates independently of catalog changes", async () => {
+  const { stateAtPurchase: _, ...saved } = purchase.subscriptionAtPurchase;
+  apiClient.defaults.adapter = (config) =>
+    Promise.resolve(
+      reply(
+        config,
+        config.url === "/users/me"
+          ? { user: employee() }
+          : config.url === "/wallet/me"
+            ? persistedWallet
+            : {
+                ...persistedMembership,
+                effective: "PAID",
+                subscription: { ...saved, state: "CURRENT" },
+              },
+      ),
+    );
+  open();
+  const accepted = await screen.findByLabelText("شروط الاشتراك المحفوظة");
+  expect(accepted).toHaveTextContent("60.00");
+  expect(accepted).toHaveTextContent("730.00");
+  expect(accepted).toHaveTextContent(saved.firstWorkDate);
+  expect(accepted).toHaveTextContent(saved.finalWorkDate);
+  expect(accepted).toHaveTextContent(saved.expiresAt);
+  expect(accepted).toHaveTextContent("21%");
+  expect(accepted).toHaveTextContent("قبل تكلفة الباقة ورسوم السحب");
+  expect(passwordButton()).toBeEnabled();
+});
+
 it("displays only current A then B read-only identity and leaves later domains unavailable", async () => {
   let current = employee();
   const requests: string[] = [];
@@ -126,7 +160,11 @@ it("displays only current A then B read-only identity and leaves later domains u
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(screen.queryByText(old.email)).toBeNull();
   expect(screen.queryByRole("heading", { name: old.fullName })).toBeNull();
-  expect(requests.every((path) => path === "/users/me")).toBe(true);
+  expect(
+    requests.every((path) =>
+      ["/users/me", "/subscriptions/me", "/wallet/me"].includes(path),
+    ),
+  ).toBe(true);
 });
 
 it("waits for identity, exposes safe failed-read retry and never supplies a fixture", async () => {
@@ -139,7 +177,10 @@ it("waits for identity, exposes safe failed-read retry and never supplies a fixt
     });
   };
   open();
-  expect(screen.getByRole("status")).toHaveTextContent("جارٍ التحقق");
+  expect(screen.getByText("جارٍ التحقق من بيانات الحساب…")).toHaveAttribute(
+    "role",
+    "status",
+  );
   expect(passwordButton()).toBeDisabled();
   await waitFor(() => {
     expect(complete).toBeDefined();
@@ -260,4 +301,55 @@ it("blocks duplicate logout while pending and displays uncertainty without resto
   expect(screen.queryByText(employee().email)).toBeNull();
   expect(passwordButton()).toBeDisabled();
   expect(logout).toBeDisabled();
+});
+
+it("shows persisted purchase-eligible balance while preserving current identity and password controls", async () => {
+  apiClient.defaults.adapter = (config) =>
+    Promise.resolve(
+      reply(
+        config,
+        config.url === "/users/me"
+          ? { user: employee() }
+          : config.url === "/wallet/me"
+            ? persistedWallet
+            : persistedMembership,
+      ),
+    );
+  open();
+  await screen.findByText("40.00", { exact: true });
+  expect(screen.getByText(employee().email)).toBeVisible();
+  expect(passwordButton()).toBeEnabled();
+});
+it("a delayed financial response cannot restore an account balance after retirement", async () => {
+  let completeWallet: (() => void) | undefined;
+  apiClient.defaults.adapter = (config) =>
+    config.url === "/wallet/me"
+      ? new Promise((resolve) => {
+          completeWallet = () => {
+            resolve(reply(config, persistedWallet));
+          };
+        })
+      : Promise.resolve(
+          reply(
+            config,
+            config.url === "/users/me"
+              ? { user: employee() }
+              : persistedMembership,
+          ),
+        );
+  open();
+  await waitFor(() => {
+    expect(completeWallet).toBeDefined();
+  });
+  act(() => {
+    getSessionRuntime().retire();
+    clearAccessToken();
+  });
+  await act(async () => {
+    completeWallet?.();
+    await Promise.resolve();
+  });
+  expect(screen.queryByText("40.00", { exact: true })).toBeNull();
+  expect(screen.queryByText(employee().email)).toBeNull();
+  expect(passwordButton()).toBeDisabled();
 });

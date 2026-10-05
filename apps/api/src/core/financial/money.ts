@@ -1,5 +1,6 @@
 import {
   basisPointsSchema,
+  MAX_AGGREGATE_MICRO_UNITS,
   MAX_USDT_AMOUNT,
   signedUsdtDeltaSchema,
   usdtAmountSchema,
@@ -38,6 +39,10 @@ export const parseSignedUsdtDelta = (delta: unknown): bigint => {
 
 export const formatUsdtAmount = (units: bigint): string => {
   boundedUnits(units);
+  return decimalAmount(units);
+};
+
+const decimalAmount = (units: bigint): string => {
   const integer = units / MICRO_UNITS_PER_USDT;
   const fraction = (units % MICRO_UNITS_PER_USDT)
     .toString()
@@ -47,6 +52,16 @@ export const formatUsdtAmount = (units: bigint): string => {
     ? integer.toString()
     : `${integer.toString()}.${fraction}`;
 };
+
+export const formatAggregateUsdtAmount = (units: bigint): string => {
+  if (units < 0n || units > MAX_AGGREGATE_MICRO_UNITS)
+    throw new RangeError("Aggregate USDT units exceed supported bounds.");
+  return decimalAmount(units);
+};
+export const formatSignedAggregateUsdtDelta = (units: bigint): string =>
+  units < 0n
+    ? `-${formatAggregateUsdtAmount(-units)}`
+    : formatAggregateUsdtAmount(units);
 
 export const formatSignedUsdtDelta = (units: bigint): string =>
   units < 0n ? `-${formatUsdtAmount(-units)}` : formatUsdtAmount(units);

@@ -10,6 +10,40 @@ const local = (instant: string) =>
 
 describe("Baghdad business boundaries", () => {
   it.each([
+    [1, "2026-10-02"],
+    [2, "2026-10-05"],
+    [5, "2026-10-08"],
+    [6, "2026-10-09"],
+    [10, "2026-10-15"],
+    [11, "2026-10-16"],
+  ])(
+    "counts %s future work dates from Friday inclusively",
+    (duration, finalWorkDate) => {
+      const term = clock.subscriptionTerm("2026-10-02T09:00:00Z", duration);
+      expect(term.firstWorkDate).toBe("2026-10-02");
+      expect(term.finalWorkDate).toBe(finalWorkDate);
+      expect(local(term.expiresAt)).toBe(
+        DateTime.fromISO(finalWorkDate, { zone: BAGHDAD_ZONE })
+          .plus({ days: 1 })
+          .startOf("day")
+          .toISO(),
+      );
+    },
+  );
+  it("preserves default duration and rejects unsupported duration/result without an unbounded loop", () => {
+    const activation = "2026-10-05T09:00:00Z";
+    expect(clock.subscriptionTerm(activation, 365)).toEqual(
+      clock.subscriptionTerm(activation),
+    );
+    for (const duration of [0, -1, 1.5, 2147483648, 2147483647, NaN, Infinity])
+      expect(() => clock.subscriptionTerm(activation, duration)).toThrow(
+        RangeError,
+      );
+    expect(() => clock.subscriptionTerm("9999-12-31T09:00:00Z", 1)).toThrow(
+      RangeError,
+    );
+  });
+  it.each([
     ["2026-10-02T11:59:59.999+03:00", false],
     ["2026-10-02T12:00:00+03:00", true],
     ["2026-10-02T17:59:59.999+03:00", true],

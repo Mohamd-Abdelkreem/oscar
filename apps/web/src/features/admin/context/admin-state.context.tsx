@@ -48,7 +48,6 @@ import { useTaskActions } from "./actions/use-task-actions";
 import { useSubmissionReviewActions } from "./actions/use-submission-review-actions";
 import { useEmployeeRestrictionActions } from "./actions/use-employee-restriction-actions";
 import { useEmployeeAccountActions } from "./actions/use-employee-account-actions";
-import { usePackageActions } from "./actions/use-package-actions";
 import { useDepositActions } from "./actions/use-deposit-actions";
 import { useWithdrawalActions } from "./actions/use-withdrawal-actions";
 import { useSettingsActions } from "./actions/use-settings-actions";
@@ -66,8 +65,7 @@ export function AdminStateProvider({
 }) {
   const [employees, setEmployees] =
     useState<readonly AdminEmployee[]>(SEED_EMPLOYEES);
-  const [packages, setPackages] =
-    useState<readonly AdminPackage[]>(SEED_PACKAGES);
+  const [packages] = useState<readonly AdminPackage[]>(SEED_PACKAGES);
   const [tasks, setTasks] = useState<readonly AdminTask[]>(SEED_TASKS);
   const [codes, setCodes] = useState<readonly TaskUnlockCode[]>(SEED_CODES);
   const [codeUsages, setCodeUsages] =
@@ -155,11 +153,6 @@ export function AdminStateProvider({
     setFinanceTransactions,
     addAuditLog,
   });
-  const { updatePackage } = usePackageActions({
-    packages,
-    setPackages,
-    addAuditLog,
-  });
   const { manualCreditDeposit } = useDepositActions({
     employees,
     deposits,
@@ -233,7 +226,6 @@ export function AdminStateProvider({
       updateEmployeeWithdrawalAddress,
       deleteEmployeeAccount,
 
-      updatePackage,
       manualCreditDeposit,
 
       holdWithdrawal,
@@ -280,7 +272,6 @@ export function AdminStateProvider({
       adjustEmployeeBalance,
       updateEmployeeWithdrawalAddress,
       deleteEmployeeAccount,
-      updatePackage,
       manualCreditDeposit,
       holdWithdrawal,
       releaseWithdrawal,

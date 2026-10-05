@@ -68,6 +68,31 @@ const app = createApp({
   emailDelivery: delivery,
 });
 
+describe("P04 private projection route composition", () => {
+  it("mounts every read with authentication before query parsing and no-store errors", async () => {
+    for (const path of [
+      "/wallet/me",
+      "/wallet/me/ledger",
+      `/wallet/me/ledger/${randomUUID()}`,
+      "/referrals/me",
+      "/referrals/me/members",
+      "/referrals/me/commissions",
+      `/admin/wallets/${randomUUID()}`,
+      "/admin/finance",
+      `/admin/finance/${randomUUID()}`,
+      "/admin/referrals/roots",
+      `/admin/referrals/${randomUUID()}`,
+      `/admin/referrals/${randomUUID()}/members`,
+      `/admin/referrals/${randomUUID()}/commissions`,
+    ]) {
+      const response = await request(app).get(`/api/v1${path}?limit=101`);
+      expect(response.status).toBe(401);
+      expect(response.headers["cache-control"]).toBe("no-store");
+      expect(response.body.code).toBe("UNAUTHORIZED");
+    }
+  });
+});
+
 describe("P02 US6 actual HTTP privacy", () => {
   it("keeps credentials/referrers/provider failures out of success, validation, error and request logs", async () => {
     const chunks: string[] = [];

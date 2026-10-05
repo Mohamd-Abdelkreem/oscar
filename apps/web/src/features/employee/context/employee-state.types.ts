@@ -37,10 +37,6 @@ export interface EmployeeContextValue {
     message: string;
   };
   readonly setTaskScenario: (scenario: TaskStatus) => void;
-  readonly upgradeToPackage: (targetPackageId: PackageId) => {
-    success: boolean;
-    message: string;
-  };
   readonly setupWithdrawalAddress: (address: string) => {
     success: boolean;
     message: string;

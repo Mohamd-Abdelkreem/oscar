@@ -1,6 +1,7 @@
 import {
   businessDateSchema,
   countedHoursToMilliseconds,
+  countedWorkDatesSchema,
   financialInstantSchema,
 } from "@template/contracts";
 import { DateTime } from "luxon";
@@ -84,14 +85,22 @@ export class BusinessClock {
     );
   }
 
-  subscriptionTerm(activation: unknown): SubscriptionTerm {
+  subscriptionTerm(
+    activation: unknown,
+    countedWorkDates = SUBSCRIPTION_WORK_DATES,
+  ): SubscriptionTerm {
+    const duration = countedWorkDatesSchema.safeParse(countedWorkDates);
+    if (!duration.success)
+      throw new RangeError("Invalid counted work-date duration.");
     const local = baghdadInstant(activation);
     const first =
       isWorkday(local) && local.hour < TASK_CLOSE_HOUR
         ? local.startOf("day")
         : nextWorkdayStart(local);
-    let final = supportedDateTime(first);
-    for (let counted = 1; counted < SUBSCRIPTION_WORK_DATES; counted += 1)
+    const remainingDates = duration.data - 1;
+    const wholeWeeks = Math.floor(remainingDates / LAST_WORKDAY);
+    let final = supportedDateTime(first.plus({ days: wholeWeeks * 7 }));
+    for (let counted = 0; counted < remainingDates % LAST_WORKDAY; counted += 1)
       final = nextWorkdayStart(final);
     const expiry = supportedDateTime(final.plus({ days: 1 }).startOf("day"));
     return {

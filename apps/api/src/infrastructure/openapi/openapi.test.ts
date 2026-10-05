@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "./openapi.js";
 
 const expectedPaths = [
+  "/wallet/me",
+  "/wallet/me/ledger",
+  "/wallet/me/ledger/{operationId}",
+  "/admin/wallets/{employeeId}",
+  "/admin/finance",
+  "/admin/finance/{operationId}",
+  "/referrals/me",
+  "/referrals/me/members",
+  "/referrals/me/commissions",
+  "/admin/referrals/roots",
+  "/admin/referrals/{rootId}",
+  "/admin/referrals/{rootId}/members",
+  "/admin/referrals/{rootId}/commissions",
   "/auth/register",
   "/auth/verify-email",
   "/auth/resend-verification",
@@ -30,9 +43,92 @@ const expectedPaths = [
   "/health/live",
   "/health/ready",
   "/openapi.json",
+  "/packages",
+  "/admin/packages",
+  "/admin/packages/{packageCode}",
+  "/admin/referral-settings",
+  "/admin/configuration-changes/{commandId}",
+  "/subscriptions/me",
+  "/subscriptions/me/history",
+  "/admin/subscriptions/{employeeId}",
+  "/subscriptions/purchase-quotes",
+  "/subscriptions/purchase-quotes/{quoteId}/outcome",
+  "/subscriptions/purchases",
+  "/subscriptions/purchases/{purchaseId}",
 ] as const;
 
 describe("OpenAPI document", () => {
+  it("documents reviewed configuration writes and nonterminal actor-scoped observation", () => {
+    const paths = buildOpenApiDocument().paths;
+    for (const path of [
+      "/admin/packages/{packageCode}",
+      "/admin/referral-settings",
+    ]) {
+      const command = paths?.[path]?.patch;
+      expect(command?.security).toEqual([{ BearerAuth: [], CsrfHeader: [] }]);
+      expect(command?.description).toContain("CONFIGURATION_SUPERSEDED");
+      for (const status of ["200", "400", "401", "403", "409", "429", "500"])
+        expect(command?.responses).toHaveProperty(status);
+    }
+    const observation =
+      paths?.["/admin/configuration-changes/{commandId}"]?.get;
+    expect(observation?.security).toEqual([{ BearerAuth: [] }]);
+    expect(observation?.description).toContain("NOT_OBSERVED is nonterminal");
+    expect(observation?.responses).not.toHaveProperty("409");
+  });
+  it("documents private wallet, finance and relative-root reads with strict filtered schemas and bearer authority", () => {
+    const paths = buildOpenApiDocument().paths;
+    for (const path of expectedPaths.filter(
+      (path) =>
+        path.includes("wallet") ||
+        path.includes("referrals") ||
+        path.includes("finance"),
+    )) {
+      const operation = paths?.[path]?.get;
+      expect(operation?.security).toEqual([{ BearerAuth: [] }]);
+      expect(operation?.description).toContain("no-store");
+      for (const status of ["200", "400", "401", "403", "404", "500"])
+        expect(operation?.responses).toHaveProperty(status);
+    }
+    expect(paths?.["/admin/finance"]?.get?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "source", in: "query" }),
+        expect.objectContaining({ name: "q", in: "query" }),
+      ]),
+    );
+    expect(
+      paths?.["/admin/referrals/{rootId}/members"]?.get?.parameters,
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "rootId", in: "path", required: true }),
+        expect.objectContaining({ name: "q", in: "query" }),
+      ]),
+    );
+  });
+  it("documents purchase replay statuses, CSRF, optional alias and locked outcome semantics", () => {
+    const paths = buildOpenApiDocument().paths;
+    const command = paths?.["/subscriptions/purchases"]?.post;
+    expect(command?.security).toEqual([{ BearerAuth: [], CsrfHeader: [] }]);
+    expect(command?.responses).toHaveProperty("201");
+    expect(command?.responses).toHaveProperty("200");
+    expect(command?.responses).toHaveProperty("409");
+    expect(command?.parameters).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          in: "header",
+          name: "Idempotency-Key",
+          required: false,
+        }),
+      ]),
+    );
+    expect(
+      paths?.["/subscriptions/purchase-quotes/{quoteId}/outcome"]?.get
+        ?.description,
+    ).toContain("ReadCommitted");
+    expect(
+      paths?.["/subscriptions/purchases/{purchaseId}"]?.get?.responses,
+    ).toHaveProperty("404");
+  });
   it("uses required enriched identity DTOs and documents session revocation without requiring a refresh cookie for logout", () => {
     const document = buildOpenApiDocument();
     const schema = document.components?.schemas?.["IdentityUser"];
@@ -96,7 +192,10 @@ describe("OpenAPI document", () => {
         ]);
         for (const code of ["400", "401", "403", "429"])
           expect(operation.responses).toHaveProperty(code);
-        if (path.includes("{"))
+        if (
+          path.includes("{") &&
+          path !== "/admin/configuration-changes/{commandId}"
+        )
           expect(operation.responses).toHaveProperty("404");
         if (method !== "get") expect(operation.responses).toHaveProperty("409");
       }

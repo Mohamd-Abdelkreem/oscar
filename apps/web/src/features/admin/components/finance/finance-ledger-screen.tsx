@@ -6,10 +6,9 @@ import {
   Eye,
   Receipt,
   Search,
-  X,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AdminButton } from "../common/admin-button";
 import { AdminEmptyState } from "../common/admin-empty-state";
 import { AdminInput } from "../common/admin-input";
@@ -17,91 +16,85 @@ import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminPagination } from "../common/admin-pagination";
 import { AdminSelect, type AdminSelectOption } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
-import { useAdminState } from "../../context/admin-state.context";
-import type { AdminFinanceTransaction } from "../../types/admin.types";
+import { useFinanceLedger, useFinanceDetail } from "../../hooks/finance.hooks";
+import { FinancialFeedback } from "@/features/employee/components/common/financial-feedback";
+import { formatMoney } from "@/features/employee/utils/money-display";
+import { operationLabels } from "@/features/employee/utils/ledger-presentation";
+import {
+  financialOriginSchema,
+  ledgerDirectionSchema,
+} from "@template/contracts";
+import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 25;
 
 // Function-size exception: filters, aggregates and detail selection describe one
 // ledger view. Revisit when a detail panel becomes an independently reused view.
 export function FinanceLedgerScreen() {
-  const { financeTransactions } = useAdminState();
-
   const [searchQuery, setSearchQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [directionFilter, setDirectionFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedTx, setSelectedTx] = useState<AdminFinanceTransaction | null>(
-    null,
-  );
-
-  const filteredTransactions = useMemo(() => {
-    return financeTransactions.filter((tx) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        if (
-          !tx.title.toLowerCase().includes(q) &&
-          !tx.employeeName.toLowerCase().includes(q) &&
-          !tx.reference.toLowerCase().includes(q) &&
-          !tx.source.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-
-      if (typeFilter !== "all" && tx.type !== typeFilter) {
-        return false;
-      }
-
-      if (directionFilter !== "all" && tx.direction !== directionFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [financeTransactions, searchQuery, typeFilter, directionFilter]);
-
-  // Aggregate summaries (balance-neutral events excluded from credit/debit to prevent double counting!)
-  const totalCredits = useMemo(() => {
-    return financeTransactions
-      .filter((t) => t.direction === "credit" && !t.isBalanceNeutral)
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [financeTransactions]);
-
-  const totalDebits = useMemo(() => {
-    return financeTransactions
-      .filter((t) => t.direction === "debit" && !t.isBalanceNeutral)
-      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  }, [financeTransactions]);
-
-  const neutralOperationsCount = useMemo(() => {
-    return financeTransactions.filter((t) => t.isBalanceNeutral).length;
-  }, [financeTransactions]);
-
-  const totalPages = Math.ceil(filteredTransactions.length / PAGE_SIZE) || 1;
-  const paginatedTransactions = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredTransactions.slice(start, start + PAGE_SIZE);
-  }, [filteredTransactions, currentPage]);
-
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [directionFilter, setDirectionFilter] = useState("all");
+  const [selection, setSelection] = useState<{
+    id: string;
+    identity: string;
+  } | null>(null);
+  const origin = financialOriginSchema.safeParse(typeFilter);
+  const direction = ledgerDirectionSchema.safeParse(directionFilter);
+  const ledger = useFinanceLedger({
+    ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
+    ...(origin.success ? { origin: origin.data } : {}),
+    ...(direction.success ? { direction: direction.data } : {}),
+  });
+  const currentPage = ledger.page;
+  const setCurrentPage = ledger.setPage;
+  const identity = JSON.stringify([
+    ledger.scope,
+    searchQuery,
+    typeFilter,
+    directionFilter,
+    currentPage,
+  ]);
+  const selectedId =
+    selection?.identity === identity && ledger.allowed ? selection.id : null;
+  const detail = useFinanceDetail(selectedId);
+  const paginatedTransactions =
+    ledger.data?.items.map((row) => ({
+      id: row.operationId,
+      employeeId: row.employee.id,
+      employeeName: row.employee.fullName,
+      title: operationLabels[row.origin],
+      amount: row.signedOwnershipDelta,
+      direction: row.direction.toLowerCase(),
+      source: row.sourceMovements
+        .map((movement) =>
+          movement.source === "REFERRAL" ? "إحالات" : "غير إحالات",
+        )
+        .join(" / "),
+      date: row.recordedAt,
+      reference: row.referenceLabel,
+    })) ?? [];
+  const filteredTransactions = paginatedTransactions;
+  const totalPages = ledger.data?.pagination.totalPages ?? 0;
+  const totalCredits = ledger.data
+    ? formatMoney(ledger.data.summary.credits)
+    : "—";
+  const totalDebits = ledger.data
+    ? formatMoney(ledger.data.summary.debits)
+    : "—";
+  const neutralOperationsCount =
+    ledger.data?.summary.neutralOperationsCount ?? "—";
   const typeFilterOptions: readonly AdminSelectOption[] = [
     { value: "all", label: "كل أنواع العمليات" },
-    { value: "deposit", label: "إيداع رصيد" },
-    { value: "task_reward", label: "مكافأة مهمة" },
-    { value: "task_reward_reversal", label: "عكس مكافأة مهمة" },
-    { value: "withdrawal_reservation", label: "حجز رصيد سحب" },
-    { value: "withdrawal_completion", label: "تسوية سحب نهائية" },
-    { value: "withdrawal_reversal", label: "فك حجز سحب" },
-    { value: "package_purchase", label: "شراء باقة" },
-    { value: "referral_commission", label: "عمولة إحالة" },
-    { value: "admin_adjustment", label: "تسوية إدارية" },
+    ...financialOriginSchema.options.map((value) => ({
+      value,
+      label: operationLabels[value],
+    })),
   ];
-
   const directionFilterOptions: readonly AdminSelectOption[] = [
-    { value: "all", label: "كل الحركات (إضافة / خصم / حجز)" },
-    { value: "credit", label: "إضافة رصيد (+)" },
-    { value: "debit", label: "خصم رصيد (-)" },
-    { value: "neutral", label: "حجز أو فك حجز الرصيد" },
+    { value: "all", label: "كل الحركات" },
+    { value: "CREDIT", label: "إضافة رصيد (+)" },
+    { value: "DEBIT", label: "خصم رصيد (-)" },
+    { value: "NEUTRAL", label: "حجز أو فك حجز الرصيد" },
   ];
 
   return (
@@ -124,7 +117,7 @@ export function FinanceLedgerScreen() {
             className="mt-2 font-mono text-2xl font-black text-emerald-950"
             dir="ltr"
           >
-            +{totalCredits.toFixed(2)} USDT
+            +{totalCredits} USDT
           </div>
           <span className="mt-1 block text-[11px] text-emerald-700">
             إيداعات معتمدة، مكافآت مهام، عمولات إحالة، وتسويات إضافة
@@ -140,10 +133,10 @@ export function FinanceLedgerScreen() {
             className="mt-2 font-mono text-2xl font-black text-rose-950"
             dir="ltr"
           >
-            -{totalDebits.toFixed(2)} USDT
+            -{totalDebits} USDT
           </div>
           <span className="mt-1 block text-[11px] text-rose-700">
-            تسويات سحب نهائية، شراء باقات، وعكس مكافآت
+            شراء باقات وتسويات مالية مسجلة
           </span>
         </div>
 
@@ -209,19 +202,24 @@ export function FinanceLedgerScreen() {
         </div>
       </div>
 
+      <FinancialFeedback
+        pending={ledger.isPending}
+        error={ledger.error}
+        retry={ledger.refetch}
+      />
       {/* Ledger Table: Jargon replaced with clear labels */}
       <AdminTableShell
         footer={
           <AdminPagination
             currentPage={currentPage}
             totalPages={totalPages}
-            totalItems={filteredTransactions.length}
+            totalItems={ledger.data?.pagination.total ?? 0}
             pageSize={PAGE_SIZE}
             onPageChange={setCurrentPage}
           />
         }
       >
-        {filteredTransactions.length === 0 ? (
+        {ledger.data && filteredTransactions.length === 0 ? (
           <AdminEmptyState
             title="لا توجد عمليات مالية مطابقة"
             description="لم يتم العثور على عمليات في السجل المالي تطابق معايير التصفية المحددة."
@@ -270,9 +268,9 @@ export function FinanceLedgerScreen() {
                       }
                     >
                       {tx.direction === "credit"
-                        ? `+${tx.amount.toFixed(2)}`
+                        ? `+${formatMoney(tx.amount)}`
                         : tx.direction === "debit"
-                          ? tx.amount.toFixed(2)
+                          ? formatMoney(tx.amount)
                           : "0.00 (محايد)"}{" "}
                       USDT
                     </span>
@@ -318,7 +316,7 @@ export function FinanceLedgerScreen() {
                       size="sm"
                       icon={Eye}
                       onClick={() => {
-                        setSelectedTx(tx);
+                        setSelection({ id: tx.id, identity });
                       }}
                       title="عرض تفاصيل العملية"
                     >
@@ -332,113 +330,69 @@ export function FinanceLedgerScreen() {
         )}
       </AdminTableShell>
 
-      {/* Transaction Detail Modal */}
-      {selectedTx && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="admin-scope fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setSelectedTx(null);
-          }}
-        >
-          <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 p-4">
-              <h2 className="text-base font-bold text-slate-900">
-                تفاصيل العملية: {selectedTx.reference}
-              </h2>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTx(null);
-                }}
-                className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
-                aria-label="إغلاق"
-              >
-                <X size={18} aria-hidden="true" />
-              </button>
-            </div>
-
-            <div className="flex-1 space-y-4 overflow-y-auto p-5 text-xs">
-              <div className="space-y-2.5 rounded-md border border-slate-200 bg-slate-50 p-4">
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">الموظف:</span>
-                  <Link
-                    href={`/admin/employees/${selectedTx.employeeId}`}
-                    className="font-bold text-slate-900 hover:text-emerald-700 hover:underline"
-                  >
-                    {selectedTx.employeeName}
-                  </Link>
+      <AdminConfirmDialog
+        isOpen={selectedId !== null}
+        title="تفاصيل العملية المالية"
+        variant="primary"
+        confirmLabel="إغلاق"
+        cancelLabel="إغلاق"
+        onClose={() => {
+          setSelection(null);
+        }}
+        onConfirm={() => true}
+        description={
+          <div className="space-y-4 text-xs">
+            <FinancialFeedback
+              pending={detail.isPending}
+              error={detail.error}
+              retry={detail.refetch}
+            />
+            {detail.data && (
+              <>
+                <div className="space-y-2.5 rounded-md border border-slate-200 bg-slate-50 p-4">
+                  <p>الموظف: {detail.data.employee.fullName}</p>
+                  <p>البيان: {operationLabels[detail.data.origin]}</p>
+                  <p>
+                    المبلغ الصافي:{" "}
+                    <bdi dir="ltr">
+                      {formatMoney(detail.data.signedOwnershipDelta)} USDT
+                    </bdi>
+                  </p>
+                  <p>
+                    المرجع: <bdi dir="ltr">{detail.data.referenceLabel}</bdi>
+                  </p>
+                  <p>
+                    التاريخ: <bdi dir="ltr">{detail.data.recordedAt}</bdi>
+                  </p>
+                  {detail.data.sourceMovements.map((movement) => (
+                    <p key={movement.source}>
+                      {movement.source === "REFERRAL" ? "إحالات" : "غير إحالات"}
+                      : المتاح <bdi>{formatMoney(movement.availableDelta)}</bdi>{" "}
+                      · المحجوز <bdi>{formatMoney(movement.reservedDelta)}</bdi>
+                    </p>
+                  ))}
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">البيان:</span>
-                  <span className="font-bold text-slate-800">
-                    {selectedTx.title}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">المبلغ:</span>
-                  <span className="font-mono text-sm font-bold" dir="ltr">
-                    {selectedTx.amount.toFixed(2)} USDT
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">
-                    نوع العملية:
-                  </span>
-                  <span className="font-bold">
-                    {selectedTx.direction === "credit"
-                      ? "إضافة للرصيد (+)"
-                      : selectedTx.direction === "debit"
-                        ? "خصم من الرصيد (-)"
-                        : "حجز أو فك حجز الرصيد (محايد)"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">المصدر:</span>
-                  <span className="text-slate-700">{selectedTx.source}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-slate-500">التاريخ:</span>
-                  <span className="font-mono text-slate-600" dir="ltr">
-                    {selectedTx.date}
-                  </span>
-                </div>
-              </div>
-
-              {selectedTx.details && (
-                <div className="space-y-2">
-                  <span className="block font-bold text-slate-700">
-                    بيانات إضافية عن العملية:
-                  </span>
-                  <div className="space-y-1.5 rounded-md border border-slate-100 bg-slate-50 p-3 font-mono text-[11px]">
-                    {Object.entries(selectedTx.details).map(([k, v]) => (
-                      <div key={k} className="flex justify-between">
-                        <span className="font-sans text-slate-500">{k}:</span>
-                        <span className="font-bold text-slate-800" dir="ltr">
-                          {v}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 p-4">
-              <AdminButton
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedTx(null);
-                }}
-              >
-                إغلاق
-              </AdminButton>
-            </div>
+                {detail.data.actor && (
+                  <p>منفذ التسوية: {detail.data.actor.fullName}</p>
+                )}
+                {detail.data.correction && (
+                  <p>
+                    السبب: {detail.data.correction.reason} · العملية المرجعية:{" "}
+                    <bdi>{detail.data.correction.referenceOperationId}</bdi>
+                  </p>
+                )}
+                {detail.data.savedTerms && (
+                  <p>
+                    شروط الشراء المحفوظة: {detail.data.savedTerms.code} ·{" "}
+                    <bdi>{formatMoney(detail.data.savedTerms.price)} USDT</bdi>{" "}
+                    · {detail.data.savedTerms.countedWorkDates} يوم
+                  </p>
+                )}
+              </>
+            )}
           </div>
-        </div>
-      )}
+        }
+      />
     </div>
   );
 }

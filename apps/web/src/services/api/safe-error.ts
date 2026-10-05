@@ -1,4 +1,5 @@
 import axios from "axios";
+import { errorEnvelopeSchema } from "@template/contracts";
 
 export type ApiErrorCategory =
   | "contract"
@@ -71,6 +72,18 @@ const knownFields = new Set([
   "passwordConfirmation",
   "reason",
 ]);
+const financialCodes = new Set([
+  "CONFIGURATION_STALE",
+  "CONFIGURATION_SUPERSEDED",
+  "PURCHASE_QUOTE_STALE",
+  "PURCHASE_TRANSITION_DENIED",
+  "LEDGER_INVALID_INTENT",
+  "LEDGER_FORBIDDEN",
+  "LEDGER_IDENTITY_CONFLICT",
+  "LEDGER_INSUFFICIENT_FUNDS",
+  "LEDGER_AMOUNT_BOUNDS",
+  "LEDGER_INTERNAL",
+]);
 
 export const getApiError = (failure: unknown): ApiError => {
   if (failure instanceof ApiFailure) return failure;
@@ -91,15 +104,32 @@ export const getApiError = (failure: unknown): ApiError => {
       : status === 401 || status === 403
         ? "denied"
         : "request";
+  const financialEnvelope = errorEnvelopeSchema.safeParse(body);
+  const originalConfigurationPatch =
+    failure.config?.method?.toLowerCase() === "patch" &&
+    /^\/admin\/(?:packages\/(?:S1|S2|O1|O2|A1)|referral-settings)$/u.test(
+      failure.config.url ?? "",
+    ) &&
+    financialEnvelope.success &&
+    financialEnvelope.data.path.endsWith(failure.config.url ?? "");
+  const financialCode =
+    financialEnvelope.success &&
+    financialEnvelope.data.statusCode === status &&
+    financialCodes.has(financialEnvelope.data.code) &&
+    (financialEnvelope.data.code !== "CONFIGURATION_SUPERSEDED" ||
+      originalConfigurationPatch)
+      ? financialEnvelope.data.code
+      : undefined;
   const code =
-    record(body) &&
+    financialCode ??
+    (record(body) &&
     body["success"] === false &&
     typeof body["code"] === "string" &&
     knownCodes.has(body["code"])
       ? body["code"]
       : status === 0
         ? "NETWORK_ERROR"
-        : "HTTP_ERROR";
+        : "HTTP_ERROR");
   const fields: Record<string, readonly string[]> = {};
   if (
     code === "VALIDATION_ERROR" &&

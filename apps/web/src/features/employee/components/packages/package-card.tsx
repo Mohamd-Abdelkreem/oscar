@@ -1,32 +1,34 @@
 "use client";
 
 import { Check, Clock, Layers, ShieldCheck, Zap } from "lucide-react";
-import type { PackageTier } from "../../types/employee.types";
-import { calculateExpectedTotalIncome } from "../../utils/financial-calculations";
+import type { PackagePresentation } from "../../utils/package-presentation";
 import { Button } from "../common/button";
 import { MoneyAmount } from "../common/money-amount";
+import type { Membership } from "@template/contracts";
+import { SavedSubscriptionDetails } from "./saved-subscription-details";
 
 interface PackageCardProps {
-  readonly pkg: PackageTier;
+  readonly pkg: PackagePresentation;
   readonly isCurrent: boolean;
-  readonly currentPrice?: number | undefined;
+  readonly subscription?: Membership["subscription"] | undefined;
+  readonly currentTier?: number | undefined;
+  readonly allowed?: boolean | undefined;
   readonly daysRemaining?: number | undefined;
-  readonly onSelectUpgrade: (pkg: PackageTier) => void;
+  readonly onSelectUpgrade: (pkg: PackagePresentation) => void;
 }
 
 export function PackageCard({
   pkg,
   isCurrent,
-  currentPrice = 0,
+  subscription,
+  currentTier = 0,
+  allowed = true,
   daysRemaining,
   onSelectUpgrade,
 }: PackageCardProps) {
   const isLowerTier =
-    !isCurrent && currentPrice > 0 && pkg.price <= currentPrice;
-  const expectedTotal = calculateExpectedTotalIncome(
-    pkg.dailyReward,
-    pkg.durationDays,
-  );
+    !isCurrent && currentTier > 0 && pkg.tierOrder <= currentTier;
+  const expectedTotal = pkg.conditionalGross;
 
   return (
     <div
@@ -64,7 +66,7 @@ export function PackageCard({
           </div>
 
           <p className="mb-3 text-xs leading-relaxed text-slate-500">
-            {pkg.description}
+            شروط الكتالوج الحالية · النسخة {pkg.version}. {pkg.description}
           </p>
 
           {/* Pricing & Key Metrics Matrix */}
@@ -93,7 +95,7 @@ export function PackageCard({
                 أيام العمل المطلوبة
               </span>
               <span className="text-sm font-bold text-slate-900">
-                {pkg.durationDays} يوم
+                {pkg.countedWorkDates} يوم
               </span>
             </div>
 
@@ -102,7 +104,7 @@ export function PackageCard({
                 الدورة
               </span>
               <span className="text-sm font-bold text-slate-800">
-                {pkg.cycle ?? "يومي"}
+                {pkg.cycle}
               </span>
             </div>
           </div>
@@ -110,7 +112,7 @@ export function PackageCard({
           {/* Expected Total Income Callout */}
           <div className="mt-2.5 flex items-center justify-between rounded-md border border-emerald-100 bg-emerald-50 p-2.5">
             <span className="text-xs font-bold text-emerald-900">
-              إجمالي الدخل المتوقع
+              إجمالي مشروط بإكمال المهام المعتمدة قبل تكلفة الباقة ورسوم السحب
             </span>
             <MoneyAmount amount={expectedTotal} size="md" color="positive" />
           </div>
@@ -118,6 +120,9 @@ export function PackageCard({
 
         {/* Feature List */}
         <div className="space-y-2.5 p-4 sm:p-5">
+          {isCurrent && subscription && (
+            <SavedSubscriptionDetails subscription={subscription} />
+          )}
           <h3 className="text-xs font-bold tracking-wider text-slate-400 uppercase">
             المواصفات والشروط:
           </h3>
@@ -162,6 +167,7 @@ export function PackageCard({
         ) : (
           <Button
             id={`upgrade-btn-${pkg.id}`}
+            disabled={!allowed}
             variant="primary"
             fullWidth
             icon={Zap}

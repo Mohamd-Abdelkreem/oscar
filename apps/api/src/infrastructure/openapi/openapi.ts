@@ -21,6 +21,44 @@ import {
   adminInvitationAcceptBodySchema,
   errorEnvelopeSchema,
   successEnvelopeSchema,
+  catalogSchema,
+  adminCatalogSchema,
+  packageEditSchema,
+  referralEditSchema,
+  referralSettingsDataSchema,
+  configurationResultSchema,
+  configurationOutcomeSchema,
+  membershipSchema,
+  purchaseQuoteBodySchema,
+  purchaseQuoteSchema,
+  confirmedPurchaseBodySchema,
+  purchaseCommandResultSchema,
+  purchaseResultSchema,
+  purchaseHistorySchema,
+  subscriptionHistorySchema,
+  quoteOutcomeSchema,
+  boundedPageQuerySchema,
+  financialRequestKeySchema,
+  walletViewSchema,
+  ledgerPageSchema,
+  ledgerFilterSchema,
+  employeeLedgerDetailSchema,
+  adminWalletViewSchema,
+  adminFinancePageSchema,
+  adminLedgerFilterSchema,
+  adminLedgerDetailSchema,
+  employeeTeamSummarySchema,
+  employeeMemberPageSchema,
+  employeeMemberFilterSchema,
+  employeeCommissionPageSchema,
+  commissionFilterSchema,
+  rootIdentityPageSchema,
+  rootSearchFilterSchema,
+  adminTeamSummarySchema,
+  adminMemberPageSchema,
+  adminMemberFilterSchema,
+  adminCommissionPageSchema,
+  adminCommissionFilterSchema,
 } from "@template/contracts";
 
 import { appConfig } from "../../core/config/app.config.js";
@@ -32,6 +70,21 @@ import {
   resetPasswordBodyDtoSchema,
 } from "../../modules/auth/dto/index.js";
 import { updateProfileBodyDtoSchema } from "../../modules/users/dto/update-profile.dto.js";
+import {
+  quoteParamsSchema,
+  purchaseParamsSchema,
+  employeeMembershipParamsSchema,
+} from "../../modules/subscriptions/subscriptions.controller.js";
+
+import {
+  operationParamsSchema,
+  walletEmployeeParamsSchema,
+} from "../../modules/wallets/wallets.controller.js";
+import { referralRootParamsSchema } from "../../modules/referrals/referrals.controller.js";
+import {
+  packageParamsSchema,
+  configurationParamsSchema,
+} from "../../modules/packages/packages.controller.js";
 
 const tokenParameter = tokenQuerySchema.shape.token.meta({
   param: {
@@ -162,6 +215,425 @@ export const buildOpenApiDocument = () =>
       },
     },
     paths: {
+      "/wallet/me": {
+        get: {
+          summary: "Read walletView",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              walletViewSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/wallet/me/ledger": {
+        get: {
+          summary: "Read ledgerPage",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          requestParams: { query: ledgerFilterSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              ledgerPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/wallet/me/ledger/{operationId}": {
+        get: {
+          summary: "Read employeeLedgerDetail",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          requestParams: { path: operationParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              employeeLedgerDetailSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/wallets/{employeeId}": {
+        get: {
+          summary: "Read adminWalletView",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: walletEmployeeParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminWalletViewSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/finance": {
+        get: {
+          summary: "Read adminFinancePage",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { query: adminLedgerFilterSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminFinancePageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/finance/{operationId}": {
+        get: {
+          summary: "Read adminLedgerDetail",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: operationParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminLedgerDetailSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/referrals/me": {
+        get: {
+          summary: "Read employeeTeamSummary",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              employeeTeamSummarySchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/referrals/me/members": {
+        get: {
+          summary: "Read employeeMemberPage",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          requestParams: { query: employeeMemberFilterSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              employeeMemberPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/referrals/me/commissions": {
+        get: {
+          summary: "Read employeeCommissionPage",
+          description:
+            "Requires current ACTIVE verified USER and an owned unrevoked session. Private responses use Cache-Control: no-store.",
+          security: adminReadSecurity,
+          requestParams: { query: commissionFilterSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              employeeCommissionPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/referrals/roots": {
+        get: {
+          summary: "Read rootIdentityPage",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { query: rootSearchFilterSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              rootIdentityPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/referrals/{rootId}": {
+        get: {
+          summary: "Read adminTeamSummary",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: referralRootParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminTeamSummarySchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/referrals/{rootId}/members": {
+        get: {
+          summary: "Read adminMemberPage",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: {
+            query: adminMemberFilterSchema,
+            path: referralRootParamsSchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminMemberPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/referrals/{rootId}/commissions": {
+        get: {
+          summary: "Read adminCommissionPage",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: {
+            query: adminCommissionFilterSchema,
+            path: referralRootParamsSchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Consistent private projection",
+              adminCommissionPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/packages": {
+        get: {
+          summary: "Read current ordered package terms",
+          description:
+            "Current verified USER or ADMIN. Private no-store read; no financial effects.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse("Current terms", catalogSchema),
+            ...commonErrors,
+          },
+        },
+      },
+      "/admin/packages": {
+        get: {
+          summary: "Read package terms and effective subscription counts",
+          description: `${adminAuthority} Counts at one serverNow use saved code and activation <= now < expiry under RepeatableRead. No-store.`,
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Current terms and counts",
+              adminCatalogSchema,
+            ),
+            ...commonErrors,
+          },
+        },
+      },
+      "/admin/packages/{packageCode}": {
+        patch: {
+          summary: "Save reviewed future package terms",
+          description: `${adminAuthority} Confirmation/reason required. Matching actor-command replay precedes version validation. CONFIGURATION_SUPERSEDED requires absent command and greater locked target version; generic stale/errors are nonterminal. No-store.`,
+          security: [{ BearerAuth: [], CsrfHeader: [] }],
+          requestParams: { path: packageParamsSchema },
+          requestBody: jsonBody(packageEditSchema),
+          responses: {
+            "200": successResponse(
+              "Saved immutable change or replay",
+              configurationResultSchema,
+            ),
+            ...commonErrors,
+            "404": errorResponse("Configured package not found"),
+            "409": errorResponse(
+              "CONFIGURATION_SUPERSEDED, CONFIGURATION_STALE or changed command intent",
+            ),
+          },
+        },
+      },
+      "/admin/referral-settings": {
+        get: {
+          summary: "Read current future referral rates",
+          description: `${adminAuthority} Private no-store read.`,
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Current five rates",
+              referralSettingsDataSchema,
+            ),
+            ...commonErrors,
+          },
+        },
+        patch: {
+          summary: "Save reviewed future referral rates",
+          description: `${adminAuthority} Exactly five fixed-level rates; confirmation/reason. Actor-command replay before locked version validation; CONFIGURATION_SUPERSEDED is terminal only for this unchanged original intent. No-store.`,
+          security: [{ BearerAuth: [], CsrfHeader: [] }],
+          requestBody: jsonBody(referralEditSchema),
+          responses: {
+            "200": successResponse(
+              "Saved immutable change or replay",
+              configurationResultSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse(
+              "CONFIGURATION_SUPERSEDED, CONFIGURATION_STALE or changed command intent",
+            ),
+          },
+        },
+      },
+      "/admin/configuration-changes/{commandId}": {
+        get: {
+          summary: "Observe own configuration command",
+          description: `${adminAuthority} Actor-scoped no-store observation. NOT_OBSERVED is nonterminal; absent GET never proves supersession or authorizes replacement.`,
+          security: adminReadSecurity,
+          requestParams: { path: configurationParamsSchema },
+          responses: {
+            "200": successResponse(
+              "COMMITTED or nonterminal NOT_OBSERVED",
+              configurationOutcomeSchema,
+            ),
+            ...commonErrors,
+          },
+        },
+      },
+      "/subscriptions/me": {
+        get: {
+          summary: "Read own effective membership",
+          description:
+            "Current verified USER. Exclusive expiry is authoritative without a maintenance job; no-store.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse("Membership", membershipSchema),
+            ...commonErrors,
+          },
+        },
+      },
+      "/subscriptions/me/history": {
+        get: {
+          summary: "Read own saved subscription history",
+          description:
+            "Current verified USER; no-store. Bounded activation/id paging with consistent rows/count under RepeatableRead. Saved terms and lifecycle remain intact at expiry; reads perform no maintenance writes.",
+          security: adminReadSecurity,
+          requestParams: { query: boundedPageQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Saved subscriptions",
+              subscriptionHistorySchema,
+            ),
+            ...commonErrors,
+          },
+        },
+      },
+      "/admin/subscriptions/{employeeId}": {
+        get: {
+          summary: "Read an employee's effective membership",
+          description: `${adminAuthority} No-store. Employee targets only; missing or non-employee IDs return 404. Saved CURRENT terms use activation <= serverNow < expiry without a maintenance job.`,
+          security: adminReadSecurity,
+          requestParams: { path: employeeMembershipParamsSchema },
+          responses: {
+            "200": successResponse("Employee membership", membershipSchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/subscriptions/purchase-quotes": {
+        post: {
+          summary: "Review an owned full-price purchase",
+          description:
+            "Current verified USER, CSRF and bounded actor action limit. Ten-minute exclusive quote TTL, referral-first partial funding/top-up and disclosed Baghdad work dates. No debit or reservation.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(purchaseQuoteBodySchema),
+          responses: {
+            "201": successResponse("Owned quote", purchaseQuoteSchema),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/subscriptions/purchase-quotes/{quoteId}/outcome": {
+        get: {
+          summary: "Observe an owned purchase outcome",
+          description:
+            "Current verified USER; no-store. Shared buyer lock and fresh ReadCommitted observation. COMMITTED wins after expiry; live NOT_OBSERVED remains uncertain. EXPIRED_UNCOMMITTED requires the completed lock barrier; failed observation is never terminal evidence.",
+          security: adminReadSecurity,
+          requestParams: { path: quoteParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Authoritative observation",
+              quoteOutcomeSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/subscriptions/purchases": {
+        post: {
+          summary: "Commit or explicitly replay an owned full-price purchase",
+          description:
+            "Current verified USER, CSRF and bounded actor action limit. Atomically debits the FULL target price, replaces/creates the saved term and awards fixed-level event commissions. Upgrade commission base is the positive prior-snapshot price difference. Quote/key replay rechecks authority and binds incoming aliases; stale configuration/funds/membership/date preview reject without effects. 5xx/lost acknowledgement is uncertain: retain the original quote and observe its outcome.",
+          security: adminWriteSecurity,
+          requestParams: {
+            header: z.object({
+              "Idempotency-Key": financialRequestKeySchema.optional().meta({
+                param: { required: false },
+              }),
+            }),
+          },
+          requestBody: jsonBody(confirmedPurchaseBodySchema),
+          responses: {
+            "201": successResponse(
+              "New atomic purchase",
+              purchaseCommandResultSchema,
+            ),
+            "200": successResponse(
+              "Immutable purchase replay",
+              purchaseCommandResultSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+        get: {
+          summary: "Read own saved purchase history",
+          description:
+            "Current verified USER; bounded stable time/id paging under RepeatableRead. Saved walletAfter is event history, not today's balance. No-store.",
+          security: adminReadSecurity,
+          requestParams: { query: boundedPageQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Saved purchase page",
+              purchaseHistorySchema,
+            ),
+            ...commonErrors,
+          },
+        },
+      },
+      "/subscriptions/purchases/{purchaseId}": {
+        get: {
+          summary: "Read an owned immutable purchase",
+          description:
+            "Current verified USER. Missing/foreign IDs return 404; saved CURRENT-at-purchase is separate from live lifecycle. No-store.",
+          security: adminReadSecurity,
+          requestParams: { path: purchaseParamsSchema },
+          responses: {
+            "200": successResponse("Saved purchase", purchaseResultSchema),
+            ...adminReadErrors,
+          },
+        },
+      },
       "/auth/register": {
         post: {
           summary: "Register with email and password",

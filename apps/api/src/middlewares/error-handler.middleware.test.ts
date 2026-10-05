@@ -4,8 +4,33 @@ import { z } from "zod";
 
 import { errorHandlerMiddleware } from "./error-handler.middleware.js";
 import { LedgerError } from "../modules/ledger/ledger.errors.js";
+import { PurchaseError } from "../modules/subscriptions/subscriptions.errors.js";
 
 describe("errorHandlerMiddleware", () => {
+  it.each(["PURCHASE_QUOTE_STALE", "PURCHASE_TRANSITION_DENIED"] as const)(
+    "preserves safe %s domain conflicts",
+    (code) => {
+      const httpRequest = {
+        log: { error: vi.fn(), warn: vi.fn() },
+        path: "/subscriptions/purchases",
+        requestId: "purchase-conflict",
+      } as unknown as Request;
+      const json = vi.fn();
+      const status = vi.fn();
+      const response = { status, json } as unknown as Response;
+      status.mockReturnValue(response);
+      errorHandlerMiddleware(
+        new PurchaseError(code),
+        httpRequest,
+        response,
+        vi.fn(),
+      );
+      expect(status).toHaveBeenCalledWith(409);
+      expect(json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: false, code, statusCode: 409 }),
+      );
+    },
+  );
   it("projects safe diagnostics for raw unexpected failures and hidden private causes", () => {
     const sentinel = "sentinel-private-unexpected-error";
     const requestLog = { error: vi.fn(), warn: vi.fn() };

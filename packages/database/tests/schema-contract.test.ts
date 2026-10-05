@@ -32,6 +32,13 @@ describe("authentication and financial foundation Prisma schema", () => {
       "LedgerPosting",
       "ReservationAllocation",
       "AuditRecord",
+      "Package",
+      "ReferralSettings",
+      "ConfigurationChange",
+      "PurchaseQuote",
+      "Purchase",
+      "Subscription",
+      "ReferralDecision",
     ]);
     expect(enums).toEqual([
       "UserRole",

@@ -29,6 +29,7 @@ type AppDependencies = Readonly<{
   database: DatabaseClient;
   logger: Logger;
   emailDelivery?: EmailDelivery;
+  financialClock?: () => Date;
 }>;
 
 const buildCorsOriginValidator = (): CorsOptions["origin"] => {
@@ -48,6 +49,7 @@ export const createApp = ({
   database,
   logger,
   emailDelivery = createEmailDelivery(),
+  financialClock = () => new Date(),
 }: AppDependencies): Application => {
   const app = express();
 
@@ -74,7 +76,7 @@ export const createApp = ({
   app.use(
     appConfig.apiPrefix,
     apiRateLimitMiddleware,
-    createApiRouter(database, new EmailService(emailDelivery)),
+    createApiRouter(database, new EmailService(emailDelivery), financialClock),
   );
 
   // Final middleware

@@ -4,27 +4,32 @@ import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 import { Info, Share2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { FINANCIAL_RULES } from "../../constants/branding";
-import { useEmployeeState } from "../../context/employee-state.context";
+import { useTeamSummary } from "../../hooks/referrals.hooks";
+import { FinancialFeedback } from "../common/financial-feedback";
 import { Button } from "../common/button";
 import { CopyAction } from "../common/copy-action";
 import { MoneyAmount } from "../common/money-amount";
 
 export function TeamStats() {
   const scheduleTimeout = useManagedTimeout();
-  const { user, teamMembers, balance } = useEmployeeState();
+  const query = useTeamSummary();
   const [shareFeedback, setShareFeedback] = useState<string | null>(null);
 
-  const referralCode = user.invitationCode;
-  const referralUrl = `https://oscar.app/employee/auth/register?ref=${referralCode}`;
+  const referralCode = query.data?.root.referralCode ?? "";
+  const referralUrl = `${typeof window === "undefined" ? "" : window.location.origin}/employee/auth/register?ref=${referralCode}`;
 
-  const totalTeamMembers = teamMembers.length;
-  const activeTeamMembers = teamMembers.filter(
-    (m) => m.status === "active",
-  ).length;
-  const totalCommissionEarned = balance.breakdown.referralCommissions;
+  const totalTeamMembers = query.data?.levelCounts.reduce(
+    (sum, count) => sum + count.members,
+    0,
+  );
+  const activeTeamMembers = query.data?.levelCounts.reduce(
+    (sum, count) => sum + count.paidMembers,
+    0,
+  );
+  const totalCommissionEarned = query.data?.ownEarned.total;
 
   const handleShare = useCallback(async () => {
+    if (!query.allowed || !referralCode) return;
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({
@@ -47,7 +52,16 @@ export function TeamStats() {
         // fallback
       }
     }
-  }, [referralCode, referralUrl, scheduleTimeout]);
+  }, [query.allowed, referralCode, referralUrl, scheduleTimeout]);
+
+  if (!query.data || totalCommissionEarned === undefined)
+    return (
+      <FinancialFeedback
+        pending={query.isPending}
+        error={query.error}
+        retry={query.refetch}
+      />
+    );
 
   return (
     <div className="space-y-4">
@@ -164,16 +178,16 @@ export function TeamStats() {
         </div>
 
         <div className="grid grid-cols-5 gap-1.5 text-center text-xs">
-          {FINANCIAL_RULES.referralRates.map((item) => (
+          {query.data.currentRates.ratesBps.map((rate, index) => (
             <div
-              key={item.level}
+              key={index}
               className="space-y-1 rounded border border-slate-200/80 bg-slate-50 p-2.5"
             >
               <span className="block text-[11px] font-medium text-slate-500">
-                مستوى {item.level}
+                مستوى {index + 1}
               </span>
               <span className="block text-sm font-bold text-emerald-800">
-                {item.percentage}
+                {rate / 100}%
               </span>
             </div>
           ))}
@@ -191,19 +205,14 @@ export function TeamStats() {
           </p>
           <ul className="list-inside list-disc space-y-1 pr-1 text-slate-600">
             <li>
-              شراء عضو في المستوى الأول (L1) باقة بقيمة 100 USDT يمنحك عمولة
-              بنسبة 12% ={" "}
-              <span className="font-bold text-slate-900">12.00 USDT</span>.
+              تُحفظ نسبة كل حدث وقت الشراء. تُحسب الترقية على فرق السعر المحفوظ
+              دون تخفيض سعر الشراء الكامل.
             </li>
             <li>
-              ترقية عضو في المستوى الأول (L1) بتكلفة صافية 540 USDT تمنحك عمولة
-              بنسبة 12% ={" "}
-              <span className="font-bold text-slate-900">64.80 USDT</span>.
+              يشترط استحقاق المنصب المدفوع وقت الحدث. لا تُستعاد العمولات
+              المتخطاة لاحقاً.
             </li>
-            <li>
-              تحتسب العمولات فقط من شراء الباقات وتجديدها وترقيتها، ولا تحتسب من
-              الإيداعات أو مكافآت المهام.
-            </li>
+            <li>لا تُحسب العمولات من الإيداعات أو مكافآت المهام.</li>
           </ul>
         </div>
 

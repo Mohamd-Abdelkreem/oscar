@@ -85,7 +85,7 @@ export const loadSession = async (
   }
 };
 
-export const useSession = (pathname?: string) => {
+const useSessionQuery = (mode: "check" | "observe", pathname?: string) => {
   const scope = useSessionScope();
   const client = useQueryClient();
   useEffect(
@@ -104,6 +104,7 @@ export const useSession = (pathname?: string) => {
     queryFn: ({ signal }) => loadSession(signal, scope),
     staleTime: 0,
     gcTime: 0,
+    refetchOnMount: mode === "check",
     // A superseded refresh must settle before the latest check restores again.
     // Unknown cookie outcomes remain quarantined by coordinationAvailable.
     retry: (attempt, failure) =>
@@ -114,6 +115,10 @@ export const useSession = (pathname?: string) => {
     retryDelay: 0,
   });
 };
+
+export const useSession = (pathname?: string) =>
+  useSessionQuery("check", pathname);
+export const useCurrentSession = () => useSessionQuery("observe");
 
 // A persistent layout cannot treat a cached identity as new route permission.
 export const useRouteSession = (pathname: string) => {

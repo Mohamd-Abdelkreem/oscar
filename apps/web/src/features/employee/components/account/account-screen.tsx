@@ -14,15 +14,23 @@ import {
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
-import { useLogout, useSession } from "@/features/auth/hooks/auth.hooks";
+import { useLogout, useCurrentSession } from "@/features/auth/hooks/auth.hooks";
 import { getApiError } from "@/services/api/api-client";
 import { AccountNavigationRow } from "@/features/employee/components/account/account-navigation-row";
 import { ChangePasswordModal } from "@/features/employee/components/account/change-password-modal";
 import { Button } from "@/features/employee/components/common/button";
 import { PageHeader } from "@/features/employee/components/navigation/page-header";
 
+import { useMembership } from "../../hooks/packages.hooks";
+import { useWallet } from "../../hooks/wallet.hooks";
+import { MoneyAmount } from "../common/money-amount";
+import { FinancialFeedback } from "../common/financial-feedback";
+import { SavedSubscriptionDetails } from "../packages/saved-subscription-details";
+
 export function EmployeeAccountScreen() {
-  const session = useSession();
+  const session = useCurrentSession();
+  const membership = useMembership();
+  const wallet = useWallet();
   const logout = useLogout();
   const account = session.data?.user;
   const checking = session.isPending || session.isFetching;
@@ -106,7 +114,11 @@ export function EmployeeAccountScreen() {
                 المنصب المفعل
               </span>
               <span className="block font-bold text-slate-900">
-                غير متاح حالياً
+                {membership.data
+                  ? membership.data.effective === "PAID"
+                    ? membership.data.subscription?.terms.code
+                    : "حساب مجاني / منتهٍ"
+                  : "غير متاح حالياً"}
               </span>
             </div>
 
@@ -115,10 +127,27 @@ export function EmployeeAccountScreen() {
                 الرصيد المتاح
               </span>
               <span className="block font-bold text-slate-900">
-                غير متاح حالياً
+                {wallet.data ? (
+                  <MoneyAmount
+                    amount={wallet.data.purchaseEligibleAmount}
+                    size="sm"
+                  />
+                ) : (
+                  "غير متاح حالياً"
+                )}
               </span>
             </div>
           </div>
+          {membership.data?.subscription && (
+            <SavedSubscriptionDetails
+              subscription={membership.data.subscription}
+            />
+          )}
+          <FinancialFeedback
+            pending={membership.isPending || wallet.isPending}
+            error={membership.error ?? wallet.error}
+            retry={() => Promise.all([membership.refetch(), wallet.refetch()])}
+          />
         </div>
 
         {/* Security & Address Section */}

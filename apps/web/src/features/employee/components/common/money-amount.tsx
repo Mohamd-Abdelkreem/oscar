@@ -1,6 +1,7 @@
+import { formatMoney } from "../../utils/money-display";
 
 interface MoneyAmountProps {
-  readonly amount: number;
+  readonly amount: number | string;
   readonly currency?: string | undefined;
   readonly showSign?: boolean | undefined;
   readonly size?: "sm" | "md" | "lg" | "xl" | undefined;
@@ -16,7 +17,10 @@ export function MoneyAmount({
   color = "neutral",
   className = "",
 }: MoneyAmountProps) {
-  const isPositive = amount > 0;
+  const isPositive =
+    typeof amount === "number"
+      ? amount > 0
+      : amount !== "0" && !amount.startsWith("-");
   const sign = showSign && isPositive ? "+" : "";
 
   const sizeClasses = {
@@ -33,10 +37,13 @@ export function MoneyAmount({
     inherit: "",
   }[color];
 
-  const formattedAmount = `${sign}${amount.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  const formattedAmount =
+    typeof amount === "string"
+      ? formatMoney(amount, showSign)
+      : `${sign}${amount.toLocaleString("en-US", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })}`;
 
   return (
     <span
@@ -45,7 +52,9 @@ export function MoneyAmount({
       <bdi dir="ltr" className="font-semibold tracking-tight">
         {formattedAmount}
       </bdi>
-      <span className="text-[0.8em] font-medium text-slate-500">{currency}</span>
+      <span className="text-[0.8em] font-medium text-slate-500">
+        {currency}
+      </span>
     </span>
   );
 }

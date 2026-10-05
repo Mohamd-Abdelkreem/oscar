@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   basisPointsSchema,
+  aggregateUsdtAmountSchema,
+  signedAggregateUsdtDeltaSchema,
   businessDateSchema,
   countedHoursToMilliseconds,
   financialInstantSchema,
@@ -17,6 +19,42 @@ import {
 } from "./financial.schema.ts";
 
 const maximum = "9223372036854.775807";
+describe("nonspendable aggregate money", () => {
+  it("preserves totals above int64 and the 38-digit micro-unit boundary", () => {
+    for (const amount of [
+      "18446744073709.551614",
+      "99999999999999999999999999999999.999999",
+    ]) {
+      expect(aggregateUsdtAmountSchema.parse(amount)).toBe(amount);
+      expect(signedAggregateUsdtDeltaSchema.parse(`-${amount}`)).toBe(
+        `-${amount}`,
+      );
+      expect(usdtAmountSchema.safeParse(amount).success).toBe(false);
+      expect(
+        sourceAllocationSchema.safeParse({
+          referral: amount,
+          nonReferral: "0",
+          gross: amount,
+        }).success,
+      ).toBe(false);
+    }
+  });
+  it.each([
+    "100000000000000000000000000000000",
+    "-0",
+    "1.0",
+    "01",
+    "1e20",
+    "0.0000001",
+    1,
+    null,
+  ])("rejects invalid aggregate %s", (amount) => {
+    expect(aggregateUsdtAmountSchema.safeParse(amount).success).toBe(false);
+    expect(signedAggregateUsdtDeltaSchema.safeParse(amount).success).toBe(
+      false,
+    );
+  });
+});
 const wallet = {
   availableReferral: "1",
   reservedReferral: "0.000001",

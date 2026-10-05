@@ -25,11 +25,15 @@ export async function createIdentityFixture(
     status?: UserStatus;
     passwordHash?: string;
     sponsorUserId?: string;
+    now?: Date;
   }> = {},
 ) {
   const role = options.role ?? "USER";
   const status = options.status ?? "ACTIVE";
-  const verifiedAt = status === "PENDING_VERIFICATION" ? null : new Date();
+  const now = options.now ?? new Date();
+  if (!Number.isFinite(now.getTime()))
+    throw new RangeError("Invalid identity fixture clock.");
+  const verifiedAt = status === "PENDING_VERIFICATION" ? null : now;
   return database.$transaction(async (transaction) => {
     const user = await transaction.user.create({
       data: {
@@ -52,7 +56,8 @@ export async function createIdentityFixture(
       data: {
         userId: user.id,
         rememberMe: false,
-        expiresAt: new Date(Date.now() + 86_400_000),
+        createdAt: now,
+        expiresAt: new Date(now.getTime() + 86_400_000),
       },
     });
     return { user, wallet, session };

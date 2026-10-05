@@ -20,7 +20,7 @@ type ControlInput = ControlRequest extends infer Request
     ? Omit<Request, "id">
     : never
   : never;
-type Scenario = {
+export type Scenario = {
   command: (input: ControlInput) => Promise<ControlReply["data"]>;
 };
 const apiDirectory = fileURLToPath(new URL("../../../api/", import.meta.url));
@@ -104,7 +104,7 @@ export const test = base.extend<
           /\bP03_(?:BUILD_FAILED|WEB_START_FAILED|API_START_FAILED|API_FAILED|IPC_TIMEOUT|API_EXITED)\b/u,
         )?.[0];
         const location = error.stack?.match(
-          /(?:identity-and-admin-access|auth-account|ui-preservation)\.spec\.ts:(\d+):(\d+)/u,
+          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals)\.spec\.ts:(\d+):(\d+)/u,
         );
         error.message =
           infrastructureCode ??
@@ -127,13 +127,15 @@ export const test = base.extend<
     { scope: "worker" },
   ],
   scenario: [
-    async ({ builtWeb: _builtWeb }, runFixture) => {
+    async ({ builtWeb: _builtWeb, context }, runFixture) => {
       const { child, scenario } = await startApi();
       let web: ChildProcess | undefined;
       try {
         web = await startWeb();
         await runFixture(scenario);
       } finally {
+        // Stop browser prefetch and in-flight reads before their owned services.
+        await context.close();
         if (web !== undefined) await stopOwnedProcess(web);
         try {
           await scenario.command({ command: "stop" });

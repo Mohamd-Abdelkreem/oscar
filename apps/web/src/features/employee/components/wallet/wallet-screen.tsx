@@ -6,48 +6,43 @@ import { PageHeader } from "@/features/employee/components/navigation/page-heade
 import { BalanceSummary } from "@/features/employee/components/wallet/balance-summary";
 import { TransactionDetailSheet } from "@/features/employee/components/wallet/transaction-detail-sheet";
 import { TransactionRow } from "@/features/employee/components/wallet/transaction-row";
-import { useEmployeeState } from "@/features/employee/context/employee-state.context";
-import type { LedgerTransaction } from "@/features/employee/types/employee.types";
+import { useWalletLedger, useWalletDetail } from "../../hooks/wallet.hooks";
+import {
+  FinancialFeedback,
+  FinancialPages,
+} from "../common/financial-feedback";
+import type { LedgerFilter } from "@template/contracts";
 
 export function EmployeeWalletScreen() {
-  const { transactions } = useEmployeeState();
   const [filterType, setFilterType] = useState<string>("all");
-  const [selectedTx, setSelectedTx] = useState<LedgerTransaction | null>(null);
+  const [selectedTx, setSelectedTx] = useState<{
+    id: string;
+    identity: string;
+  } | null>(null);
 
   const filterTabs = [
     { id: "all", label: "الكل" },
     { id: "deposit", label: "الإيداعات" },
-    { id: "withdrawal", label: "السحوبات" },
+    { id: "withdrawal", label: "حجوزات السحب" },
     { id: "task_reward", label: "مكافآت المهام" },
     { id: "referral_commission", label: "عمولات الفريق" },
-    { id: "other", label: "باقات وتسويات" },
+    { id: "other", label: "شراء الباقات" },
   ] as const;
 
-  const filteredTransactions = transactions.filter((tx) => {
-    if (filterType === "all") return true;
-    if (filterType === "deposit") return tx.type === "deposit";
-    if (filterType === "withdrawal") {
-      return (
-        tx.type === "withdrawal_reservation" ||
-        tx.type === "withdrawal_completion" ||
-        tx.type === "withdrawal_reversal"
-      );
-    }
-    if (filterType === "task_reward") {
-      return tx.type === "task_reward" || tx.type === "task_reward_reversal";
-    }
-    if (filterType === "referral_commission") {
-      return tx.type === "referral_commission";
-    }
-    if (filterType === "other") {
-      return (
-        tx.type === "package_purchase" ||
-        tx.type === "package_upgrade" ||
-        tx.type === "admin_adjustment"
-      );
-    }
-    return true;
-  });
+  const origins: Record<string, LedgerFilter["origin"]> = {
+    deposit: "DEPOSIT",
+    withdrawal: "WITHDRAWAL_RESERVATION",
+    task_reward: "TASK_REWARD",
+    referral_commission: "REFERRAL_COMMISSION",
+    other: "PACKAGE_PURCHASE",
+  };
+  const origin = origins[filterType];
+  const ledger = useWalletLedger(origin ? { origin } : {});
+  const identity = JSON.stringify([ledger.scope, filterType, ledger.page]);
+  const selectedId =
+    selectedTx?.identity === identity && ledger.allowed ? selectedTx.id : null;
+  const detail = useWalletDetail(selectedId);
+  const filteredTransactions = ledger.data?.items ?? [];
 
   return (
     <div className="flex flex-1 flex-col">
@@ -70,7 +65,7 @@ export function EmployeeWalletScreen() {
               <span>كشف الحساب والعمليات المالية</span>
             </h2>
             <span className="text-xs text-slate-400">
-              {filteredTransactions.length} عملية
+              {ledger.data?.pagination.total ?? "—"} عملية
             </span>
           </div>
 
@@ -95,7 +90,12 @@ export function EmployeeWalletScreen() {
           </div>
 
           {/* Transaction List */}
-          {filteredTransactions.length === 0 ? (
+          <FinancialFeedback
+            pending={ledger.isPending}
+            error={ledger.error}
+            retry={ledger.refetch}
+          />
+          {ledger.data && filteredTransactions.length === 0 ? (
             <div className="py-8 text-center text-sm text-slate-500">
               لا توجد عمليات مسجلة تحت هذا التصنيف.
             </div>
@@ -103,20 +103,34 @@ export function EmployeeWalletScreen() {
             <div className="divide-y divide-slate-100 overflow-hidden rounded-md border border-slate-200">
               {filteredTransactions.map((tx) => (
                 <TransactionRow
-                  key={tx.id}
+                  key={tx.operationId}
                   transaction={tx}
                   onClick={(item) => {
-                    setSelectedTx(item);
+                    setSelectedTx({ id: item.operationId, identity });
                   }}
                 />
               ))}
             </div>
           )}
+          {ledger.data && (
+            <FinancialPages
+              page={ledger.page}
+              pages={ledger.data.pagination.totalPages}
+              setPage={ledger.setPage}
+            />
+          )}
+          {selectedId && (
+            <FinancialFeedback
+              pending={detail.isPending}
+              error={detail.error}
+              retry={detail.refetch}
+            />
+          )}
         </div>
       </div>
 
       <TransactionDetailSheet
-        transaction={selectedTx}
+        transaction={selectedId ? (detail.data ?? null) : null}
         onClose={() => {
           setSelectedTx(null);
         }}

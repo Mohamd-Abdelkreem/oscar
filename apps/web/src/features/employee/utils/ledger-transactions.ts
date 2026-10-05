@@ -1,6 +1,5 @@
 import type {
   LedgerTransaction,
-  PackageTier,
   WithdrawalRequest,
 } from "../types/employee.types";
 import { formatLocalTime } from "./financial-calculations";
@@ -22,29 +21,6 @@ export function createTaskRewardTransaction(
       now.getFullYear().toString() +
       (now.getMonth() + 1).toString().padStart(2, "0") +
       now.getDate().toString().padStart(2, "0"),
-  };
-}
-
-export function createPackageUpgradeTransaction(
-  current: PackageTier,
-  target: PackageTier,
-  cost: number,
-  now: Date,
-): LedgerTransaction {
-  return {
-    id: "tx_" + now.getTime().toString(),
-    type: "package_upgrade",
-    title: "ترقية المنصب من " + current.name + " إلى " + target.name,
-    amount: -cost,
-    currency: "USDT",
-    date: "الآن",
-    status: "completed",
-    reference: "POS-UPG-" + now.getTime().toString().slice(-6),
-    details: {
-      "سعر المنصب الجديد": target.price.toFixed(2) + " USDT",
-      "خصم المنصب الحالي": current.price.toFixed(2) + " USDT",
-      "صافي المدفوع": cost.toFixed(2) + " USDT",
-    },
   };
 }
 

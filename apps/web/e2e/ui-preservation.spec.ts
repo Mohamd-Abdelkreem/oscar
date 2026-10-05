@@ -2,6 +2,15 @@ import { mkdir, readFile } from "node:fs/promises";
 import type { Page } from "@playwright/test";
 import { test, expect } from "./support/fixtures";
 import {
+  employeeSignIn,
+  reviewPurchase,
+  reviewConfiguration,
+  confirmPurchase,
+  financeState,
+  editFutureTerms,
+  blockWithdrawals,
+} from "./support/p04-finance";
+import {
   managementActor,
   managementSignIn,
   reviewInvitation,
@@ -26,13 +35,90 @@ const observeUi = (page: Page) => {
   };
 };
 
-const captureSurface = async (page: Page, name: string, scope?: string) => {
+const waitForFinancialContent = async (page: Page) => {
+  const route = new URL(page.url()).pathname;
+  if (route === "/employee/packages") {
+    await expect(page.getByText(/شروط الكتالوج الحالية/u)).toHaveCount(5);
+    await expect(page.getByLabel("شروط الاشتراك المحفوظة")).toBeVisible();
+  } else if (route === "/employee/wallet") {
+    await expect(page.getByText(/المحجوز الإحالي:/u)).toContainText("28.00");
+    await expect(page.getByText(/المحجوز غير الإحالي:/u)).toContainText(
+      "1,000.00",
+    );
+    await expect(
+      page.getByRole("button", { name: /حجز رصيد/u }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/السحب محظور حالياً على الحساب/u),
+    ).toBeVisible();
+  } else if (route === "/employee/team") {
+    await expect(
+      page.getByRole("heading", { name: "رابط وكود الدعوة الخاص بك" }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByText("كود الدعوة:", { exact: true })
+        .locator("..")
+        .locator("bdi"),
+    ).not.toBeEmpty();
+  } else if (route === "/employee/account") {
+    await expect(page.getByLabel("شروط الاشتراك المحفوظة")).toBeVisible();
+    await expect(page.getByText("112.00", { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "P04 buyer" }),
+    ).toBeVisible();
+  } else if (route === "/admin/packages") {
+    await expect(page.locator("tbody tr")).toHaveCount(5);
+    await expect(page.locator("tbody tr").first()).toContainText("61.000001");
+  } else if (route === "/admin/finance") {
+    await expect(page.locator("tbody tr").first()).toBeVisible();
+    await expect(page.getByText("28 عملية", { exact: true })).toBeVisible();
+  } else if (route === "/admin/referrals") {
+    await expect(
+      page
+        .getByRole("button")
+        .filter({ has: page.getByText("P04 buyer", { exact: true }) }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("الحساب المختار: فريق P04 ancestor 0", { exact: true }),
+    ).toBeVisible();
+  } else {
+    throw new Error("P04_UNEXPECTED_FINANCIAL_SURFACE");
+  }
+  await expect(
+    page.getByText("جارٍ تحميل البيانات المالية…", { exact: true }),
+  ).toHaveCount(0);
+  await expect(page.locator("main [role=alert]")).toHaveCount(0);
+};
+
+const captureSurface = async (
+  page: Page,
+  name: string,
+  scope?: string,
+  ready?: () => Promise<void>,
+) => {
   await mkdir("../../output/playwright/p03", { recursive: true });
   for (const width of [320, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 850 });
+    await ready?.();
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
+      ),
+    ).toBe(true);
+    expect(
+      await page
+        .getByRole("dialog")
+        .evaluateAll((dialogs) =>
+          dialogs.every((dialog) => dialog.scrollWidth <= dialog.clientWidth),
+        ),
+    ).toBe(true);
+    expect(
+      await page.locator('[role="dialog"] bdi').evaluateAll((values) =>
+        values.every((value) => {
+          const box = value.getBoundingClientRect();
+          return box.left >= 0 && box.right <= innerWidth;
+        }),
       ),
     ).toBe(true);
     if (scope !== undefined) {
@@ -84,6 +170,135 @@ const captureSurface = async (page: Page, name: string, scope?: string) => {
     });
   }
 };
+
+test("P04 loading feedback remains distinct from populated wallet acceptance", async ({
+  page,
+  scenario,
+}) => {
+  await scenario.command({ command: "p04-fixtures", profile: "wallet" });
+  await employeeSignIn(page);
+  let release!: () => void;
+  const held = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route("**/wallet/me", async (route) => {
+    await held;
+    await route.continue();
+  });
+  try {
+    await page.setViewportSize({ width: 320, height: 850 });
+    await page.goto("/employee/wallet");
+    await expect(
+      page.getByText("جارٍ تحميل البيانات المالية…", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(page.getByText(/المحجوز الإحالي:/u)).toHaveCount(0);
+    await mkdir("../../output/playwright/p03", { recursive: true });
+    await page.screenshot({
+      path: "../../output/playwright/p03/p03-final-p04-wallet-loading-320.png",
+      mask: [
+        page.locator("input"),
+        page.locator("bdi"),
+        page.locator("[title]"),
+      ],
+    });
+  } finally {
+    release();
+  }
+  await expect(page.getByText(/المحجوز الإحالي:/u)).toContainText("28.00");
+  await expect(
+    page.getByText("جارٍ تحميل البيانات المالية…", { exact: true }),
+  ).toHaveCount(0);
+});
+
+test("P04 existing financial surfaces retain narrow layouts, typography and dialog focus", async ({
+  page,
+  request,
+  scenario,
+}) => {
+  await scenario.command({ command: "p04-fixtures", profile: "wallet" });
+  const checkDiagnostics = observeUi(page);
+  await employeeSignIn(page);
+  await reviewPurchase(page);
+  await confirmPurchase(page);
+  await expect(page.getByRole("dialog")).toContainText(
+    "تم تفعيل المنصب وتسجيل الشراء",
+  );
+  await editFutureTerms(request, "61.000001");
+  await blockWithdrawals(request, (await financeState(scenario)).employeeId);
+  const ready = () => waitForFinancialContent(page);
+  for (const route of ["packages", "wallet", "team", "account"]) {
+    await page.goto(`/employee/${route}`);
+    await expect(page.locator("main")).toBeVisible();
+    await captureSurface(
+      page,
+      `p04-employee-${route}`,
+      ".employee-scope",
+      ready,
+    );
+  }
+  await page.goto("/employee/wallet");
+  const walletDetail = page.getByRole("button", { name: /حجز رصيد/u }).first();
+  await walletDetail.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(
+    await page
+      .getByRole("dialog")
+      .evaluate((element) => element.contains(document.activeElement)),
+  ).toBe(true);
+  await expect(page.getByRole("dialog")).toContainText("المحجوز");
+  await captureSurface(page, "p04-wallet-detail", undefined, ready);
+  await page.keyboard.press("Escape");
+  await expect(walletDetail).toBeFocused();
+  await reviewPurchase(page, "S2");
+  const sheet = page.getByRole("dialog");
+  await expect(sheet).toBeVisible();
+  expect(
+    await sheet.evaluate((element) => element.contains(document.activeElement)),
+  ).toBe(true);
+  await captureSurface(page, "p04-purchase-review", undefined, ready);
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page.locator("#upgrade-btn-S2")).toBeFocused();
+  await managementSignIn(page);
+  for (const route of ["packages", "finance", "referrals"]) {
+    await page.goto(`/admin/${route}`);
+    await expect(page.locator("main")).toBeVisible();
+    if (route === "referrals") {
+      await page.getByLabel("بحث عن الحساب الجذر").fill("P04 ancestor 0");
+      await page
+        .getByRole("combobox", { name: "اختر عضو لحساب فريقه" })
+        .click();
+      await page.getByRole("option", { name: /P04 ancestor 0/u }).click();
+    }
+    await captureSurface(page, `p04-admin-${route}`, ".admin-scope", ready);
+  }
+  await page.goto("/admin/finance");
+  await page
+    .getByRole("button", { name: "تفاصيل", exact: true })
+    .first()
+    .click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog")).toContainText("المبلغ الصافي:");
+  await captureSurface(page, "p04-finance-detail", undefined, ready);
+  await page.keyboard.press("Escape");
+  await reviewConfiguration(page, "61");
+  const dialog = page.getByRole("dialog");
+  expect(
+    await dialog.evaluate((element) =>
+      element.contains(document.activeElement),
+    ),
+  ).toBe(true);
+  await captureSurface(page, "p04-configuration-review", undefined, ready);
+  await page.keyboard.press("Tab");
+  expect(
+    await dialog.evaluate((element) =>
+      element.contains(document.activeElement),
+    ),
+  ).toBe(true);
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  checkDiagnostics();
+});
 
 test("US2-06 P03-final all public authentication peers preserve normal narrow layouts and credential privacy", async ({
   page,

@@ -13,6 +13,7 @@
     "node_modules",
     "dist",
     "coverage",
+    "src/testing/**",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",

@@ -5,7 +5,7 @@ const MAX_MICRO_UNITS = 9223372036854775807n;
 const MICRO_UNITS_PER_USDT = 1000000n;
 const CANONICAL_AMOUNT = /^(?:0|[1-9][0-9]*)(?:\.[0-9]{0,5}[1-9])?$/u;
 
-const canonicalAmountUnits = (amount: string): bigint => {
+export const canonicalAmountUnits = (amount: string): bigint => {
   const [integer = "", fraction = ""] = amount.split(".");
   return (
     BigInt(integer) * MICRO_UNITS_PER_USDT + BigInt(fraction.padEnd(6, "0"))
@@ -30,6 +30,21 @@ export const signedUsdtDeltaSchema = z.string().refine((delta) => {
   const magnitude = delta.slice(1);
   return magnitude !== "0" && validUnsignedAmount(magnitude);
 }, "Invalid signed USDT movement.");
+
+// Read totals may combine many wallets; these bounds never authorize spending.
+export const MAX_AGGREGATE_MICRO_UNITS = 10n ** 38n - 1n;
+const validAggregateAmount = (amount: string): boolean =>
+  amount.length <= 39 &&
+  CANONICAL_AMOUNT.test(amount) &&
+  canonicalAmountUnits(amount) <= MAX_AGGREGATE_MICRO_UNITS;
+export const aggregateUsdtAmountSchema = z
+  .string()
+  .refine(validAggregateAmount, "Invalid aggregate USDT amount.");
+export const signedAggregateUsdtDeltaSchema = z.string().refine((delta) => {
+  if (!delta.startsWith("-")) return validAggregateAmount(delta);
+  const magnitude = delta.slice(1);
+  return magnitude !== "0" && validAggregateAmount(magnitude);
+}, "Invalid signed aggregate USDT movement.");
 export const basisPointsSchema = z.number().int().min(0).max(10000);
 export const fundSourceSchema = z.enum(["NON_REFERRAL", "REFERRAL"]);
 export const businessDateSchema = z.iso
@@ -51,7 +66,8 @@ export const financialInstantSchema = z.iso
     "Unsupported instant precision or year.",
   )
   .refine(supportedUtcInstant, "Unsupported UTC instant.")
-  .transform((instant) => new Date(instant).toISOString());
+  .transform((instant) => new Date(instant).toISOString())
+  .pipe(z.iso.datetime());
 export const financialRequestKeySchema = z
   .string()
   .min(1)
@@ -221,6 +237,10 @@ export const financialOperationResultSchema = z
   );
 
 export type UsdtAmount = z.infer<typeof usdtAmountSchema>;
+export type AggregateUsdtAmount = z.infer<typeof aggregateUsdtAmountSchema>;
+export type SignedAggregateUsdtDelta = z.infer<
+  typeof signedAggregateUsdtDeltaSchema
+>;
 export type PositiveUsdtAmount = z.infer<typeof positiveUsdtAmountSchema>;
 export type SignedUsdtDelta = z.infer<typeof signedUsdtDeltaSchema>;
 export type BasisPoints = z.infer<typeof basisPointsSchema>;

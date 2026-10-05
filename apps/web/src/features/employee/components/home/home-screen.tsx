@@ -11,8 +11,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { ButtonLink } from "@/features/employee/components/common/button";
 import { MoneyAmount } from "@/features/employee/components/common/money-amount";
-import { TransactionDetailSheet } from "@/features/employee/components/wallet/transaction-detail-sheet";
-import { TransactionRow } from "@/features/employee/components/wallet/transaction-row";
+import { TransactionDetailSheet } from "@/features/employee/components/wallet/demo-transaction-detail-sheet";
+import { TransactionRow } from "@/features/employee/components/wallet/demo-transaction-row";
 import { useEmployeeState } from "@/features/employee/context/employee-state.context";
 import type { LedgerTransaction } from "@/features/employee/types/employee.types";
 

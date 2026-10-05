@@ -45,20 +45,27 @@ model User {
   withdrawalsBlocked         Boolean    @default(false) @map("withdrawals_blocked")
   accountVersion             Int        @default(0) @map("account_version")
 
-  refreshTokens        RefreshToken[]
-  wallet               Wallet?
-  financialOperations  FinancialOperation[]  @relation("FinancialActor")
-  financialAudits      AuditRecord[]         @relation("AuditActor")
-  sponsor              User?                 @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sponsoredUsers       User[]                @relation("Sponsor")
-  authSessions         AuthSession[]
-  adminSetupState      AdminSetupState?
-  issuedInvitations    AdminInvitation[]     @relation("InvitationIssuer")
-  acceptedInvitations  AdminInvitation[]     @relation("InvitationAcceptedUser")
-  revokedInvitations   AdminInvitation[]     @relation("InvitationRevokedBy")
-  identityActorAudits  IdentityAuditRecord[] @relation("IdentityActor")
-  identityTargetAudits IdentityAuditRecord[] @relation("IdentityTarget")
-  identityIssuerAudits IdentityAuditRecord[] @relation("IdentityIssuer")
+  refreshTokens           RefreshToken[]
+  wallet                  Wallet?
+  financialOperations     FinancialOperation[]  @relation("FinancialActor")
+  financialAudits         AuditRecord[]         @relation("AuditActor")
+  sponsor                 User?                 @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sponsoredUsers          User[]                @relation("Sponsor")
+  authSessions            AuthSession[]
+  adminSetupState         AdminSetupState?
+  issuedInvitations       AdminInvitation[]     @relation("InvitationIssuer")
+  acceptedInvitations     AdminInvitation[]     @relation("InvitationAcceptedUser")
+  revokedInvitations      AdminInvitation[]     @relation("InvitationRevokedBy")
+  identityActorAudits     IdentityAuditRecord[] @relation("IdentityActor")
+  identityTargetAudits    IdentityAuditRecord[] @relation("IdentityTarget")
+  identityIssuerAudits    IdentityAuditRecord[] @relation("IdentityIssuer")
+  updatedPackages         Package[]             @relation("PackageEditor")
+  updatedReferralSettings ReferralSettings[]
+  configurationChanges    ConfigurationChange[]
+  purchaseQuotes          PurchaseQuote[]
+  purchases               Purchase[]
+  subscriptions           Subscription[]
+  referralDecisions       ReferralDecision[]
 
   @@index([status, role], map: "users_status_role_idx")
   @@index([sponsorUserId], map: "users_sponsor_idx")
@@ -248,6 +255,8 @@ model FinancialOperation {
   releaseAllocation  ReservationAllocation? @relation("ReservationRelease")
   audit              AuditRecord?           @relation("OperationAudit")
   referencedByAudits AuditRecord[]          @relation("CorrectionReference")
+  packagePurchase    Purchase?
+  referralDecision   ReferralDecision?
 
   @@unique([id, walletId])
   @@unique([kind, businessNamespace, businessKey], map: "financial_operations_business_key")
@@ -324,4 +333,199 @@ model AuditRecord {
   referenceOperation FinancialOperation? @relation("CorrectionReference", fields: [referenceOperationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("financial_audit_records")
+}
+
+model Package {
+  code             String                @id @db.VarChar(2)
+  tierOrder        Int                   @unique @map("tier_order")
+  priceUnits       BigInt                @map("price_units")
+  dailyRewardUnits BigInt                @map("daily_reward_units")
+  countedWorkDates Int                   @map("counted_work_dates")
+  withdrawalFeeBps Int                   @map("withdrawal_fee_bps")
+  version          Int                   @default(1)
+  updatedAt        DateTime              @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId  String?               @map("updated_by_user_id") @db.Uuid
+  updatedBy        User?                 @relation("PackageEditor", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  quotes           PurchaseQuote[]
+  purchases        Purchase[]
+  subscriptions    Subscription[]
+  changes          ConfigurationChange[]
+
+  @@map("packages")
+}
+
+model ReferralSettings {
+  id              Int      @id @default(1)
+  version         Int      @default(1)
+  level1Bps       Int      @map("level_1_bps")
+  level2Bps       Int      @map("level_2_bps")
+  level3Bps       Int      @map("level_3_bps")
+  level4Bps       Int      @map("level_4_bps")
+  level5Bps       Int      @map("level_5_bps")
+  updatedAt       DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId String?  @map("updated_by_user_id") @db.Uuid
+  updatedBy       User?    @relation(fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("referral_settings")
+}
+
+model ConfigurationChange {
+  id               String   @id @default(uuid()) @db.Uuid
+  actorUserId      String   @map("actor_user_id") @db.Uuid
+  commandId        String   @map("command_id") @db.Uuid
+  targetKind       String   @map("target_kind") @db.VarChar(32)
+  packageCode      String?  @map("package_code") @db.VarChar(2)
+  intentHash       String   @map("intent_hash") @db.Char(64)
+  expectedVersion  Int      @map("expected_version")
+  committedVersion Int      @map("committed_version")
+  reason           String   @db.VarChar(500)
+  beforeSnapshot   Json     @map("before_snapshot")
+  afterSnapshot    Json     @map("after_snapshot")
+  occurredAt       DateTime @map("occurred_at") @db.Timestamptz(6)
+  actor            User     @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  package          Package? @relation(fields: [packageCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([actorUserId, commandId], map: "configuration_changes_actor_command_key")
+  @@index([targetKind, packageCode, occurredAt, id], map: "configuration_changes_target_time_idx")
+  @@map("configuration_changes")
+}
+
+model PurchaseQuote {
+  id                            String        @id @default(uuid()) @db.Uuid
+  buyerId                       String        @map("buyer_id") @db.Uuid
+  packageCode                   String        @map("package_code") @db.VarChar(2)
+  createdAt                     DateTime      @map("created_at") @db.Timestamptz(6)
+  expiresAt                     DateTime      @map("expires_at") @db.Timestamptz(6)
+  packageVersion                Int           @map("package_version")
+  referralSettingsVersion       Int           @map("referral_settings_version")
+  savedRatesBps                 Json          @map("saved_rates_bps")
+  expectedBuyerPurchaseSequence BigInt        @map("expected_buyer_purchase_sequence")
+  observedSubscriptionId        String?       @map("observed_subscription_id") @db.Uuid
+  action                        String        @db.VarChar(16)
+  acceptedTerms                 Json          @map("accepted_terms")
+  tierOrder                     Int           @map("tier_order")
+  priceUnits                    BigInt        @map("price_units")
+  dailyRewardUnits              BigInt        @map("daily_reward_units")
+  countedWorkDates              Int           @map("counted_work_dates")
+  withdrawalFeeBps              Int           @map("withdrawal_fee_bps")
+  availableReferralUnits        BigInt        @map("available_referral_units")
+  reservedReferralUnits         BigInt        @map("reserved_referral_units")
+  availableNonReferralUnits     BigInt        @map("available_non_referral_units")
+  reservedNonReferralUnits      BigInt        @map("reserved_non_referral_units")
+  fullDebitUnits                BigInt        @map("full_debit_units")
+  usableUnits                   BigInt        @map("usable_units")
+  topUpUnits                    BigInt        @map("top_up_units")
+  fundedReferralUnits           BigInt        @map("funded_referral_units")
+  fundedNonReferralUnits        BigInt        @map("funded_non_referral_units")
+  firstWorkDate                 DateTime      @map("first_work_date") @db.Date
+  finalWorkDate                 DateTime      @map("final_work_date") @db.Date
+  subscriptionExpiresAt         DateTime      @map("subscription_expires_at") @db.Timestamptz(6)
+  intentHash                    String        @map("intent_hash") @db.Char(64)
+  buyer                         User          @relation(fields: [buyerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  package                       Package       @relation(fields: [packageCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+  observedSubscription          Subscription? @relation("QuoteObservedSubscription", fields: [observedSubscriptionId, buyerId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  purchase                      Purchase?
+
+  @@unique([id, buyerId], map: "purchase_quotes_id_buyer_key")
+  @@index([buyerId, createdAt, id], map: "purchase_quotes_buyer_time_idx")
+  @@map("purchase_quotes")
+}
+
+model Purchase {
+  id                      String             @id @default(uuid()) @db.Uuid
+  quoteId                 String             @unique @map("quote_id") @db.Uuid
+  buyerId                 String             @map("buyer_id") @db.Uuid
+  buyerSequence           BigInt             @map("buyer_sequence")
+  action                  String             @db.VarChar(16)
+  packageCode             String             @map("package_code") @db.VarChar(2)
+  previousSubscriptionId  String?            @map("previous_subscription_id") @db.Uuid
+  debitOperationId        String             @unique @map("debit_operation_id") @db.Uuid
+  purchasedAt             DateTime           @map("purchased_at") @db.Timestamptz(6)
+  acceptedTerms           Json               @map("accepted_terms")
+  tierOrder               Int                @map("tier_order")
+  priceUnits              BigInt             @map("price_units")
+  dailyRewardUnits        BigInt             @map("daily_reward_units")
+  countedWorkDates        Int                @map("counted_work_dates")
+  withdrawalFeeBps        Int                @map("withdrawal_fee_bps")
+  packageVersion          Int                @map("package_version")
+  fullDebitUnits          BigInt             @map("full_debit_units")
+  sourceReferralUnits     BigInt             @map("source_referral_units")
+  sourceNonReferralUnits  BigInt             @map("source_non_referral_units")
+  commissionBaseUnits     BigInt             @map("commission_base_units")
+  referralSettingsVersion Int                @map("referral_settings_version")
+  savedRatesBps           Json               @map("saved_rates_bps")
+  buyer                   User               @relation(fields: [buyerId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  package                 Package            @relation(fields: [packageCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+  quote                   PurchaseQuote      @relation(fields: [quoteId, buyerId], references: [id, buyerId], onDelete: Restrict, onUpdate: Restrict)
+  previousSubscription    Subscription?      @relation("PurchasePreviousSubscription", fields: [previousSubscriptionId, buyerId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  debitOperation          FinancialOperation @relation(fields: [debitOperationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  subscription            Subscription?      @relation("SubscriptionPurchase")
+  replacedSubscriptions   Subscription[]     @relation("SubscriptionReplacement")
+  decisions               ReferralDecision[]
+
+  @@unique([buyerId, buyerSequence], map: "purchases_buyer_sequence_key")
+  @@unique([quoteId, buyerId], map: "purchases_quote_buyer_key")
+  @@unique([id, buyerId], map: "purchases_id_buyer_key")
+  @@index([buyerId, purchasedAt, id], map: "purchases_buyer_time_idx")
+  @@map("purchases")
+}
+
+model Subscription {
+  id                    String             @id @default(uuid()) @db.Uuid
+  ownerUserId           String             @map("owner_user_id") @db.Uuid
+  purchaseId            String             @unique @map("purchase_id") @db.Uuid
+  packageCode           String             @map("package_code") @db.VarChar(2)
+  acceptedTerms         Json               @map("accepted_terms")
+  tierOrder             Int                @map("tier_order")
+  priceUnits            BigInt             @map("price_units")
+  dailyRewardUnits      BigInt             @map("daily_reward_units")
+  countedWorkDates      Int                @map("counted_work_dates")
+  withdrawalFeeBps      Int                @map("withdrawal_fee_bps")
+  packageVersion        Int                @map("package_version")
+  activationAt          DateTime           @map("activation_at") @db.Timestamptz(6)
+  firstWorkDate         DateTime           @map("first_work_date") @db.Date
+  finalWorkDate         DateTime           @map("final_work_date") @db.Date
+  expiresAt             DateTime           @map("expires_at") @db.Timestamptz(6)
+  state                 String             @default("CURRENT") @db.VarChar(16)
+  replacedAt            DateTime?          @map("replaced_at") @db.Timestamptz(6)
+  replacementPurchaseId String?            @map("replacement_purchase_id") @db.Uuid
+  owner                 User               @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  package               Package            @relation(fields: [packageCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+  purchase              Purchase           @relation("SubscriptionPurchase", fields: [purchaseId, ownerUserId], references: [id, buyerId], onDelete: Restrict, onUpdate: Restrict)
+  replacementPurchase   Purchase?          @relation("SubscriptionReplacement", fields: [replacementPurchaseId, ownerUserId], references: [id, buyerId], onDelete: Restrict, onUpdate: Restrict)
+  observedByQuotes      PurchaseQuote[]    @relation("QuoteObservedSubscription")
+  previousForPurchases  Purchase[]         @relation("PurchasePreviousSubscription")
+  referralDecisions     ReferralDecision[]
+
+  @@unique([id, ownerUserId], map: "subscriptions_id_owner_key")
+  @@unique([purchaseId, ownerUserId], map: "subscriptions_purchase_owner_key")
+  @@index([ownerUserId, activationAt, id], map: "subscriptions_owner_activation_idx")
+  @@index([packageCode, state, expiresAt], map: "subscriptions_package_state_expiry_idx")
+  @@map("subscriptions")
+}
+
+model ReferralDecision {
+  id                      String              @id @default(uuid()) @db.Uuid
+  purchaseId              String              @map("purchase_id") @db.Uuid
+  recipientUserId         String              @map("recipient_user_id") @db.Uuid
+  level                   Int
+  decision                String              @db.VarChar(16)
+  skippedReason           String?             @map("skipped_reason") @db.VarChar(32)
+  zeroReason              String?             @map("zero_reason") @db.VarChar(32)
+  rateBps                 Int                 @map("rate_bps")
+  commissionBaseUnits     BigInt              @map("commission_base_units")
+  awardUnits              BigInt              @map("award_units")
+  recipientSubscriptionId String?             @map("recipient_subscription_id") @db.Uuid
+  eligibilitySnapshot     Json                @map("eligibility_snapshot")
+  creditOperationId       String?             @unique @map("credit_operation_id") @db.Uuid
+  occurredAt              DateTime            @map("occurred_at") @db.Timestamptz(6)
+  purchase                Purchase            @relation(fields: [purchaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  recipient               User                @relation(fields: [recipientUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  recipientSubscription   Subscription?       @relation(fields: [recipientSubscriptionId, recipientUserId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  creditOperation         FinancialOperation? @relation(fields: [creditOperationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([purchaseId, recipientUserId, level], map: "referral_decisions_award_key")
+  @@unique([purchaseId, level], map: "referral_decisions_purchase_level_key")
+  @@index([recipientUserId, occurredAt, id], map: "referral_decisions_recipient_time_idx")
+  @@map("referral_decisions")
 }

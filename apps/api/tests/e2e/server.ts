@@ -10,6 +10,7 @@ import {
   type StartedPostgreSqlContainer,
 } from "@testcontainers/postgresql";
 import type { DatabaseClient } from "@template/database";
+import type { P04FinanceScenario } from "./p04-finance.js";
 
 import {
   controlRequestSchema,
@@ -45,6 +46,8 @@ Object.assign(process.env, {
   MAIL_FROM_ADDRESS: "test@example.test",
   MAIL_REPLY_TO: "support@example.test",
   AUTH_JWT_SECRET: randomUUID() + randomUUID(),
+  // The finite financial clock journey stays inside a legitimately issued session lease.
+  AUTH_REFRESH_FAMILY_TTL_SECONDS: String(14 * 24 * 60 * 60),
   AUTH_REFRESH_JWT_SECRET: randomUUID() + randomUUID(),
   AUTH_VERIFICATION_JWT_SECRET: randomUUID() + randomUUID(),
   AUTH_RESET_JWT_SECRET: randomUUID() + randomUUID(),
@@ -53,6 +56,7 @@ Object.assign(process.env, {
 let container: StartedPostgreSqlContainer | undefined;
 let database: DatabaseClient | undefined;
 let server: Server | undefined;
+let financial: P04FinanceScenario | undefined;
 const lifecycle = { stopping: false };
 const stopRequested = () => lifecycle.stopping;
 let cleanupPromise: Promise<void> | undefined;
@@ -92,6 +96,30 @@ const control = async (
   if (request.command === "mail")
     return { url: mail.get(request.email) ?? null };
   if (database === undefined) throw new Error("HARNESS_NOT_READY");
+  const finance = financial;
+  if (finance === undefined) throw new Error("HARNESS_NOT_READY");
+  if (request.command === "p04-fixtures")
+    return finance.fixtures(request.profile);
+  if (request.command === "p04-state") return finance.state(request.email);
+  if (request.command === "p04-referral-purchase") {
+    await finance.referralPurchase(request.event);
+    return null;
+  }
+  if (request.command === "p04-release") {
+    await finance.release(request.email);
+    return null;
+  }
+  if (request.command === "p04-clock") {
+    finance.setClock(request.instant);
+    return null;
+  }
+  if (request.command === "p04-fund") {
+    await finance.fund(request.email, {
+      referral: request.referral,
+      nonReferral: request.nonReferral,
+    });
+    return null;
+  }
   if (request.command === "display-fixtures") {
     await database.user.updateMany({
       where: { email: { in: ["employee@p03.test", "admin@p03.test"] } },
@@ -281,6 +309,8 @@ const start = async () => {
     import("../../src/infrastructure/email/email-delivery.js"),
   ]);
   database = createDatabaseClient(databaseUrl);
+  const { P04FinanceScenario } = await import("./p04-finance.js");
+  financial = new P04FinanceScenario(database);
   const passwordHash = await generateHash("P03 test password only!");
   for (const [email, role, status, verified] of [
     ["employee@p03.test", "USER", "ACTIVE", true],
@@ -306,6 +336,7 @@ const start = async () => {
         status,
         emailVerifiedAt: verified ? new Date() : null,
         passwordHash,
+        ...(role === "USER" ? { wallet: { create: {} } } : {}),
       },
     });
   }
@@ -343,6 +374,7 @@ const start = async () => {
     database,
     logger: createLogger({ level: "silent", pretty: false }),
     emailDelivery,
+    financialClock: financial.clock,
   });
   await new Promise<void>((ready, reject) => {
     server = app.listen(4103, "127.0.0.1", (error) => {

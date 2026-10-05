@@ -1,6 +1,72 @@
 import { z } from "zod";
+import {
+  financialInstantSchema,
+  usdtAmountSchema,
+  walletComponentsSchema,
+} from "@template/contracts";
+
+export const p04StateSchema = z
+  .object({
+    employeeId: z.uuid(),
+    purchases: z.number().int().min(0),
+    subscriptions: z.number().int().min(0),
+    awards: z.number().int().min(0),
+    skipped: z.number().int().min(0),
+    operations: z.number().int().min(0),
+    postings: z.number().int().min(0),
+    configurationChanges: z.number().int().min(0),
+    wallet: walletComponentsSchema,
+    savedPrices: z.array(usdtAmountSchema).max(20),
+    savedCountedDates: z.array(z.number().int().positive()).max(20),
+    expiresAt: financialInstantSchema.nullable(),
+  })
+  .strict();
 
 export const controlRequestSchema = z.discriminatedUnion("command", [
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-referral-purchase"),
+      event: z.enum(["after-rate", "after-expiry"]),
+    })
+    .strict(),
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-release"),
+      email: z.email().max(320),
+    })
+    .strict(),
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-fixtures"),
+      profile: z.enum(["purchase", "wallet", "referrals"]),
+    })
+    .strict(),
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-state"),
+      email: z.email().max(320),
+    })
+    .strict(),
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-clock"),
+      instant: financialInstantSchema,
+    })
+    .strict(),
+  z
+    .object({
+      id: z.number().int().min(1),
+      command: z.literal("p04-fund"),
+      email: z.email().max(320),
+      referral: usdtAmountSchema,
+      nonReferral: usdtAmountSchema,
+    })
+    .strict(),
   z
     .object({
       id: z.number().int().min(1),
@@ -67,6 +133,10 @@ export const controlReplySchema = z
     status: z.enum(["ready", "ok", "failed", "stopped"]),
     data: z.union([
       z.null(),
+      p04StateSchema,
+      z
+        .object({ buyerId: z.uuid(), rootId: z.uuid(), otherId: z.uuid() })
+        .strict(),
       z
         .object({
           invitation: z

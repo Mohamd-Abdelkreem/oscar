@@ -80,6 +80,73 @@ export const errorEnvelopeSchema = z
   .strict();
 
 export type FieldError = z.infer<typeof fieldErrorSchema>;
+const queryInteger = (fallback: number, maximum: number) =>
+  z.preprocess(
+    (raw) =>
+      raw === undefined
+        ? fallback
+        : typeof raw === "string" && /^[1-9][0-9]*$/u.test(raw)
+          ? Number(raw)
+          : raw,
+    z.number().int().min(1).max(maximum),
+  );
+export const boundedPageQueryShape = {
+  page: queryInteger(1, Number.MAX_SAFE_INTEGER),
+  limit: queryInteger(25, 100),
+};
+export const safePageOffset = (query: {
+  page: number;
+  limit: number;
+}): boolean => Number.isSafeInteger((query.page - 1) * query.limit);
+export const boundedPageQuerySchema = z
+  .object(boundedPageQueryShape)
+  .strict()
+  .refine(safePageOffset, "Unsupported page offset.");
+export const boundedSearchSchema = z
+  .string()
+  .max(150)
+  .transform((query) => query.trim());
+export const financialPageSchema = <T extends z.ZodType>(row: T) =>
+  z
+    .object({ items: z.array(row).max(100), pagination: paginationMetaSchema })
+    .strict()
+    .refine(
+      (page) =>
+        page.pagination.limit <= 100 &&
+        Number.isSafeInteger(page.pagination.total) &&
+        Number.isSafeInteger(page.pagination.page) &&
+        safePageOffset(page.pagination) &&
+        page.items.length ===
+          Math.min(
+            page.pagination.limit,
+            Math.max(
+              0,
+              page.pagination.total -
+                (page.pagination.page - 1) * page.pagination.limit,
+            ),
+          ),
+      "Rows must agree with bounded pagination.",
+    );
+export const paginatedFinancialEnvelopeSchema = <T extends z.ZodType>(
+  page: T,
+) =>
+  successEnvelopeSchema
+    .safeExtend({ data: page, paginationMeta: paginationMetaSchema })
+    .refine((envelope) => {
+      const common = successEnvelopeSchema.safeParse(envelope);
+      if (!common.success) return false;
+      const parsed = z
+        .object({ pagination: paginationMetaSchema })
+        .safeParse(common.data.data);
+      const metadata = common.data.paginationMeta;
+      return (
+        parsed.success &&
+        metadata !== undefined &&
+        Object.entries(parsed.data.pagination).every(
+          ([key, field]) => Reflect.get(metadata, key) === field,
+        )
+      );
+    }, "Envelope pagination must agree with data.");
 export type PaginationMeta = z.infer<typeof paginationMetaSchema>;
 export type ErrorEnvelope = z.infer<typeof errorEnvelopeSchema>;
 export type SuccessEnvelope<T = unknown> = Omit<

@@ -784,14 +784,18 @@ test("US1-04 unavailable and malformed current checks block private content and 
   await signIn(page);
   await expect(privateNavigation(page)).toBeVisible();
   let unauthorizedRead = false;
+  let checkingDenied = false;
   page.on("request", (request) => {
     if (
+      checkingDenied &&
       request.url().startsWith(apiUrl) &&
       !/\/(?:auth\/refresh|users\/me)$/u.test(request.url())
     )
       unauthorizedRead = true;
   });
   for (const status of [503, 200]) {
+    checkingDenied = true;
+    unauthorizedRead = false;
     await page.route(`${apiUrl}/users/me`, (route) =>
       route.fulfill({
         status,
@@ -806,6 +810,7 @@ test("US1-04 unavailable and malformed current checks block private content and 
     await expect(page.locator("p[role=alert]")).toBeVisible();
     await expect(privateNavigation(page)).toHaveCount(0);
     expect(unauthorizedRead).toBe(false);
+    checkingDenied = false;
     await page.unroute(`${apiUrl}/users/me`);
     await page.getByRole("button", { name: "إعادة المحاولة" }).click();
     await expect(privateNavigation(page)).toBeVisible();
@@ -934,11 +939,14 @@ test("US3-01 dedicated entry two identities reload logout and responsive Cairo R
       other.getByRole("banner").getByText(secondAdminName, { exact: true }),
     ).toBeVisible();
     await other.setViewportSize({ width: 640, height: 850 });
-    expect(
-      await other
-        .getByRole("banner")
-        .evaluate((element) => element.scrollWidth <= element.clientWidth),
-    ).toBe(true);
+    // The sidebar margin transitions across the desktop breakpoint.
+    await expect
+      .poll(() =>
+        other
+          .getByRole("banner")
+          .evaluate((element) => element.scrollWidth <= element.clientWidth),
+      )
+      .toBe(true);
     await expect(
       other.getByRole("banner").getByText(secondAdminName, { exact: true }),
     ).toHaveAttribute("title", secondAdminName);

@@ -647,7 +647,7 @@ test("US5-01 account shows persisted current identity across reload logout and A
     ).toBeVisible();
     await expect(
       page.getByText("غير متاح حالياً", { exact: true }),
-    ).toHaveCount(3);
+    ).toHaveCount(1);
     await expect(
       page.getByRole("button", { name: "طلب تغيير العنوان" }),
     ).toBeDisabled();
@@ -663,7 +663,10 @@ test("US5-01 account shows persisted current identity across reload logout and A
   await expect(
     page.getByText("employee@p03.test", { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/USDT|Free|المجاني/u)).toHaveCount(0);
+  await expect(
+    page.getByText("حساب مجاني / منتهٍ", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("0.00", { exact: true })).toBeVisible();
   await mkdir("../../output/playwright/p03", { recursive: true });
   for (const width of [320, 390, 430, 1280]) {
     await page.setViewportSize({ width, height: 850 });
@@ -724,6 +727,8 @@ test("US5-01 account shows persisted current identity across reload logout and A
         "/api/v1/auth/logout",
         "/api/v1/auth/refresh",
         "/api/v1/users/me",
+        "/api/v1/subscriptions/me",
+        "/api/v1/wallet/me",
       ].includes(path),
     ),
   ).toBe(true);
