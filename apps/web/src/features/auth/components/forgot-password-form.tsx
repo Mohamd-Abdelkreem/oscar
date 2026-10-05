@@ -1,74 +1,74 @@
 "use client";
-
-import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  emailRequestBodySchema,
-  type EmailRequestBody,
-} from "@template/contracts";
-import Link from "next/link";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import type { z } from "zod";
-
+import Link from "next/link";
+import { emailRequestBodySchema } from "@template/contracts";
 import { FormField } from "@/components/forms/form-field";
-import { useForgotPassword } from "@/features/auth/hooks/auth.hooks";
-import { applyApiFormError } from "@/shared/forms/form";
-
-type EmailInput = z.input<typeof emailRequestBodySchema>;
+import { useForgotPassword } from "../hooks/auth.hooks";
+import { getApiError } from "@/services/api/api-client";
 
 export function ForgotPasswordForm() {
-  const forgotPassword = useForgotPassword();
-  const [message, setMessage] = useState<string | null>(null);
-  const {
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    getValues,
-    register,
-    setError,
-  } = useForm<EmailInput, unknown, EmailRequestBody>({
-    resolver: zodResolver(emailRequestBodySchema),
-    defaultValues: { email: "" },
-  });
-
-  const onSubmit = handleSubmit(async (values) => {
-    try {
-      const result = await forgotPassword.mutateAsync(values);
-      setMessage(result.data.message);
-    } catch (error) {
-      setMessage(applyApiFormError(error, { getValues, setError }));
+  const command = useForgotPassword();
+  const [email, setEmail] = useState("");
+  const [notice, setNotice] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const submit = async (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    if (command.isPending || command.uncertain) return;
+    const parsed = emailRequestBodySchema.safeParse({ email });
+    if (!parsed.success) {
+      setError("أدخل بريداً إلكترونياً صالحاً.");
+      return;
     }
-  });
-
+    setError(null);
+    try {
+      await command.mutateAsync(parsed.data);
+      if (command.isCurrentFlow())
+        setNotice(
+          "إذا كان الحساب مؤهلاً، ستصلك رسالة بالخطوات المطلوبة. قبول الطلب لا يؤكد وصولها.",
+        );
+    } catch (failure: unknown) {
+      const safe = getApiError(failure);
+      if (safe.category !== "obsolete") setError(safe.message);
+    }
+  };
   return (
     <form
       className="auth-form"
-      onSubmit={(event) => {
-        void onSubmit(event);
-      }}
       noValidate
+      onSubmit={(event) => {
+        void submit(event);
+      }}
     >
       <FormField
-        id="email"
-        label="Account email"
+        id="recovery-email"
+        label="البريد الإلكتروني للحساب"
         type="email"
         autoComplete="email"
-        error={errors.email?.message}
-        {...register("email")}
+        value={email}
+        onChange={(event) => {
+          setEmail(event.target.value);
+        }}
       />
-      {message === null ? null : (
+      {notice && (
         <p className="form-notice" role="status">
-          {message}
+          {notice}
+        </p>
+      )}
+      {error && (
+        <p className="form-notice form-notice--error" role="alert">
+          {error}
         </p>
       )}
       <button
         className="button button--full"
         type="submit"
-        disabled={isSubmitting}
+        disabled={command.isPending || command.uncertain}
       >
-        {isSubmitting ? "Sending…" : "Send recovery link"}
+        إرسال رابط إعادة التعيين
       </button>
       <p className="auth-form__footer">
-        <Link href="/auth/login">Back to sign in</Link>
+        <Link href="/employee/auth/login">تسجيل دخول الموظف</Link> ·{" "}
+        <Link href="/admin/auth/login">تسجيل دخول المسؤول</Link>
       </p>
     </form>
   );

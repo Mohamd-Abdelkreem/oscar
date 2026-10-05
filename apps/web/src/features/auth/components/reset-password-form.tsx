@@ -1,103 +1,89 @@
 "use client";
-
-import {
-  PASSWORD_MIN_LENGTH,
-  resetPasswordBodySchema,
-  type ResetPasswordBody,
-} from "@template/contracts";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
-import type { z } from "zod";
-
 import { FormField } from "@/components/forms/form-field";
-import {
-  useResetPassword,
-  useValidateResetToken,
-} from "@/features/auth/hooks/auth.hooks";
-import { applyApiFormError, useZodForm } from "@/shared/forms/form";
-
-type ResetInput = z.input<typeof resetPasswordBodySchema>;
+import { usePasswordReset } from "../hooks/password-recovery.hooks";
 
 export function ResetPasswordForm() {
-  const token = useSearchParams().get("token");
-  const tokenQuery = useValidateResetToken(token ?? "");
-  const resetPassword = useResetPassword();
-  const [formError, setFormError] = useState<string | null>(null);
-  const form = useZodForm<ResetInput, ResetPasswordBody>(
-    resetPasswordBodySchema,
-    { defaultValues: { newPassword: "", passwordConfirmation: "" } },
-  );
-  const {
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    register,
-  } = form;
-
-  const onSubmit = handleSubmit(async (body) => {
-    if (token === null) return;
-    setFormError(null);
-    try {
-      await resetPassword.mutateAsync({ token, body });
-    } catch (error) {
-      setFormError(applyApiFormError(error, form));
-    }
-  });
-
-  if (token === null || tokenQuery.isError) {
+  const flow = usePasswordReset();
+  if (flow.stage === "invalid")
     return (
       <div className="success-panel">
-        <h2>Link unavailable.</h2>
-        <p>This recovery link is missing, expired, or was already used.</p>
+        <h2>رابط إعادة التعيين غير صالح أو منتهي</h2>
+        <p>الرابط مفقود أو انتهت صلاحيته أو تم استبداله أو استخدامه.</p>
         <Link className="button button--full" href="/auth/forgot-password">
-          Request another link
+          طلب رابط استعادة جديد
         </Link>
       </div>
     );
-  }
-  if (tokenQuery.isPending) {
+  if (flow.stage === "success")
     return (
-      <p className="form-notice" aria-live="polite">
-        Checking this recovery link...
-      </p>
+      <div className="success-panel" role="status">
+        <h2>تم تعيين كلمة المرور الجديدة بنجاح</h2>
+        <p>سجل الدخول من جديد بكلمة المرور الجديدة.</p>
+        <Link className="button button--full" href="/employee/auth/login">
+          تسجيل دخول الموظف
+        </Link>
+        <Link className="button button--full" href="/admin/auth/login">
+          تسجيل دخول المسؤول
+        </Link>
+      </div>
     );
-  }
   return (
     <form
       className="auth-form"
-      onSubmit={(event) => {
-        void onSubmit(event);
-      }}
       noValidate
+      onSubmit={(event) => {
+        void flow.submit(event);
+      }}
     >
-      <FormField
-        id="newPassword"
-        label="New password"
-        type="password"
-        autoComplete="new-password"
-        hint={`Use at least ${String(PASSWORD_MIN_LENGTH)} characters.`}
-        error={errors.newPassword?.message}
-        {...register("newPassword")}
-      />
-      <FormField
-        id="passwordConfirmation"
-        label="Confirm new password"
-        type="password"
-        autoComplete="new-password"
-        error={errors.passwordConfirmation?.message}
-        {...register("passwordConfirmation")}
-      />
-      {formError === null ? null : (
-        <p className="form-notice form-notice--error" role="alert">
-          {formError}
+      {flow.stage === "checking" && (
+        <p className="form-notice" role="status">
+          جارٍ التحقق من الرابط...
         </p>
+      )}
+      <FormField
+        id="reset-new-password"
+        label="كلمة المرور الجديدة"
+        type="password"
+        autoComplete="new-password"
+        hint="من 15 إلى 128 حرفاً"
+        value={flow.newPassword}
+        onChange={(event) => {
+          flow.setNewPassword(event.target.value);
+        }}
+      />
+      <FormField
+        id="reset-confirmation"
+        label="تأكيد كلمة المرور"
+        type="password"
+        autoComplete="new-password"
+        value={flow.confirmation}
+        onChange={(event) => {
+          flow.setConfirmation(event.target.value);
+        }}
+      />
+      {flow.error && (
+        <p className="form-notice form-notice--error" role="alert">
+          {flow.error}
+        </p>
+      )}
+      {flow.stage === "unavailable" && (
+        <button
+          className="button button--full"
+          type="button"
+          onClick={() => {
+            void flow.preview();
+          }}
+        >
+          إعادة التحقق من الرابط
+        </button>
       )}
       <button
         className="button button--full"
         type="submit"
-        disabled={isSubmitting}
+        disabled={flow.pending || flow.stage !== "ready"}
       >
-        {isSubmitting ? "Updating..." : "Set new password"}
+        حفظ كلمة المرور الجديدة
       </button>
     </form>
   );

@@ -8,20 +8,47 @@
 
 **Input**: User description: "$ARGUMENTS"
 
-## User Scenarios & Testing *(mandatory)*
+**Roadmap Phase**: [Pnn - exact title from PLAN.md]
+
+**Feature Directory**: [exact generated/selected feature path]
+
+## Roadmap Scope and Gates _(mandatory)_
+
+- **Deliverables**: [Only this phase's approved requirements; cite PLAN.md sections]
+- **Exclusions**: [Future/completed phase work and other out-of-scope behavior]
+- **Prerequisites**: [Predecessor/group gates and evidence; missing evidence stays visible]
+- **Frontend boundary**: [Existing surfaces for authorized integration, or no frontend work]
+- **Owner decisions**: [Missing UI/frozen-presentation conflicts or genuine unsettled policy]
+- **Acceptance gate**: [Observable phase completion conditions and required verification]
+
+Apply `.specify/memory/constitution.md` and the operating contract in
+`docs/workflow/speckit-prompts.txt`. Read all eight engineering guides at phase start.
+Preserve the frontend freeze; a roadmap requirement for a missing screen, static-copy
+change, or new/changed dialog is not approval to create it. Keep relevant conflicts,
+including dedicated admin login, explicit without dropping their business/security
+requirements. Backend prerequisites must pass before dependent frontend integration.
+
+## User Scenarios & Testing _(mandatory)_
 
 <!--
   IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
+  Each story/journey must be independently testable within its declared prerequisites.
+  Story priority does not authorize bypassing backend/group gates or phase boundaries.
 
   Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
   Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
+  - Implemented within the selected phase and explicit dependencies
+  - Tested through an observable acceptance boundary
+  - Demonstrated after required prerequisites pass
+  Deployment is a separate owner-authorized operation.
 -->
+
+Every implementation phase MUST create or extend actual automated test files.
+Acceptance scenarios MUST include relevant authorization, failure, boundary-time,
+replay/concurrency, and uncertain-provider outcomes when affected. State observable
+results and preserved financial invariants; do not substitute fixtures, screenshots,
+or a planned test for required execution evidence. Exact formulas and calendar
+rules come from PLAN.md and the constitution, not assumptions or old UI examples.
 
 ### User Story 1 - [Brief Title] (Priority: P1)
 
@@ -78,7 +105,7 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
-## Requirements *(mandatory)*
+## Requirements _(mandatory)_
 
 <!--
   ACTION REQUIRED: The content in this section represents placeholders.
@@ -93,27 +120,29 @@
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
-*Example of marking unclear requirements:*
+_Example of marking unclear requirements:_
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
 
-### Key Entities *(include if feature involves data)*
+### Key Entities _(include if feature involves data)_
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
 
-## Success Criteria *(mandatory)*
+## Success Criteria _(mandatory)_
 
 <!--
   ACTION REQUIRED: Define measurable success criteria.
   These must be technology-agnostic and measurable.
+  Use phase acceptance and risk boundaries, without inventing capacity promises,
+  arbitrary coverage targets, or perfect-security guarantees.
 -->
 
 ### Measurable Outcomes
 
 - **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
+- **SC-002**: [Measurable failure/invariant outcome for an applicable phase boundary]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
 
@@ -123,6 +152,8 @@
   ACTION REQUIRED: The content in this section represents placeholders.
   Fill them out with the right assumptions based on reasonable defaults
   chosen when the feature description did not specify certain details.
+  Do not guess financial policy, assume missing UI approval, or reopen settled
+  owner decisions. Genuine material ambiguity or conflict remains an explicit gate.
 -->
 
 - [Assumption about target users, e.g., "Users have stable internet connectivity"]

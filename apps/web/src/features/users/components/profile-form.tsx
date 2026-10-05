@@ -25,6 +25,7 @@ export function ProfileForm() {
     handleSubmit,
     getValues,
     register,
+    reset,
     setError,
   } = useForm<ProfileInput, unknown, UpdateProfileBody>({
     resolver: zodResolver(updateProfileBodySchema),
@@ -38,6 +39,7 @@ export function ProfileForm() {
     setMessage(null);
     try {
       await updateProfile.mutateAsync(values);
+      reset(values);
       setMessage("Profile details saved.");
     } catch (error) {
       setMessage(applyApiFormError(error, { getValues, setError }));

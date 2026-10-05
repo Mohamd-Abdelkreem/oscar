@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { useState } from "react";
-import { afterEach, expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 
 import {
   AdminStateProvider,
@@ -15,6 +15,53 @@ import {
 import { AdminConfirmDialog } from "./admin-confirm-dialog";
 
 afterEach(cleanup);
+
+it("preserves a reviewed reason on denial and blocks synchronous double confirmation", async () => {
+  let settle: (committed: boolean) => void = () => {
+    throw new Error("NOT_STARTED");
+  };
+  const confirm = vi.fn(
+    () =>
+      new Promise<boolean>((resolve) => {
+        settle = resolve;
+      }),
+  );
+  const close = vi.fn();
+  render(
+    <AdminConfirmDialog
+      isOpen
+      title="Reasoned action"
+      description="Review"
+      requireReason
+      onConfirm={confirm}
+      onClose={close}
+    />,
+  );
+  const reason = screen.getByRole("textbox");
+  fireEvent.change(reason, { target: { value: "reviewed reason" } });
+  const button = screen.getByRole("button", { name: "تأكيد الإجراء" });
+  button.focus();
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("button", { name: "إلغاء" })).toBeDisabled();
+  expect(button).not.toHaveFocus();
+  expect(screen.getByRole("dialog")).toContainElement(
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
+  fireEvent.keyDown(window, { key: "Tab" });
+  expect(screen.getByRole("dialog")).toContainElement(
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
+  settle(false);
+  await waitFor(() => expect(button).toBeEnabled());
+  expect(reason).toHaveValue("reviewed reason");
+  expect(close).not.toHaveBeenCalled();
+});
 
 function CodeStatusControl() {
   const { codes, toggleCodeStatus } = useAdminState();

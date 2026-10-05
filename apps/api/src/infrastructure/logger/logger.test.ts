@@ -3,6 +3,70 @@ import { describe, expect, it } from "vitest";
 import { createLogger, LOGGER_REDACT_PATHS } from "./logger.js";
 
 describe("logger redaction", () => {
+  it("removes credential hashes and provider/signing material in arrays while retaining safe outcome codes", () => {
+    const chunks: string[] = [];
+    const testLogger = createLogger({
+      level: "info",
+      pretty: false,
+      destination: {
+        write: (chunk) => {
+          chunks.push(chunk);
+        },
+      },
+    });
+    const sentinel = "sentinel-private-hash-or-provider-material";
+    testLogger.warn(
+      {
+        operation: "ADMIN_INVITATION",
+        outcome: "UNKNOWN",
+        attempts: [
+          {
+            passwordHash: sentinel,
+            tokenHash: sentinel,
+            RESEND_API_KEY: sentinel,
+            signedBytes: sentinel,
+            failure: new Error(sentinel),
+          },
+        ],
+      },
+      "Provider outcome recorded.",
+    );
+    const emitted = chunks.join("");
+    expect(emitted).not.toContain(sentinel);
+    expect(emitted).toContain("ADMIN_INVITATION");
+    expect(emitted).toContain("UNKNOWN");
+  });
+  it("removes nested unexpected error objects, messages, stacks and hidden causes from ordinary logs", () => {
+    const chunks: string[] = [];
+    const testLogger = createLogger({
+      level: "info",
+      pretty: false,
+      destination: {
+        write: (chunk) => {
+          chunks.push(chunk);
+        },
+      },
+    });
+    const sentinel = "sentinel-nested-provider-signing-secret";
+    const failure = new Error(sentinel, { cause: { privateKey: sentinel } });
+    testLogger.error(
+      {
+        code: "INTERNAL_SERVER_ERROR",
+        requestId: "correlation",
+        err: failure,
+        nested: {
+          error: failure,
+          privateKey: sentinel,
+          signingPayload: sentinel,
+        },
+      },
+      "Operation failed.",
+    );
+    const emitted = chunks.join("");
+    expect(emitted).not.toContain(sentinel);
+    expect(emitted).toContain("INTERNAL_SERVER_ERROR");
+    expect(emitted).not.toContain("stack");
+  });
   it("explicitly redacts the double-submit CSRF request header", () => {
     expect(LOGGER_REDACT_PATHS).toContain("req.headers['x-csrf-token']");
   });

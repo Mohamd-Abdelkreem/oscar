@@ -13,3 +13,7 @@ export {
   type ResetPasswordBodyDto,
 } from "./reset-password.dto.js";
 export { tokenQueryDtoSchema, type TokenQueryDto } from "./token-query.dto.js";
+export {
+  adminInvitationAcceptBodySchema as adminInvitationAcceptBodyDtoSchema,
+  type AdminInvitationAcceptBody as AdminInvitationAcceptBodyDto,
+} from "@template/contracts";

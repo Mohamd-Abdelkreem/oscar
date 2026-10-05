@@ -8,4 +8,4 @@ export const AUTH_PATHS = Object.freeze({
   settings: "/settings",
 });
 
-export const DEFAULT_RETURN_PATH = AUTH_PATHS.dashboard;
+export const DEFAULT_RETURN_PATH = "/employee";

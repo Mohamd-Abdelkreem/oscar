@@ -13,6 +13,9 @@
     "dist",
     "coverage",
     "tests",
+    "src/modules/ledger/testing/**",
+    "src/modules/auth/testing/**",
+    "src/modules/subscriptions/testing/**",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]

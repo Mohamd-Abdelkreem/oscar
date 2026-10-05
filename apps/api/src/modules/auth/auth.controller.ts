@@ -3,6 +3,8 @@ import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 
 import { cookieConfig } from "../../core/config/cookie.config.js";
+import { InternalServerError } from "../../core/errors/internal-server.error.js";
+import type { AuthenticatedSession } from "../../core/types/request-context.types.js";
 import { ResponseHelper } from "../../core/responses/api-response.js";
 import { AUTH_CONSTANTS } from "./auth.constants.js";
 import type { AuthService } from "./auth.service.js";
@@ -18,9 +20,50 @@ import type {
   AuthResponseWithTokens,
   CookieAttributes,
 } from "./types/auth.types.js";
+import type { AdminInvitationsService } from "../admins/admin-invitations.service.js";
+import type { AdminInvitationAcceptBodyDto } from "./dto/index.js";
 
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly invitations?: AdminInvitationsService,
+  ) {}
+
+  validateAdminInvitation = async (
+    request: Request,
+    response: Response,
+  ): Promise<Response> => {
+    if (this.invitations === undefined)
+      throw new InternalServerError("Invitation service is required.");
+    const { token } = request.validated?.query as TokenQueryDto;
+    const validation = await this.invitations.validate(token);
+    return ResponseHelper.ok(
+      response,
+      validation,
+      "Invitation link is valid.",
+      request.path,
+      request.requestId,
+    );
+  };
+  acceptAdminInvitation = async (
+    request: Request,
+    response: Response,
+  ): Promise<Response> => {
+    if (this.invitations === undefined)
+      throw new InternalServerError("Invitation service is required.");
+    const { token } = request.validated?.query as TokenQueryDto;
+    const recipient = await this.invitations.accept(
+      token,
+      request.validated?.body as AdminInvitationAcceptBodyDto,
+    );
+    return ResponseHelper.created(
+      response,
+      recipient,
+      "Administrator invitation accepted. Sign in to continue.",
+      request.path,
+      request.requestId,
+    );
+  };
 
   register = async (
     request: Request,
@@ -48,6 +91,23 @@ export class AuthController {
       response,
       result,
       AUTH_CONSTANTS.messages.verify,
+      request.path,
+      request.requestId,
+    );
+  };
+
+  validateVerificationToken = async (
+    request: Request,
+    response: Response,
+  ): Promise<Response> => {
+    const query = request.validated?.query as TokenQueryDto;
+    const validation = await this.authService.validateVerificationToken(
+      query.token,
+    );
+    return ResponseHelper.ok(
+      response,
+      validation,
+      "Verification link is valid.",
       request.path,
       request.requestId,
     );
@@ -81,6 +141,21 @@ export class AuthController {
     );
   };
 
+  adminLogin = async (
+    request: Request,
+    response: Response,
+  ): Promise<Response> => {
+    const result = await this.authService.adminLogin(
+      request.validated?.body as LoginBodyDto,
+    );
+    return this.sendSession(
+      request,
+      response,
+      result,
+      AUTH_CONSTANTS.messages.login,
+    );
+  };
+
   refresh = async (request: Request, response: Response): Promise<Response> => {
     const result = await this.authService.refresh(
       this.extractRefreshToken(request),
@@ -94,10 +169,7 @@ export class AuthController {
   };
 
   logout = async (request: Request, response: Response): Promise<Response> => {
-    await this.authService.logout(
-      request.user?.id ?? "",
-      this.extractRefreshToken(request),
-    );
+    await this.authService.logout(this.sessionContext(request));
     this.clearSessionCookies(response);
     return ResponseHelper.ok(
       response,
@@ -112,7 +184,7 @@ export class AuthController {
     request: Request,
     response: Response,
   ): Promise<Response> => {
-    await this.authService.logoutAll(request.user?.id ?? "");
+    await this.authService.logoutAll(this.sessionContext(request));
     this.clearSessionCookies(response);
     return ResponseHelper.ok(
       response,
@@ -178,7 +250,7 @@ export class AuthController {
     response: Response,
   ): Promise<Response> => {
     const result = await this.authService.changePassword(
-      request.user?.id ?? "",
+      this.sessionContext(request),
       request.validated?.body as ChangePasswordBodyDto,
     );
     this.clearSessionCookies(response);
@@ -245,8 +317,21 @@ export class AuthController {
   }
 
   private extractRefreshToken(request: Request): string {
-    const cookies = request.cookies as Record<string, string> | undefined;
-    return cookies?.[AUTH_CONSTANTS.refreshTokenCookieName] ?? "";
+    const cookies = request.cookies as Record<string, unknown> | undefined;
+    const token = cookies?.[AUTH_CONSTANTS.refreshTokenCookieName];
+    return typeof token === "string" ? token : "";
+  }
+
+  private sessionContext(request: Request): AuthenticatedSession {
+    if (
+      request.authSession === undefined ||
+      request.user === undefined ||
+      request.authSession.userId !== request.user.id
+    )
+      throw new InternalServerError(
+        "Authenticated session context is required.",
+      );
+    return request.authSession;
   }
 
   private refreshCookieOptions(rememberMe: boolean): CookieAttributes {

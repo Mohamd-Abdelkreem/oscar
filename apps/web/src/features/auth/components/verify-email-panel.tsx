@@ -1,119 +1,100 @@
 "use client";
 
-import {
-  emailRequestBodySchema,
-  type EmailRequestBody,
-} from "@template/contracts";
-import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
-import type { z } from "zod";
-
 import { FormField } from "@/components/forms/form-field";
-import {
-  useResendVerification,
-  useVerifyEmail,
-} from "@/features/auth/hooks/auth.hooks";
-import { applyApiFormError } from "@/shared/forms/form";
-
-type VerifyState = "working" | "verified" | "invalid";
-type EmailInput = z.input<typeof emailRequestBodySchema>;
+import { useEmailVerification } from "@/features/auth/hooks/email-verification.hooks";
 
 export function VerifyEmailPanel() {
-  const verifyEmail = useVerifyEmail();
-  const resendVerification = useResendVerification();
-  const token = useSearchParams().get("token");
-  const attemptedToken = useRef<string | null>(null);
-  const [state, setState] = useState<VerifyState>("working");
-  const [message, setMessage] = useState<string | null>(null);
-  const {
-    formState: { errors, isSubmitting },
-    handleSubmit,
-    getValues,
-    register,
-    setError,
-  } = useForm<EmailInput, unknown, EmailRequestBody>({
-    resolver: zodResolver(emailRequestBodySchema),
-    defaultValues: { email: "" },
-  });
-
-  useEffect(() => {
-    if (token === null || attemptedToken.current === token) return;
-    attemptedToken.current = token;
-    void verifyEmail
-      .mutateAsync(token)
-      .then(() => {
-        setState("verified");
-      })
-      .catch(() => {
-        setState("invalid");
-      });
-  }, [token, verifyEmail]);
-
-  const resend = handleSubmit(async (values) => {
-    try {
-      const result = await resendVerification.mutateAsync(values);
-      setMessage(result.data.message);
-    } catch (error) {
-      setMessage(applyApiFormError(error, { getValues, setError }));
-    }
-  });
-
-  const visibleState = token === null ? "invalid" : state;
-
-  if (visibleState === "working") {
+  const flow = useEmailVerification();
+  if (flow.stage === "checking")
     return (
       <p className="form-notice" aria-live="polite">
-        Verifying your one-time link…
+        جارٍ التحقق من صلاحية الرابط؛ لن يتم التفعيل دون تأكيدك.
       </p>
     );
-  }
-  if (visibleState === "verified") {
+  if (flow.stage === "success")
     return (
       <div className="success-panel">
         <span className="success-panel__mark" aria-hidden="true">
           ✓
         </span>
-        <h2>Email verified.</h2>
-        <p>Your account is active and ready for a new session.</p>
+        <h2>تم تفعيل بريدك الإلكتروني بنجاح!</h2>
+        <p>
+          تم تأكيد البريد الإلكتروني. سجل الدخول لعرض صلاحيات حسابك؛ التفعيل لا
+          يمنح اشتراكاً مدفوعاً.
+        </p>
+        <Link className="button button--full" href="/employee/auth/login">
+          تسجيل الدخول للموظفين
+        </Link>
         <Link className="button button--full" href="/auth/login">
-          Continue to sign in
+          تسجيل الدخول
         </Link>
       </div>
     );
-  }
   return (
     <form
       className="auth-form"
       onSubmit={(event) => {
-        void resend(event);
+        void flow.resendLink(event);
       }}
       noValidate
     >
-      <p className="form-notice form-notice--error">
-        This verification link is missing, invalid, or expired.
+      <p className="form-notice">
+        {flow.stage === "ready"
+          ? "الرابط صالح الآن. أكد تفعيل البريد الإلكتروني؛ فتح الرابط لا يفعّل الحساب."
+          : "افتح رابط التفعيل الوارد أو اطلب رابطاً جديداً لبريد الحساب."}
       </p>
+      {flow.stage === "ready" && (
+        <button
+          className="button button--full"
+          type="button"
+          disabled={flow.verifying}
+          onClick={() => {
+            void flow.confirm();
+          }}
+        >
+          {flow.verifying ? "جارٍ التأكيد…" : "تأكيد تفعيل البريد الإلكتروني"}
+        </button>
+      )}
+      {flow.stage === "unavailable" && (
+        <button
+          className="button button--full"
+          type="button"
+          disabled={flow.previewBlocked}
+          onClick={() => {
+            void flow.preview();
+          }}
+        >
+          إعادة المحاولة
+        </button>
+      )}
       <FormField
         id="email"
-        label="Account email"
+        label="البريد الإلكتروني للحساب"
         type="email"
         autoComplete="email"
-        error={errors.email?.message}
-        {...register("email")}
+        dir="ltr"
+        value={flow.email}
+        onChange={(event) => {
+          flow.setEmail(event.target.value);
+        }}
       />
-      {message === null ? null : (
+      {flow.error && (
+        <p className="form-notice form-notice--error" role="alert">
+          {flow.error}
+        </p>
+      )}
+      {flow.notice && (
         <p className="form-notice" role="status">
-          {message}
+          {flow.notice}
         </p>
       )}
       <button
         className="button button--full"
         type="submit"
-        disabled={isSubmitting}
+        disabled={flow.resending || flow.resendUncertain}
       >
-        {isSubmitting ? "Sending…" : "Send a fresh link"}
+        {flow.resending ? "جارٍ الإرسال…" : "إعادة إرسال رابط التفعيل"}
       </button>
     </form>
   );

@@ -1,43 +1,66 @@
 "use client";
 
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
-
+import { loginBodySchema } from "@template/contracts";
+import { useLogin, useChangePassword } from "@/features/auth/hooks/auth.hooks";
+import { useCredentialFieldCleanup } from "@/features/auth/hooks/credential-commands.hooks";
+import { resolvePostLoginPath } from "@/features/auth/utils/safe-return-path";
+import { getApiError } from "@/services/api/api-client";
 import { AlertCircle, LogIn } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PasswordVisibilityToggle } from "@/features/employee/components/common/password-visibility-toggle";
 import { Button } from "@/features/employee/components/common/button";
 
 export function EmployeeLoginScreen() {
-  const scheduleTimeout = useManagedTimeout();
   const router = useRouter();
-  const [email, setEmail] = useState("ahmed.marwan@example.com");
-  const [password, setPassword] = useState("Password12345678");
+  const login = useLogin();
+  const passwordChange = useChangePassword();
+  const submitting = useRef(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  useCredentialFieldCleanup(() => {
+    setPassword("");
+  }, login.isCurrentFlow);
 
-  const handleSubmit = (e: React.SyntheticEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    if (submitting.current || login.isPending || login.uncertain) return;
     setError(null);
-
-    // Repository standard password validation (15 - 128 characters)
-    if (password.length < 15) {
-      setError("كلمة المرور يجب أن تتكون من 15 حرفاً على الأقل.");
+    const parsed = loginBodySchema.safeParse({
+      email,
+      password,
+      rememberMe: false,
+    });
+    if (!parsed.success) {
+      setError("راجع البريد الإلكتروني وكلمة المرور (من 1 إلى 128 حرفاً).");
       return;
     }
-    if (password.length > 128) {
-      setError("كلمة المرور يجب ألا تتجاوز 128 حرفاً.");
-      return;
+    submitting.current = true;
+    try {
+      const account = await login.mutateAsync(parsed.data);
+      setPassword("");
+      if (login.isCurrentFlow()) {
+        const returnTo = new URL(window.location.href).searchParams.get(
+          "returnTo",
+        );
+        router.replace(resolvePostLoginPath(returnTo, account.user.role));
+      }
+    } catch (failure: unknown) {
+      const safe = getApiError(failure);
+      if (safe.category !== "obsolete")
+        setError(
+          safe.statusCode === 429
+            ? "محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً."
+            : safe.statusCode === 401
+              ? "تعذر تسجيل الدخول. راجع البريد وكلمة المرور وتأكد من تفعيل حسابك."
+              : safe.message,
+        );
+    } finally {
+      submitting.current = false;
     }
-
-    setIsLoading(true);
-    scheduleTimeout(() => {
-      setIsLoading(false);
-      // Simulate local login and route to employee home
-      router.push("/employee");
-    }, 400);
   };
 
   return (
@@ -51,7 +74,18 @@ export function EmployeeLoginScreen() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {passwordChange.isSuccess && (
+        <p role="status" className="text-xs text-slate-500">
+          تم تغيير كلمة المرور. سجل الدخول من جديد بكلمة المرور الجديدة.
+        </p>
+      )}
+
+      <form
+        onSubmit={(event) => {
+          void handleSubmit(event);
+        }}
+        className="space-y-4"
+      >
         <div className="space-y-1">
           <label
             htmlFor="login-email"
@@ -62,6 +96,7 @@ export function EmployeeLoginScreen() {
           <input
             id="login-email"
             type="email"
+            autoComplete="email"
             dir="ltr"
             value={email}
             onChange={(e) => {
@@ -92,6 +127,8 @@ export function EmployeeLoginScreen() {
             <input
               id="login-password"
               type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              maxLength={128}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
@@ -123,7 +160,8 @@ export function EmployeeLoginScreen() {
           variant="primary"
           size="default"
           fullWidth
-          loading={isLoading}
+          loading={login.isPending}
+          disabled={login.isPending || login.uncertain}
           icon={LogIn}
         >
           تسجيل الدخول

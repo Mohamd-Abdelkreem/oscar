@@ -6,6 +6,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const requiredArtifacts = [
   "apps/api/dist/server.js",
   "apps/api/dist/app.js",
+  "apps/api/dist/modules/admins/admin-bootstrap.cli.js",
   "packages/contracts/dist/index.js",
   "packages/contracts/dist/index.d.ts",
   "packages/database/dist/index.js",

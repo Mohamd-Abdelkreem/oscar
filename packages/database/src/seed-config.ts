@@ -102,10 +102,14 @@ export const buildSeedUpsert = (
     verificationTokenExpiresAt: null,
     resetTokenHash: null,
     resetTokenExpiresAt: null,
-  } satisfies Prisma.UserUpdateInput;
+  };
   return {
     where: { email: decision.email },
-    update: account,
-    create: { email: decision.email, ...account },
+    update: {},
+    create: {
+      email: decision.email,
+      ...account,
+      ...(decision.role === UserRole.USER ? { wallet: { create: {} } } : {}),
+    },
   };
 };

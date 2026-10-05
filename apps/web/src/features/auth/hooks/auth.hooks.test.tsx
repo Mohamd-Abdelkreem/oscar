@@ -1,290 +1,406 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { AxiosError, AxiosHeaders } from "axios";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { apiClient, setAccessToken } from "@/services/api/api-client";
+import { getSessionRuntime } from "@/services/api/session-runtime";
 
 import {
-  AUTH_SESSION_QUERY_KEY,
-  loadSession,
-  useChangePassword,
   useLogin,
   useLogout,
   useLogoutAll,
   useResetPassword,
+  useChangePassword,
+  useSession,
 } from "./auth.hooks";
 
-const mocks = vi.hoisted(() => ({
-  clearAccessToken: vi.fn(),
-  changePassword: vi.fn(),
-  getAccessToken: vi.fn(),
-  getApiError: vi.fn(),
-  getMe: vi.fn(),
-  login: vi.fn(),
-  logout: vi.fn(),
-  logoutAll: vi.fn(),
-  refresh: vi.fn(),
-  replaceWithLogin: vi.fn(),
-  resetPassword: vi.fn(),
-}));
-
-vi.mock("@/services/api/api-client", () => ({
-  clearAccessToken: mocks.clearAccessToken,
-  getAccessToken: mocks.getAccessToken,
-  getApiError: mocks.getApiError,
-}));
-vi.mock("@/features/users/api/users.api", () => ({
-  usersApi: { getMe: mocks.getMe },
-}));
-vi.mock("../api/auth.api", () => ({
-  authApi: {
-    changePassword: mocks.changePassword,
-    login: mocks.login,
-    logout: mocks.logout,
-    logoutAll: mocks.logoutAll,
-    refresh: mocks.refresh,
-    resetPassword: mocks.resetPassword,
-  },
-}));
-vi.mock("../utils/session-navigation", () => ({
-  replaceWithLogin: mocks.replaceWithLogin,
-}));
-
-const apiError = (statusCode: number, code: string) => ({
-  message: "test",
-  statusCode,
-  code,
-  requestId: "request",
-  fieldErrors: {},
-});
-
-describe("loadSession", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocks.getAccessToken.mockReturnValue({ kind: "missing" });
-  });
-
-  it.each([
-    [400, "BAD_REQUEST"],
-    [401, "UNAUTHORIZED"],
-  ])("treats refresh %s/%s as anonymous", async (statusCode, code) => {
-    mocks.refresh.mockRejectedValue(new Error("anonymous"));
-    mocks.getApiError.mockReturnValue(apiError(statusCode, code));
-    await expect(loadSession()).resolves.toBeNull();
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-    expect(mocks.getMe).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    [400, "VALIDATION_ERROR"],
-    [401, "TOKEN_REPLAYED"],
-    [403, "FORBIDDEN"],
-    [503, "SERVICE_UNAVAILABLE"],
-  ])("rethrows unexpected refresh %s/%s", async (statusCode, code) => {
-    const error = new Error("unexpected");
-    mocks.refresh.mockRejectedValue(error);
-    mocks.getApiError.mockReturnValue(apiError(statusCode, code));
-    await expect(loadSession()).rejects.toBe(error);
-    expect(mocks.clearAccessToken).not.toHaveBeenCalled();
-  });
-
-  it("loads the current user after refresh", async () => {
-    const account = { user: { id: "user" } };
-    mocks.refresh.mockResolvedValue(undefined);
-    mocks.getMe.mockResolvedValue(account);
-    await expect(loadSession()).resolves.toBe(account);
-  });
-
-  it("skips proactive refresh when an access token already exists", async () => {
-    const account = { user: { id: "user" } };
-    mocks.getAccessToken.mockReturnValue({ kind: "value", value: "token" });
-    mocks.getMe.mockResolvedValue(account);
-    await expect(loadSession()).resolves.toBe(account);
-    expect(mocks.refresh).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    [400, "BAD_REQUEST"],
-    [401, "UNAUTHORIZED"],
-  ])("treats current-user %s/%s as anonymous", async (statusCode, code) => {
-    mocks.getAccessToken.mockReturnValue({ kind: "value", value: "token" });
-    mocks.getMe.mockRejectedValue(new Error("anonymous current user"));
-    mocks.getApiError.mockReturnValue(apiError(statusCode, code));
-
-    await expect(loadSession()).resolves.toBeNull();
-
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-  });
-
-  it.each([
-    [400, "VALIDATION_ERROR"],
-    [401, "TOKEN_REPLAYED"],
-    [403, "FORBIDDEN"],
-    [500, "INTERNAL_SERVER_ERROR"],
-    [0, "NETWORK_ERROR"],
-  ])("rethrows unexpected current-user %s/%s", async (statusCode, code) => {
-    const error = new Error("unexpected current-user failure");
-    mocks.getAccessToken.mockReturnValue({ kind: "value", value: "token" });
-    mocks.getMe.mockRejectedValue(error);
-    mocks.getApiError.mockReturnValue(apiError(statusCode, code));
-
-    await expect(loadSession()).rejects.toBe(error);
-
-    expect(mocks.clearAccessToken).not.toHaveBeenCalled();
-  });
-});
-
-const createHarness = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      mutations: { retry: false },
-      queries: { retry: false },
+const user = {
+  id: "00000000-0000-4000-8000-000000000001",
+  fullName: "Employee",
+  email: "employee@example.test",
+  phone: null,
+  role: "USER",
+  status: "ACTIVE",
+  emailVerifiedAt: "2026-10-01T00:00:00.000Z",
+  createdAt: "2026-10-01T00:00:00.000Z",
+  updatedAt: "2026-10-01T00:00:00.000Z",
+  referralCode: "a".repeat(32),
+  tasksBlocked: false,
+  withdrawalsBlocked: false,
+  accountVersion: 0,
+};
+const original = apiClient.defaults.adapter;
+const clients: QueryClient[] = [];
+const wrapperFor = () => {
+  Object.defineProperty(navigator, "locks", {
+    configurable: true,
+    value: {
+      request: (_name: string, callback: () => Promise<unknown>) =>
+        Promise.resolve(callback()),
     },
   });
-  const wrapper = ({ children }: Readonly<{ children: ReactNode }>) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  return { queryClient, wrapper };
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  clients.push(client);
+  return {
+    client,
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
+  };
 };
-
-const account = {
-  user: {
-    id: "1b3d904e-a46c-4dd8-9cb7-d0767546ea95",
-    fullName: "Template User",
-    email: "user@example.com",
-    phone: null,
-    role: "USER" as const,
-    status: "ACTIVE" as const,
-    emailVerifiedAt: "2026-08-18T00:00:00.000Z",
-    createdAt: "2026-08-18T00:00:00.000Z",
-    updatedAt: "2026-08-18T00:00:00.000Z",
-  },
-};
-
-describe("session mutation hooks", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+afterEach(() => {
+  if (original !== undefined) apiClient.defaults.adapter = original;
+  getSessionRuntime().dispose();
+  localStorage.clear();
+  clients.splice(0).forEach((client) => {
+    client.clear();
   });
+});
 
-  it("populates the session cache only after login and current-user lookup", async () => {
-    const { queryClient, wrapper } = createHarness();
-    mocks.login.mockResolvedValue({});
-    mocks.getMe.mockResolvedValue(account);
-    const { result } = renderHook(() => useLogin(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        email: "user@example.com",
-        password: "CorrectHorseBatteryStaple!1",
-        rememberMe: false,
+describe("scoped session and transient login", () => {
+  it("US4 resetting unrelated B retires browser A without admitting B's reset reply as a session", async () => {
+    const { wrapper, client } = wrapperFor();
+    const runtime = getSessionRuntime();
+    runtime.admitIdentity(runtime.scope(), { id: user.id, role: "USER" });
+    setAccessToken("account-a-token");
+    client.setQueryData(["private", user.id], { user });
+    const target = {
+      ...user,
+      id: "00000000-0000-4000-8000-000000000002",
+      email: "unrelated@example.test",
+      role: "ADMIN",
+      referralCode: null,
+    };
+    apiClient.defaults.adapter = (config) =>
+      Promise.resolve({
+        config,
+        status: 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data: {
+          success: true,
+          statusCode: 200,
+          message: "OK",
+          requestId: "id",
+          timestamp: user.createdAt,
+          path: config.url,
+          data: { user: target },
+        },
       });
-    });
-
-    expect(mocks.login).toHaveBeenCalledOnce();
-    expect(mocks.getMe).toHaveBeenCalledOnce();
-    expect(queryClient.getQueryData(AUTH_SESSION_QUERY_KEY)).toEqual(account);
-  });
-
-  it("preserves the local session and reports the mutation error when logout fails", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    queryClient.setQueryData(["unrelated"], "cached");
-    const failure = new Error("network");
-    mocks.logout.mockRejectedValue(failure);
-    const { result } = renderHook(() => useLogout(), { wrapper });
-
+    const hook = renderHook(() => useResetPassword(), { wrapper });
     await act(async () => {
-      await expect(result.current.mutateAsync()).rejects.toBe(failure);
-    });
-
-    expect(mocks.clearAccessToken).not.toHaveBeenCalled();
-    expect(queryClient.getQueryData(AUTH_SESSION_QUERY_KEY)).toEqual(account);
-    expect(queryClient.getQueryData(["unrelated"])).toBe("cached");
-  });
-
-  it("clears in-memory credentials and every query after server logout succeeds", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    queryClient.setQueryData(["unrelated"], "cached");
-    mocks.logout.mockResolvedValue({});
-    const { result } = renderHook(() => useLogout(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync();
-    });
-
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-  });
-
-  it("preserves the local session when logout-all fails", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    queryClient.setQueryData(["unrelated"], "cached");
-    const failure = new Error("network");
-    mocks.logoutAll.mockRejectedValue(failure);
-    const { result } = renderHook(() => useLogoutAll(), { wrapper });
-
-    await act(async () => {
-      await expect(result.current.mutateAsync()).rejects.toBe(failure);
-    });
-
-    expect(mocks.clearAccessToken).not.toHaveBeenCalled();
-    expect(queryClient.getQueryData(AUTH_SESSION_QUERY_KEY)).toEqual(account);
-    expect(queryClient.getQueryData(["unrelated"])).toBe("cached");
-  });
-
-  it("clears in-memory credentials and every query after logout-all succeeds", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    queryClient.setQueryData(["unrelated"], "cached");
-    mocks.logoutAll.mockResolvedValue({});
-    const { result } = renderHook(() => useLogoutAll(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync();
-    });
-
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-  });
-
-  it("fully clears the session after a password change", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    mocks.changePassword.mockResolvedValue({});
-    const { result } = renderHook(() => useChangePassword(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        currentPassword: "OldCorrectHorseBatteryStaple!1",
-        newPassword: "NewCorrectHorseBatteryStaple!1",
-        passwordConfirmation: "NewCorrectHorseBatteryStaple!1",
-      });
-    });
-
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(mocks.replaceWithLogin).toHaveBeenCalledOnce();
-  });
-
-  it("fully clears the session after a password reset", async () => {
-    const { queryClient, wrapper } = createHarness();
-    queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, account);
-    mocks.resetPassword.mockResolvedValue({});
-    const { result } = renderHook(() => useResetPassword(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        token: "opaque-reset-token",
+      await hook.result.current.mutateAsync({
+        token: "UNRELATED-TOKEN-SENTINEL",
         body: {
-          newPassword: "NewCorrectHorseBatteryStaple!1",
-          passwordConfirmation: "NewCorrectHorseBatteryStaple!1",
+          newPassword: "PASSWORD-SENTINEL",
+          passwordConfirmation: "PASSWORD-SENTINEL",
         },
       });
     });
+    expect(hook.result.current.isSuccess).toBe(true);
+    expect(runtime.scope().accountId).toBeNull();
+    expect(client.getQueryCache().getAll()).toEqual([]);
+    expect(client.getMutationCache().getAll()).toEqual([]);
+  });
+  it("US4 a terminal wrong-current denial preserves the active form authority; committed change retires it and clears private state", async () => {
+    const { wrapper, client } = wrapperFor();
+    const runtime = getSessionRuntime();
+    runtime.admitIdentity(runtime.scope(), { id: user.id, role: "USER" });
+    const scope = runtime.scope();
+    setAccessToken("test-token");
+    client.setQueryData(["private"], { userId: user.id });
+    let denied = true;
+    apiClient.defaults.adapter = (config) => {
+      const response = {
+        config,
+        status: denied ? 400 : 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data: denied
+          ? {
+              success: false,
+              statusCode: 400,
+              code: "BAD_REQUEST",
+              message: "SENTINEL",
+            }
+          : {
+              success: true,
+              statusCode: 200,
+              message: "OK",
+              requestId: "id",
+              timestamp: user.createdAt,
+              path: config.url,
+              data: { user },
+            },
+      };
+      return denied
+        ? Promise.reject(
+            new AxiosError(
+              "SENTINEL",
+              "ERR_BAD_REQUEST",
+              config,
+              undefined,
+              response,
+            ),
+          )
+        : Promise.resolve(response);
+    };
+    const hook = renderHook(() => useChangePassword(), { wrapper });
+    const body = {
+      currentPassword: "wrong-current",
+      newPassword: "PASSWORD-SENTINEL",
+      passwordConfirmation: "PASSWORD-SENTINEL",
+    };
+    await act(async () => {
+      await expect(hook.result.current.mutateAsync(body)).rejects.toMatchObject(
+        { statusCode: 400 },
+      );
+    });
+    expect(runtime.isCurrent(scope)).toBe(true);
+    expect(client.getQueryData(["private"])).toEqual({ userId: user.id });
+    expect(hook.result.current.isSuccess).toBe(false);
+    denied = false;
+    await act(async () => {
+      await hook.result.current.mutateAsync({
+        ...body,
+        currentPassword: "correct-current",
+      });
+    });
+    expect(runtime.isCurrent(scope)).toBe(false);
+    expect(hook.result.current.isSuccess).toBe(true);
+    expect(client.getQueryCache().getAll()).toEqual([]);
+    expect(client.getMutationCache().getAll()).toEqual([]);
+    expect(JSON.stringify(hook.result.current)).not.toContain("SENTINEL");
+  });
+  it.each(["reset", "change", "logout", "logout-all"])(
+    "US4 %s lost response clears private caches and cannot infer commitment from denied restoration",
+    async (operation) => {
+      const { wrapper, client } = wrapperFor();
+      client.setQueryData(["private", "account-a"], {
+        secret: "PRIVATE-SENTINEL",
+      });
+      setAccessToken("test-only-token");
+      let sends = 0;
+      apiClient.defaults.adapter = (config) => {
+        sends++;
+        return Promise.reject(
+          new AxiosError("PASSWORD-SENTINEL", "ERR_NETWORK", config),
+        );
+      };
+      const hook = renderHook(
+        () => ({
+          reset: useResetPassword(),
+          change: useChangePassword(),
+          logout: useLogout(),
+          all: useLogoutAll(),
+        }),
+        { wrapper },
+      );
+      await act(async () => {
+        const command =
+          operation === "reset"
+            ? hook.result.current.reset.mutateAsync({
+                token: "TOKEN-SENTINEL",
+                body: {
+                  newPassword: "PASSWORD-SENTINEL",
+                  passwordConfirmation: "PASSWORD-SENTINEL",
+                },
+              })
+            : operation === "change"
+              ? hook.result.current.change.mutateAsync({
+                  currentPassword: "CURRENT-SENTINEL",
+                  newPassword: "PASSWORD-SENTINEL",
+                  passwordConfirmation: "PASSWORD-SENTINEL",
+                })
+              : operation === "logout"
+                ? hook.result.current.logout.mutateAsync()
+                : hook.result.current.all.mutateAsync();
+        await command.catch(() => undefined);
+      });
+      expect(sends).toBe(1);
+      expect(client.getQueryCache().getAll()).toEqual([]);
+      expect(client.getMutationCache().getAll()).toEqual([]);
+      expect(JSON.stringify(hook.result.current)).not.toContain("SENTINEL");
+      expect(getSessionRuntime().coordinationAvailable()).toBe(false);
+      const active =
+        operation === "reset"
+          ? hook.result.current.reset
+          : operation === "change"
+            ? hook.result.current.change
+            : operation === "logout"
+              ? hook.result.current.logout
+              : hook.result.current.all;
+      expect(active.uncertain).toBe(true);
+      expect(active.isSuccess).toBe(false);
+    },
+  );
+  it("reconciles a policy denial through a fresh authority check without granting the denied response", async () => {
+    const { wrapper } = wrapperFor();
+    setAccessToken("test-only-token");
+    let reads = 0;
+    apiClient.defaults.adapter = (config) => {
+      reads++;
+      const response = {
+        config,
+        status: reads === 1 ? 403 : 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data:
+          reads === 1
+            ? {
+                success: false,
+                statusCode: 403,
+                code: "FORBIDDEN",
+                message: "SENTINEL",
+              }
+            : {
+                success: true,
+                statusCode: 200,
+                message: "OK",
+                requestId: "id",
+                timestamp: user.createdAt,
+                path: config.url,
+                data: { user },
+              },
+      };
+      return reads === 1
+        ? Promise.reject(
+            new AxiosError(
+              "SENTINEL",
+              "ERR_BAD_REQUEST",
+              config,
+              undefined,
+              response,
+            ),
+          )
+        : Promise.resolve(response);
+    };
+    const hook = renderHook(() => useSession(), { wrapper });
+    await vi.waitFor(() => {
+      expect(hook.result.current.data?.user.id).toBe(user.id);
+    });
+    expect(getSessionRuntime().scope()).toMatchObject({
+      epoch: 0,
+      check: 1,
+      accountId: user.id,
+      role: "USER",
+    });
+    expect(reads).toBeGreaterThanOrEqual(2);
+    hook.unmount();
+  });
+  it("validates current authority after login and retains no passwords/tokens in query or mutation state", async () => {
+    const { client, wrapper } = wrapperFor();
+    apiClient.defaults.adapter = (config) =>
+      Promise.resolve({
+        config,
+        status: 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data: {
+          success: true,
+          statusCode: 200,
+          message: "OK",
+          requestId: "id",
+          timestamp: user.createdAt,
+          path: config.url,
+          data:
+            config.url === "/auth/login"
+              ? { user, tokens: { accessToken: "SENTINEL-TOKEN" } }
+              : { user },
+        },
+      });
+    const { result } = renderHook(() => useLogin(), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync({
+        email: user.email,
+        password: "SENTINEL-PASSWORD",
+        rememberMe: false,
+      });
+    });
+    expect(client.getMutationCache().getAll()).toEqual([]);
+    expect(
+      JSON.stringify(
+        client
+          .getQueryCache()
+          .getAll()
+          .map((query) => query.state),
+      ),
+    ).not.toContain("SENTINEL");
+  });
 
-    expect(mocks.clearAccessToken).toHaveBeenCalledOnce();
-    expect(queryClient.getQueryCache().getAll()).toHaveLength(0);
-    expect(mocks.replaceWithLogin).toHaveBeenCalledOnce();
+  it("blocks remounted duplicate commands and clears private cache before logout settles", async () => {
+    const { client, wrapper } = wrapperFor();
+    let finish!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    apiClient.defaults.adapter = async (config) => {
+      await gate;
+      return {
+        config,
+        status: 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data: {
+          success: true,
+          statusCode: 200,
+          message: "OK",
+          requestId: "id",
+          timestamp: user.createdAt,
+          path: "/auth/logout",
+          data: {},
+        },
+      };
+    };
+    client.setQueryData(["private"], { sentinel: "SENTINEL" });
+    const first = renderHook(() => useLogout(), { wrapper });
+    let pending!: Promise<unknown>;
+    act(() => {
+      pending = first.result.current.mutateAsync();
+    });
+    first.unmount();
+    const second = renderHook(() => useLogout(), { wrapper });
+    await act(async () => {
+      await expect(second.result.current.mutateAsync()).rejects.toMatchObject({
+        code: "COMMAND_PENDING",
+      });
+    });
+    expect(client.getQueryCache().getAll()).toHaveLength(0);
+    await act(async () => {
+      finish();
+      await expect(pending).rejects.toMatchObject({ code: "OBSOLETE_SCOPE" });
+    });
+  });
+
+  it("never grants authority to inactive current-user data", async () => {
+    const { wrapper } = wrapperFor();
+    apiClient.defaults.adapter = (config) =>
+      Promise.resolve({
+        config,
+        status: 200,
+        statusText: "OK",
+        headers: new AxiosHeaders(),
+        data: {
+          success: true,
+          statusCode: 200,
+          message: "OK",
+          requestId: "id",
+          timestamp: user.createdAt,
+          path: config.url,
+          data:
+            config.url === "/auth/refresh"
+              ? { user, tokens: { accessToken: "token" } }
+              : { user: { ...user, status: "BANNED" } },
+        },
+      });
+    const { result } = renderHook(() => useSession(), { wrapper });
+    await vi.waitFor(() => {
+      expect(result.current.isFetched).toBe(true);
+    });
+    expect(result.current.data).toBeNull();
   });
 });

@@ -1,4 +1,7 @@
-import type { SafeUser } from "@template/contracts";
+import type {
+  IdentitySessionData,
+  IdentityUserData,
+} from "@template/contracts";
 import type { UserRole } from "@template/database";
 
 export type CookieAttributes = Readonly<{
@@ -14,6 +17,7 @@ export interface AccessTokenPayload {
   jti: string;
   userId: string;
   tokenId: string;
+  sessionId: string;
   email: string;
   role: UserRole;
   type: "ACCESS";
@@ -24,16 +28,18 @@ export interface RefreshTokenPayload {
   jti: string;
   userId: string;
   tokenId: string;
+  sessionId: string;
   rememberMe: boolean;
   expiresAt: number;
   type: "REFRESH";
 }
 
-export interface TemporaryTokenPayload {
+export interface ResetTokenPayload {
   sub: string;
   jti: string;
   email: string;
-  type: "VERIFICATION" | "PASSWORD_RESET";
+  userId: string;
+  type: "PASSWORD_RESET";
 }
 
 export interface TokenPair {
@@ -46,11 +52,23 @@ export type VerifiedToken<T> =
   | Readonly<{ valid: false; error: string }>;
 
 export interface AuthResponseWithTokens {
-  user: SafeUser;
+  user: IdentitySessionData["user"];
   tokens: TokenPair;
   rememberMe: boolean;
 }
 
-export interface AuthResponseWithoutTokens {
-  user: SafeUser;
+export type AuthResponseWithoutTokens = IdentityUserData;
+
+export interface VerificationTokenPayload {
+  sub: string;
+  jti: string;
+  userId: string;
+  email: string;
+  type: "VERIFICATION";
 }
+export type AdminInvitationTokenPayload = Readonly<{
+  invitationId: string;
+  tokenVersion: number;
+  email: string;
+  type: "ADMIN_INVITATION";
+}>;

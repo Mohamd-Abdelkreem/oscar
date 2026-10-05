@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveGuestOnlyRouteState } from "./guest-only-route";
 import { resolveProtectedRouteState } from "./protected-route";
+import { isPublicAdminPath } from "@/features/admin/components/common/admin-route-boundary";
 
 const user = (overrides: Partial<SafeUser> = {}): AuthUserData => ({
   user: {
@@ -19,9 +20,56 @@ const user = (overrides: Partial<SafeUser> = {}): AuthUserData => ({
   },
 });
 
-const settled = { isPending: false, isFetched: true, isError: false };
+const settled = {
+  isPending: false,
+  isFetched: true,
+  isError: false,
+  isFetching: false,
+};
 
 describe("pure route states", () => {
+  it.each([
+    ["/admin/auth/login", true],
+    ["/admin/auth/accept-invitation", true],
+    ["/admin/auth/login/extra", false],
+    ["/admin/auth/unknown", false],
+    ["/admin", false],
+    ["/admin/settings/admins", false],
+  ])("exact public administrator allowlist: %s", (pathname, permitted) => {
+    expect(isPublicAdminPath(pathname)).toBe(permitted);
+  });
+  it("blocks cached authority during checks and sends wrong roles to their audience", () => {
+    expect(
+      resolveProtectedRouteState(
+        { ...settled, isFetching: true },
+        user(),
+        "/employee",
+        ["USER"],
+      ).kind,
+    ).toBe("pending");
+    expect(
+      resolveProtectedRouteState(
+        { ...settled, isError: true },
+        user(),
+        "/employee",
+        ["USER"],
+      ).kind,
+    ).toBe("error");
+    expect(
+      resolveProtectedRouteState(
+        settled,
+        user({ role: "ADMIN" }),
+        "/employee",
+        ["USER"],
+      ),
+    ).toEqual({ kind: "redirecting", target: "/admin" });
+    expect(
+      resolveProtectedRouteState(settled, null, "/employee/account", ["USER"]),
+    ).toEqual({
+      kind: "redirecting",
+      target: "/employee/auth/login?returnTo=%2Femployee%2Faccount",
+    });
+  });
   it("keeps pending and unexpected failures distinct", () => {
     expect(
       resolveProtectedRouteState(
@@ -66,10 +114,10 @@ describe("pure route states", () => {
         "/dashboard",
         undefined,
       ),
-    ).toEqual({ kind: "redirecting", target: "/auth/verify-email" });
+    ).toEqual({ kind: "redirecting", target: "/auth/login" });
     expect(
       resolveProtectedRouteState(settled, user(), "/dashboard", ["ADMIN"]),
-    ).toEqual({ kind: "redirecting", target: "/dashboard" });
+    ).toEqual({ kind: "redirecting", target: "/employee" });
     expect(
       resolveProtectedRouteState(
         settled,
@@ -84,7 +132,7 @@ describe("pure route states", () => {
     expect(resolveGuestOnlyRouteState(settled, null).kind).toBe("authorized");
     expect(resolveGuestOnlyRouteState(settled, user())).toEqual({
       kind: "redirecting",
-      target: "/dashboard",
+      target: "/employee",
     });
   });
 });

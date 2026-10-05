@@ -8,12 +8,14 @@
     "clean": "rimraf dist node_modules/.cache/tsconfig.build.tsbuildinfo",
     "build": "pnpm clean && tsc -p tsconfig.build.json",
     "start": "node --enable-source-maps dist/server.js",
+    "admin:bootstrap": "node --enable-source-maps dist/modules/admins/admin-bootstrap.cli.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check-types": "tsc --noEmit",
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "test:watch": "vitest --config vitest.config.ts"
+    "test:watch": "vitest --config vitest.config.ts",
+    "check-types:e2e": "tsc --noEmit -p tests/e2e/tsconfig.json"
   },
   "dependencies": {
     "@template/contracts": "workspace:*",
@@ -27,6 +29,7 @@
     "express-rate-limit": "8.6.1",
     "helmet": "8.3.0",
     "jsonwebtoken": "9.0.3",
+    "luxon": "3.7.2",
     "nodemailer": "9.0.4",
     "pino": "10.3.1",
     "pino-http": "11.0.0",
@@ -43,6 +46,7 @@
     "@types/cors": "2.8.19",
     "@types/express": "5.0.6",
     "@types/jsonwebtoken": "9.0.10",
+    "@types/luxon": "3.7.6",
     "@types/node": "24.13.3",
     "@types/nodemailer": "8.0.1",
     "@types/supertest": "6.0.3",

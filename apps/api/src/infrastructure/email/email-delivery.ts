@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { access, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, parse, resolve } from "node:path";
+import type { ReadableStreamReadResult } from "node:stream/web";
 
-import type { ErrorResponse } from "resend";
+import { z } from "zod";
 
 import {
   emailConfig,
@@ -10,8 +11,8 @@ import {
   type EmailProvider,
 } from "../../core/config/index.js";
 import {
-  getResendEmailClient,
-  type ResendEmailClient,
+  resendConfig,
+  type ResendHttpTransport,
 } from "../../core/config/resend.config.js";
 import { logger } from "../logger/logger.js";
 
@@ -24,6 +25,7 @@ export type EmailSendRequest = Readonly<{
   html: string;
   replyTo?: string;
   localPreviewUrl?: string;
+  assertCanDispatch?: () => Promise<void>;
 }>;
 
 export type EmailSendResult = Readonly<{
@@ -49,57 +51,37 @@ const wait: RetryWait = async (delayMs) => {
   });
 };
 
-const isTransientResendError = (error: ErrorResponse): boolean =>
-  error.name === "rate_limit_exceeded" ||
-  error.name === "concurrent_idempotent_requests" ||
-  error.name === "application_error" ||
-  error.name === "internal_server_error" ||
-  (error.statusCode !== null && error.statusCode >= 500);
-
-const safeError = (
-  error: unknown,
-): Readonly<{ name: string; statusCode: number | null }> => {
-  if (error instanceof Error) {
-    return { name: error.name, statusCode: null };
-  }
-  if (error !== null && typeof error === "object") {
-    const record = error as Record<string, unknown>;
-    return {
-      name:
-        typeof record["name"] === "string" ? record["name"] : "UnknownError",
-      statusCode:
-        typeof record["statusCode"] === "number" ? record["statusCode"] : null,
-    };
-  }
-  return { name: "UnknownError", statusCode: null };
-};
-
-const logFailure = (
-  provider: EmailProvider,
-  attempt: number,
-  error: unknown,
-): void => {
-  const details = safeError(error);
-  logger.error(
-    {
-      provider,
-      attempt,
-      outcome: "email_send_failed",
-      errorName: details.name,
-      errorStatusCode: details.statusCode,
-    },
-    "Email send attempt failed.",
-  );
-};
-
+export type EmailFailureCode =
+  | "TIMEOUT"
+  | "TRANSPORT"
+  | "RATE_LIMIT"
+  | "PROVIDER_UNAVAILABLE"
+  | "PROVIDER_REJECTED"
+  | "INVALID_RESPONSE"
+  | "RESPONSE_TOO_LARGE";
 export class EmailDeliveryError extends Error {
-  constructor(provider: EmailProvider, attempts: number) {
+  constructor(
+    readonly provider: EmailProvider,
+    readonly attempts: number,
+    readonly disposition: "UNKNOWN" | "REJECTED" = "UNKNOWN",
+    readonly code: EmailFailureCode = "TRANSPORT",
+  ) {
     super(
       `${provider} email delivery failed after ${String(attempts)} attempt(s).`,
     );
     this.name = "EmailDeliveryError";
   }
 }
+const logFailure = (
+  provider: EmailProvider,
+  attempt: number,
+  code: EmailFailureCode = "TRANSPORT",
+): void => {
+  logger.error(
+    { provider, attempt, outcome: "email_send_failed", code },
+    "Email send attempt failed.",
+  );
+};
 
 export type ConsoleEmailPreview = (
   request: EmailSendRequest,
@@ -174,65 +156,195 @@ export class ConsoleEmailDelivery implements EmailDelivery {
   async send(request: EmailSendRequest): Promise<EmailSendResult> {
     try {
       await this.preview(request);
-    } catch (error) {
-      logFailure(this.provider, 1, error);
+    } catch {
+      logFailure(this.provider, 1);
       throw new EmailDeliveryError(this.provider, 1);
     }
     return { providerMessageId: `console/${randomUUID()}` };
   }
 }
 
+type FailedAttempt = Readonly<{
+  code: EmailFailureCode;
+  uncertain: boolean;
+  retryable: boolean;
+}>;
+type ResendAttempt = Readonly<{ providerMessageId: string }> | FailedAttempt;
+export type ResendDeliveryDependencies = Readonly<{
+  fetch?: ResendHttpTransport;
+  wait?: RetryWait;
+  idempotencyKey?: () => string;
+  apiKey?: string;
+  timeoutSignal?: () => AbortSignal;
+}>;
+class ResponseLimitError extends Error {}
+
+const abortable = async <T>(
+  pending: Promise<T>,
+  signal: AbortSignal,
+): Promise<T> => {
+  if (signal.aborted)
+    throw new DOMException("Email attempt expired.", "TimeoutError");
+  let abort = () => {};
+  const expired = new Promise<never>((_resolve, reject) => {
+    abort = () => {
+      reject(new DOMException("Email attempt expired.", "TimeoutError"));
+    };
+    signal.addEventListener("abort", abort, { once: true });
+  });
+  try {
+    return await Promise.race([pending, expired]);
+  } finally {
+    signal.removeEventListener("abort", abort);
+  }
+};
+
+const boundedResponseBody = async (
+  response: Response,
+  signal: AbortSignal,
+): Promise<string> => {
+  if (response.body === null) return "";
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const chunk: ReadableStreamReadResult<unknown> = await abortable(
+        reader.read(),
+        signal,
+      );
+      if (chunk.done) break;
+      if (!(chunk.value instanceof Uint8Array)) throw new ResponseLimitError();
+      size += chunk.value.byteLength;
+      if (size > resendConfig.responseLimitBytes)
+        throw new ResponseLimitError();
+      chunks.push(chunk.value);
+    }
+    return Buffer.concat(chunks).toString("utf8");
+  } finally {
+    // Cancel unread provider bytes on every failure without exposing stream diagnostics.
+    await abortable(reader.cancel(), signal).catch(() => {});
+    reader.releaseLock();
+  }
+};
+
+const resendHttpFailure = (status: number): FailedAttempt => ({
+  uncertain: status >= 500 || status === 408 || status === 409 || status < 400,
+  retryable: [429, 500, 502, 503, 504].includes(status),
+  code:
+    status === 429
+      ? "RATE_LIMIT"
+      : status >= 500
+        ? "PROVIDER_UNAVAILABLE"
+        : "PROVIDER_REJECTED",
+});
+const resendSuccessSchema = z.object({ id: z.uuid() });
+
 export class ResendEmailDelivery implements EmailDelivery {
   readonly provider = "resend" as const;
+  private readonly fetchEmail: ResendHttpTransport;
+  private readonly retryWait: RetryWait;
+  private readonly keyFactory: () => string;
+  private readonly apiKey: string;
+  private readonly timeoutSignal: () => AbortSignal;
 
-  constructor(
-    private readonly getClient: () => ResendEmailClient = getResendEmailClient,
-    private readonly retryWait: RetryWait = wait,
-    private readonly idempotencyKeyFactory: () => string = () =>
-      `template-email/${randomUUID()}`,
-  ) {}
+  constructor(dependencies: ResendDeliveryDependencies = {}) {
+    this.fetchEmail = dependencies.fetch ?? fetch;
+    this.retryWait = dependencies.wait ?? wait;
+    this.keyFactory =
+      dependencies.idempotencyKey ?? (() => `identity-email/${randomUUID()}`);
+    this.apiKey = dependencies.apiKey ?? emailConfig.resendApiKey;
+    this.timeoutSignal =
+      dependencies.timeoutSignal ??
+      (() => AbortSignal.timeout(resendConfig.attemptTimeoutMs));
+  }
 
   async send(request: EmailSendRequest): Promise<EmailSendResult> {
-    const idempotencyKey = this.idempotencyKeyFactory();
-
+    const idempotencyKey = this.keyFactory();
+    const payload = JSON.stringify({
+      from: request.from,
+      to: request.to,
+      subject: request.subject,
+      html: request.html,
+      ...(request.replyTo === undefined ? {} : { reply_to: request.replyTo }),
+    });
+    let uncertain = false;
     for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
       try {
-        const response = await this.getClient().send(
-          {
-            from: request.from,
-            to: request.to,
-            subject: request.subject,
-            html: request.html,
-            ...(request.replyTo === undefined
-              ? {}
-              : { replyTo: request.replyTo }),
-          },
-          { idempotencyKey },
+        await request.assertCanDispatch?.();
+      } catch (failure) {
+        if (!uncertain) throw failure;
+        // Closure stops retries but cannot erase a possibly accepted earlier dispatch.
+        throw new EmailDeliveryError(
+          this.provider,
+          attempt - 1,
+          "UNKNOWN",
+          "TRANSPORT",
         );
-
-        if (response.error === null) {
-          return { providerMessageId: response.data.id };
-        }
-
-        logFailure(this.provider, attempt, response.error);
-        if (
-          !isTransientResendError(response.error) ||
-          attempt === maximumAttempts
-        ) {
-          throw new EmailDeliveryError(this.provider, attempt);
-        }
-      } catch (error) {
-        if (error instanceof EmailDeliveryError) throw error;
-        logFailure(this.provider, attempt, error);
-        if (!(error instanceof TypeError) || attempt === maximumAttempts) {
-          throw new EmailDeliveryError(this.provider, attempt);
-        }
       }
-
-      await this.retryWait(attempt * 1_000);
+      const outcome = await this.attempt(payload, idempotencyKey);
+      if ("providerMessageId" in outcome) return outcome;
+      uncertain ||= outcome.uncertain;
+      logFailure(this.provider, attempt, outcome.code);
+      if (!outcome.retryable || attempt === maximumAttempts)
+        throw new EmailDeliveryError(
+          this.provider,
+          attempt,
+          uncertain ? "UNKNOWN" : "REJECTED",
+          outcome.code,
+        );
+      await this.retryWait(attempt === 1 ? 100 : 250);
     }
-
     throw new EmailDeliveryError(this.provider, maximumAttempts);
+  }
+
+  private async attempt(
+    payload: string,
+    idempotencyKey: string,
+  ): Promise<ResendAttempt> {
+    const signal = this.timeoutSignal();
+    try {
+      const response = await abortable(
+        this.fetchEmail(resendConfig.endpoint, {
+          method: "POST",
+          redirect: "error",
+          signal,
+          body: payload,
+          headers: {
+            Authorization: `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+        }),
+        signal,
+      );
+      const body = await boundedResponseBody(response, signal);
+      if (!response.ok) return resendHttpFailure(response.status);
+      let decoded: unknown;
+      try {
+        decoded = JSON.parse(body);
+      } catch {
+        return { code: "INVALID_RESPONSE", uncertain: true, retryable: false };
+      }
+      const parsed = resendSuccessSchema.safeParse(decoded);
+      return parsed.success
+        ? { providerMessageId: parsed.data.id }
+        : { code: "INVALID_RESPONSE", uncertain: true, retryable: false };
+    } catch (failure) {
+      if (failure instanceof ResponseLimitError)
+        return {
+          code: "RESPONSE_TOO_LARGE",
+          uncertain: true,
+          retryable: false,
+        };
+      if (signal.aborted)
+        return { code: "TIMEOUT", uncertain: true, retryable: true };
+      const redirect =
+        failure instanceof TypeError &&
+        failure.cause instanceof Error &&
+        failure.cause.message === "unexpected redirect";
+      return { code: "TRANSPORT", uncertain: true, retryable: !redirect };
+    }
   }
 }
 
@@ -257,8 +369,8 @@ export class SmtpEmailDelivery implements EmailDelivery {
             : { replyTo: request.replyTo }),
         });
         return { providerMessageId: result.messageId ?? null };
-      } catch (error) {
-        logFailure(this.provider, attempt, error);
+      } catch {
+        logFailure(this.provider, attempt);
         if (attempt === maximumAttempts) {
           throw new EmailDeliveryError(this.provider, attempt);
         }
@@ -272,7 +384,7 @@ export class SmtpEmailDelivery implements EmailDelivery {
 
 export type EmailDeliveryDependencies = Readonly<{
   consolePreview?: ConsoleEmailPreview;
-  getResendClient?: () => ResendEmailClient;
+  resendFetch?: ResendHttpTransport;
   getSmtpTransporter?: () => SmtpEmailTransport;
 }>;
 
@@ -283,5 +395,9 @@ export const createEmailDelivery = (
   provider === "console"
     ? new ConsoleEmailDelivery(dependencies.consolePreview)
     : provider === "resend"
-      ? new ResendEmailDelivery(dependencies.getResendClient)
+      ? new ResendEmailDelivery(
+          dependencies.resendFetch === undefined
+            ? {}
+            : { fetch: dependencies.resendFetch },
+        )
       : new SmtpEmailDelivery(dependencies.getSmtpTransporter);

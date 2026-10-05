@@ -1,186 +1,223 @@
 "use client";
-
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
-
-import { AlertCircle, ArrowUpRight, CheckCircle2, Wallet } from "lucide-react";
+import { ArrowUpRight, Wallet } from "lucide-react";
 import { useState } from "react";
-import { useEmployeeState } from "../../context/employee-state.context";
-import type { PackageTier } from "../../types/employee.types";
-import {
-  getRequiredDeposit,
-  getUpgradeCost,
-} from "../../utils/financial-calculations";
+import { getApiError } from "@/services/api/safe-error";
+import type { PurchaseQuote } from "@template/contracts";
+import { usePurchaseCommand } from "../../hooks/purchase-command.hooks";
 import { Button, ButtonLink } from "../common/button";
 import { ConfirmationSheet } from "../common/confirmation-sheet";
 import { MoneyAmount } from "../common/money-amount";
 
-interface PackageUpgradeModalProps {
-  readonly targetPackage: PackageTier | null;
-  readonly onClose: () => void;
-}
-
 export function PackageUpgradeModal({
-  targetPackage,
+  quote,
+  isOpen,
+  loading,
+  quoteError,
   onClose,
-}: PackageUpgradeModalProps) {
-  const scheduleTimeout = useManagedTimeout();
-  const { currentPackage, balance, upgradeToPackage } = useEmployeeState();
+}: {
+  quote: PurchaseQuote | null;
+  isOpen: boolean;
+  loading: boolean;
+  quoteError: Error | null;
+  onClose: () => void;
+}) {
+  const command = usePurchaseCommand();
   const [feedback, setFeedback] = useState<{
-    success: boolean;
-    message: string;
+    scope: string;
+    text: string;
+    committed?: boolean;
   } | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  if (!targetPackage) return null;
-
-  const currentPrice = currentPackage.price;
-  const targetPrice = targetPackage.price;
-  const isFromFree = currentPackage.id === "FREE";
-  // Upgrade cost is the difference (or full price if FREE)
-  const upgradeCost = getUpgradeCost(currentPackage, targetPackage);
-
-  const availableBalance = balance.available;
-  const isSufficient = availableBalance >= upgradeCost;
-  const requiredAdditionalDeposit = getRequiredDeposit(
-    upgradeCost,
-    availableBalance,
-  );
-
-  const handleConfirmUpgrade = () => {
-    setIsProcessing(true);
-    scheduleTimeout(() => {
-      const res = upgradeToPackage(targetPackage.id);
-      setFeedback(res);
-      setIsProcessing(false);
-      if (res.success) {
-        scheduleTimeout(() => {
-          onClose();
-        }, 1200);
-      }
-    }, 400);
+  const identity = quote?.quoteId ?? "";
+  const pending =
+    command.state.state === "pending" ||
+    command.isPending ||
+    command.observation.isPending;
+  const send = async () => {
+    if (
+      !quote ||
+      !command.allowed ||
+      pending ||
+      !quote.canPurchase ||
+      (feedback?.scope === identity && feedback.committed)
+    )
+      return;
+    try {
+      await command.mutateAsync(quote.quoteId);
+      setFeedback({
+        scope: identity,
+        committed: true,
+        text: "تم تفعيل المنصب وتسجيل الشراء. أُعيد تحميل الأرصدة الحالية.",
+      });
+    } catch (failure: unknown) {
+      const error = getApiError(failure);
+      setFeedback({
+        scope: identity,
+        text:
+          error.code === "OFFLINE"
+            ? "لا يوجد اتصال. لم يُرسل طلب شراء جديد."
+            : error.category === "coordination" && command.retained === null
+              ? "تعذر تنسيق الشراء بأمان. تحقق من العملية الأصلية قبل إعادة المحاولة."
+              : "لم تتأكد نتيجة العملية. تحقق من العملية الأصلية قبل شراء جديد.",
+      });
+    }
   };
-
   return (
     <ConfirmationSheet
-      isOpen={true}
+      isOpen={isOpen}
       onClose={onClose}
-      title={`تأكيد ترقية المنصب إلى ${targetPackage.name}`}
-      description="تفاصيل احتساب تكلفة الترقية وخصم المنصب الحالي"
+      title={
+        quote
+          ? `تأكيد تفعيل المنصب ${quote.packageCode}`
+          : "مراجعة تفعيل المنصب"
+      }
+      description="يُخصم سعر المنصب كاملاً. العرض ليس حجزاً للأموال."
     >
       <div className="space-y-4">
-        {/* Breakdown Card */}
-        <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-          <div className="flex items-center justify-between text-slate-600">
-            <span>سعر المنصب المستهدف ({targetPackage.name}):</span>
-            <MoneyAmount amount={targetPrice} size="sm" />
-          </div>
-
-          {!isFromFree && (
-            <div className="flex items-center justify-between text-slate-600">
-              <span>خصم سعر منصبك الحالي ({currentPackage.name}):</span>
-              <span className="font-semibold text-rose-700">
-                -
-                <MoneyAmount amount={currentPrice} size="sm" color="negative" />
-              </span>
+        {loading && <p role="status">جارٍ تحميل عرض الشراء…</p>}
+        {quoteError && (
+          <p role="alert">
+            تعذر تحميل عرض الشراء. أغلق المراجعة وأعد المحاولة.
+          </p>
+        )}
+        {quote && (
+          <>
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
+              <div className="flex items-center justify-between text-slate-600">
+                <span>سعر المنصب المستهدف:</span>
+                <MoneyAmount amount={quote.terms.price} size="sm" />
+              </div>
+              <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-900">
+                <span>إجمالي المبلغ المخصوم:</span>
+                <MoneyAmount amount={quote.fullDebit} size="md" />
+              </div>
             </div>
-          )}
-
-          <div className="flex items-center justify-between border-t border-slate-200 pt-2 font-bold text-slate-900">
-            <span>صافي تكلفة الترقية الفعلية:</span>
-            <MoneyAmount amount={upgradeCost} size="md" color="neutral" />
-          </div>
-        </div>
-
-        {/* Balance & Additional Required Deposit Breakdown */}
-        <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
-          <div className="flex items-center justify-between text-slate-600">
-            <span className="flex items-center gap-1.5">
-              <Wallet size={16} className="text-slate-500" aria-hidden="true" />
-              الرصيد المتاح حالياً في حسابك:
-            </span>
-            <MoneyAmount amount={availableBalance} size="sm" />
-          </div>
-
-          {!isSufficient ? (
-            <div className="-mx-4 -mb-4 space-y-2 rounded-b-lg border-t border-amber-200 border-slate-200 bg-amber-50/70 p-4 pt-2">
-              <div className="flex items-center justify-between font-bold text-amber-900">
-                <span>المبلغ الإضافي المطلوب إيداعه:</span>
+            <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 text-sm">
+              <div className="flex items-center justify-between text-slate-600">
+                <span className="flex items-center gap-1.5">
+                  <Wallet size={16} aria-hidden="true" />
+                  الرصيد القابل للشراء:
+                </span>
+                <MoneyAmount amount={quote.usableFunds} size="sm" />
+              </div>
+              <div className="flex items-center justify-between">
+                <span>تمويل الإحالات:</span>
                 <MoneyAmount
-                  amount={requiredAdditionalDeposit}
-                  size="md"
-                  color="negative"
+                  amount={quote.fundedAllocation.referral}
+                  size="sm"
                 />
               </div>
-              <p className="text-xs leading-relaxed text-amber-900">
-                ملاحظة: تكلفة الترقية الكاملة هي {upgradeCost.toFixed(2)} USDT.
-                الرصيد المتاح في حسابك ({availableBalance.toFixed(2)} USDT) يغطي
-                جزءاً منها، ويتطلب إيداع {requiredAdditionalDeposit.toFixed(2)}{" "}
-                USDT إضافية لتغذية الرصيد قبل إتمام الترقية.
+              <div className="flex items-center justify-between">
+                <span>تمويل غير الإحالات:</span>
+                <MoneyAmount
+                  amount={quote.fundedAllocation.nonReferral}
+                  size="sm"
+                />
+              </div>
+              {quote.requiredTopUp !== "0" && (
+                <div className="flex items-center justify-between border-t border-amber-200 pt-2 text-amber-900">
+                  <span>المبلغ الإضافي المطلوب:</span>
+                  <MoneyAmount amount={quote.requiredTopUp} size="sm" />
+                </div>
+              )}
+            </div>
+            <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
+              <p>التفعيل فوري بعد الشراء. لا يمكن إلغاء الشراء المكتمل.</p>
+              <p>
+                مكافأة المهمة المعتمدة:{" "}
+                <MoneyAmount amount={quote.terms.dailyReward} size="sm" /> ·
+                رسوم السحب:{" "}
+                <bdi dir="ltr">{quote.terms.withdrawalFeeBps / 100}%</bdi>
+              </p>
+              <p>
+                التقويم: <bdi dir="ltr">{quote.terms.calendar.zone}</bdi> · أيام
+                الأسبوع:{" "}
+                <bdi dir="ltr">{quote.terms.calendar.workdays.join(", ")}</bdi>{" "}
+                · حد أول يوم:{" "}
+                <bdi dir="ltr">{quote.terms.calendar.firstDateCutoff}</bdi>
+              </p>
+              <p>
+                أيام العمل المحتسبة: {quote.terms.countedWorkDates} · أول يوم:{" "}
+                <bdi>{quote.preview.firstWorkDate}</bdi> · آخر يوم:{" "}
+                <bdi>{quote.preview.finalWorkDate}</bdi>
+              </p>
+              <p>
+                انتهاء الصلاحية: <bdi dir="ltr">{quote.preview.expiresAt}</bdi>
+              </p>
+              <p>
+                الإجمالي المشروط بإكمال المهام المعتمدة قبل تكلفة الباقة ورسوم
+                السحب:{" "}
+                <MoneyAmount amount={quote.terms.conditionalGross} size="sm" />
               </p>
             </div>
-          ) : (
-            <div className="flex items-center justify-between border-t border-slate-200 pt-2 text-xs font-medium text-emerald-700">
-              <span>الرصيد كافٍ لإتمام الترقية مباشرة من الرصيد المتاح.</span>
-            </div>
-          )}
-        </div>
-
-        {/* Policy notice */}
-        <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-          <p className="font-semibold text-slate-700">
-            تنويه إداري حول مدة المنصب:
-          </p>
-          <p>
-            لا يمكن إلغاء الاشتراك أو التراجع بعد إتمام الترقية. مدة سريان
-            المنصب بعد الترقية وإعادة ضبطها قيد الاعتماد الإداري.
-          </p>
-        </div>
-
-        {feedback && (
-          <div
-            className={`flex items-center gap-2 rounded-md p-3 text-xs font-semibold ${
-              feedback.success
-                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border border-rose-200 bg-rose-50 text-rose-800"
-            }`}
-            role="alert"
-          >
-            {feedback.success ? (
-              <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
-            ) : (
-              <AlertCircle size={16} className="shrink-0" aria-hidden="true" />
+            {!quote.canPurchase && (
+              <p role="alert">
+                {quote.blockReason === "INSUFFICIENT_FUNDS"
+                  ? "الرصيد غير كافٍ. لا تُخصم الأموال قبل تأكيد شراء صالح."
+                  : "هذا الانتقال غير مسموح أو تغيّرت صلاحية العرض. أعد تحميل البيانات."}
+              </p>
             )}
-            <span>{feedback.message}</span>
-          </div>
+            {feedback?.scope === identity && (
+              <p
+                role="status"
+                className="rounded-md border border-slate-200 p-3 text-xs"
+              >
+                {feedback.text}
+              </p>
+            )}
+            <div className="flex flex-col gap-2 pt-2">
+              {quote.canPurchase ? (
+                <Button
+                  variant="primary"
+                  fullWidth
+                  loading={command.isPending}
+                  disabled={
+                    !command.allowed ||
+                    pending ||
+                    (feedback?.scope === identity &&
+                      feedback.committed === true)
+                  }
+                  icon={ArrowUpRight}
+                  onClick={() => {
+                    void send();
+                  }}
+                >
+                  {command.retained && command.state.state !== "pending"
+                    ? "إعادة إرسال الشراء الأصلي نفسه"
+                    : "تأكيد الشراء وخصم السعر كاملاً"}
+                </Button>
+              ) : quote.blockReason === "INSUFFICIENT_FUNDS" ? (
+                <ButtonLink
+                  href="/employee/deposit"
+                  variant="primary"
+                  fullWidth
+                  icon={Wallet}
+                >
+                  الانتقال للإيداع
+                </ButtonLink>
+              ) : null}
+              {command.retained && (
+                <Button
+                  variant="outline"
+                  fullWidth
+                  disabled={!command.allowed || pending}
+                  onClick={() => {
+                    void command.observation.mutateAsync().catch(() => {
+                      setFeedback({
+                        scope: identity,
+                        text: "تعذر التحقق. تظل العملية الأصلية غير محسومة.",
+                      });
+                    });
+                  }}
+                >
+                  التحقق من نتيجة العملية
+                </Button>
+              )}
+              <Button variant="outline" fullWidth onClick={onClose}>
+                إغلاق
+              </Button>
+            </div>
+          </>
         )}
-
-        {/* Action buttons */}
-        <div className="flex flex-col gap-2 pt-2">
-          {isSufficient ? (
-            <Button
-              variant="primary"
-              fullWidth
-              loading={isProcessing}
-              icon={ArrowUpRight}
-              onClick={handleConfirmUpgrade}
-            >
-              {`تأكيد الترقية وخصم ${upgradeCost.toFixed(2)} USDT`}
-            </Button>
-          ) : (
-            <ButtonLink
-              href="/employee/deposit"
-              variant="primary"
-              fullWidth
-              icon={Wallet}
-            >
-              {`الانتقال للإيداع وإضافة ${requiredAdditionalDeposit.toFixed(2)} USDT`}
-            </ButtonLink>
-          )}
-
-          <Button variant="outline" fullWidth onClick={onClose}>
-            إلغاء
-          </Button>
-        </div>
       </div>
     </ConfirmationSheet>
   );

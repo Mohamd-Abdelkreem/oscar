@@ -35,7 +35,6 @@ import type {
 } from "../types/employee.types";
 
 import { useEmployeeTaskActions } from "./actions/use-employee-task-actions";
-import { useEmployeePackageActions } from "./actions/use-employee-package-actions";
 import { useEmployeeWalletActions } from "./actions/use-employee-wallet-actions";
 import type { EmployeeContextValue } from "./employee-state.types";
 
@@ -47,7 +46,7 @@ export function EmployeeStateProvider({
   readonly children: ReactNode;
 }) {
   const [user, setUser] = useState<EmployeeUser>(INITIAL_USER);
-  const [currentPackageId, setCurrentPackageId] = useState<PackageId>("S1");
+  const [currentPackageId] = useState<PackageId>("S1");
   const [packageExpiryDays] = useState(22);
   const [balance, setBalance] = useState<FinancialBalance>(INITIAL_BALANCE);
   const [task, setTask] = useState<DailyTask>(INITIAL_TASK);
@@ -82,15 +81,6 @@ export function EmployeeStateProvider({
   const hasPendingWithdrawal = pendingWithdrawal !== undefined;
   const { submitTask, replaceTaskScreenshot, setTaskScenario } =
     useEmployeeTaskActions({ task, setBalance, setTask, setTransactions });
-  const { upgradeToPackage } = useEmployeePackageActions({
-    balance,
-    setBalance,
-    setTask,
-    setTransactions,
-    setCurrentPackageId,
-    currentPackageId,
-    currentPackage,
-  });
   const {
     setupWithdrawalAddress,
     requestWithdrawal,
@@ -125,7 +115,6 @@ export function EmployeeStateProvider({
       submitTask,
       replaceTaskScreenshot,
       setTaskScenario,
-      upgradeToPackage,
       setupWithdrawalAddress,
       requestWithdrawal,
       checkDepositStatus,
@@ -149,7 +138,6 @@ export function EmployeeStateProvider({
       submitTask,
       replaceTaskScreenshot,
       setTaskScenario,
-      upgradeToPackage,
       setupWithdrawalAddress,
       requestWithdrawal,
       checkDepositStatus,

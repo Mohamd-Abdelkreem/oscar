@@ -4,6 +4,20 @@ A generic Next.js 16, Express 5, PostgreSQL, and Prisma 7 foundation with a
 complete email/password account lifecycle. It contains no product domain,
 organization, tenant, payment, or demo data model.
 
+## OSCAR governance
+
+OSCAR work follows the [project constitution](.specify/memory/constitution.md),
+the approved [roadmap](PLAN.md), the [engineering guides](docs/engineering/README.md),
+and the [workflow operating contract](docs/workflow/speckit-prompts.txt).
+Read all eight engineering guides at each phase start and revisit relevant sections
+for each task batch and review. Execute only the owner's selected command, phase,
+and task scope; satisfy predecessor and verification gates before completion.
+Approved employee/admin designs are frozen, with missing UI or conflicting
+presentation changes requiring an explicit owner decision.
+
+The remaining sections document the existing authentication foundation and runtime
+setup; they do not establish OSCAR financial acceptance or release authorization.
+
 ## What is included
 
 - React 19 and Next.js App Router
@@ -39,8 +53,10 @@ Copy-Item .env.example .env
 Copy-Item apps/web/.env.example apps/web/.env.local
 ```
 
-Replace every `AUTH_*_SECRET` placeholder in `.env` with an independent
-random value of at least 32 characters. Development and tests default to
+Fill every blank `AUTH_*_SECRET` in `.env` with an independent
+random value of at least 32 characters. For local use, set
+`EMAIL_PROVIDER=console` and `WEB_APP_URL=http://localhost:3000` in the copied
+`.env`; unset development/test provider settings default to
 `EMAIL_PROVIDER=console`, which writes complete HTML previews beneath the
 workspace-root, Git-ignored `.local-emails` directory, requesting owner-only
 filesystem modes where the platform supports them, without making a provider
@@ -107,11 +123,15 @@ owns the current safe-user session. During restoration, only those same exact
 anonymous code/status pairs become `null`; unexpected `400` or `401` codes and
 all other restore failures remain visible and retryable.
 
-Logout revokes the current refresh record. Logout-all, password change, and
-password reset revoke every refresh record. Refresh and reset tokens are
-single-use. These operations cannot immediately revoke an already issued,
-stateless access JWT: it remains usable until its short configured expiry (15
-minutes by default). The boilerplate intentionally has no token blacklist.
+Logout revokes the authenticated stable session, including its access and
+refresh authority, even with a stale or absent refresh cookie. Logout-all,
+password change, and password reset revoke every prior session for that account.
+Protected requests check current account and persisted session authority, so
+revoked access tokens fail on the next request. Refresh and reset tokens are
+single-use; refresh rotation retains the original session expiry and remember-me
+policy. Reset links bind the intended User ID, email and purpose to the current
+stored credential; recovery requires an ACTIVE, verified account and does not
+activate or restore it. Successful reset/change requires a fresh sign-in.
 Browser session state is cleared only after the server confirms logout.
 Failures stay visible and retryable, and a failed logout-all never claims that
 sessions on other devices were revoked.
@@ -120,12 +140,15 @@ sessions on other devices were revoked.
 
 - `console`: development/test only; no provider network call
 - `resend`: requires a non-placeholder `RESEND_API_KEY`
-- `smtp`: production requires host, user, and password
+- `smtp`: optional development/test transport
 
-Production rejects `EMAIL_PROVIDER=console` and requires an HTTPS
-`WEB_APP_URL`. Registration does not report success if verification email
+Production requires explicit `EMAIL_PROVIDER=resend`, company
+`MAIL_FROM_NAME`, `MAIL_FROM_ADDRESS`, `MAIL_REPLY_TO`, an HTTPS `WEB_APP_URL`,
+and an owner-approved same-origin `ADMIN_INVITATION_ACCEPT_URL`. Production
+signing keys must be explicit and distinct across all four purposes.
+Registration does not report success if verification email
 delivery fails. Provider failure logs contain only safe classifications such as
-provider, attempt, error name, and status code; raw provider messages are not
+provider, attempt, outcome, and finite failure code; raw provider messages are not
 logged.
 
 ## Optional seed accounts

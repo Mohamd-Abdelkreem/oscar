@@ -1,6 +1,6 @@
 "use client";
 
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
+import { useEmailVerification } from "@/features/auth/hooks/email-verification.hooks";
 
 import {
   AlertCircle,
@@ -11,52 +11,18 @@ import {
   Send,
 } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   Button,
   ButtonLink,
 } from "@/features/employee/components/common/button";
 
-type VerificationState = "inbox" | "checking" | "success" | "expired";
-
 export function EmployeeVerifyEmailScreen() {
-  const scheduleTimeout = useManagedTimeout();
-  const searchParams = useSearchParams();
-  const stateParam = searchParams.get("state");
-
-  const [userOverriddenState, setUserOverriddenState] =
-    useState<VerificationState | null>(null);
-  const state = userOverriddenState ?? stateParam ?? "inbox";
-  const [cooldown, setCooldown] = useState(0);
-
-  // Handle local resend cooldown
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = setInterval(() => {
-      setCooldown((prev) => prev - 1);
-    }, 1000);
-    return () => {
-      clearInterval(timer);
-    };
-  }, [cooldown]);
-
-  const handleResendLink = () => {
-    if (cooldown > 0) return;
-    setCooldown(60);
-  };
-
-  const handleSimulateClickLink = () => {
-    setUserOverriddenState("checking");
-    scheduleTimeout(() => {
-      setUserOverriddenState("success");
-    }, 1200);
-  };
+  const flow = useEmailVerification();
+  const state = flow.stage;
 
   return (
     <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm sm:p-8">
-      {/* 1. Inbox Instructions State */}
-      {state === "inbox" && (
+      {["inbox", "ready", "unavailable", "uncertain"].includes(state) && (
         <div className="space-y-4">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-100 text-emerald-800">
             <MailCheck size={28} aria-hidden="true" />
@@ -67,8 +33,8 @@ export function EmployeeVerifyEmailScreen() {
               تحقق من صندوق بريدك الإلكتروني
             </h1>
             <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500 sm:text-sm">
-              أرسلنا رابط تفعيل مشفراً إلى بريدك المسجل. يرجى فتح الرسالة والنقر
-              على الرابط لتأكيد الحساب.
+              افتح رابط التفعيل الوارد إلى بريد الحساب، ثم أكد التفعيل. فتح
+              الرابط وحده لا يفعّل الحساب.
             </p>
           </div>
 
@@ -78,7 +44,10 @@ export function EmployeeVerifyEmailScreen() {
               <li>
                 التحقق يتم حصرياً عبر الروابط المباشرة (لا نطلب أي رموز OTP).
               </li>
-              <li>صلاحية الرابط تمتد لـ 24 ساعة من تاريخ الإرسال.</li>
+              <li>
+                صلاحية الرابط يحددها الخادم؛ قد يُستبدل أو تنتهي صلاحيته قبل
+                التأكيد.
+              </li>
               <li>
                 يرجى التحقق من مجلد الرسائل الترويجية أو غير المرغوب فيها
                 (Spam).
@@ -86,47 +55,47 @@ export function EmployeeVerifyEmailScreen() {
             </ul>
           </div>
 
-          {/* Interactive Simulation Action */}
           <div className="space-y-2 rounded-md border border-emerald-200 bg-emerald-50/60 p-3.5 text-xs">
             <span className="block font-semibold text-emerald-900">
-              محاكاة تجريبية للرابط (Demo Action):
+              تأكيد تفعيل البريد الإلكتروني:
             </span>
             <Button
               variant="primary"
               size="default"
               fullWidth
               icon={ExternalLink}
-              onClick={handleSimulateClickLink}
+              aria-label="تأكيد تفعيل البريد الإلكتروني"
+              disabled={state !== "ready" || flow.verifying}
+              loading={flow.verifying}
+              onClick={() => {
+                void flow.confirm();
+              }}
             >
-              محاكاة الضغط على رابط التفعيل الوارد
+              تأكيد التفعيل
             </Button>
           </div>
 
-          <div className="flex flex-col gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="default"
-              fullWidth
-              disabled={cooldown > 0}
-              icon={RefreshCw}
-              onClick={handleResendLink}
-            >
-              {cooldown > 0
-                ? `إعادة إرسال الرابط متاحة بعد (${cooldown.toString()} ثانية)`
-                : "إعادة إرسال رابط التفعيل"}
-            </Button>
-
-            <Link
-              href="/employee/auth/login"
-              className="py-1 text-xs text-slate-500 hover:text-slate-800"
-            >
-              الرجوع لصفحة تسجيل الدخول
-            </Link>
-          </div>
+          <VerificationRecovery flow={flow} />
         </div>
       )}
 
-      {/* 2. Checking State */}
+      {state === "invalid" && (
+        <div className="space-y-4">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600">
+            <AlertCircle size={32} aria-hidden="true" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900">
+              رابط التفعيل غير صالح أو منتهي الصلاحية
+            </h1>
+            <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
+              قد يكون الرابط منتهي الصلاحية أو مستبدلاً أو مستخدماً مسبقاً.
+              يمكنك طلب رابط تفعيل جديد إلى بريدك.
+            </p>
+          </div>
+          <VerificationRecovery flow={flow} />
+        </div>
+      )}
       {state === "checking" && (
         <div className="space-y-4 py-4">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-emerald-700">
@@ -137,13 +106,12 @@ export function EmployeeVerifyEmailScreen() {
               جارٍ التحقق من صلاحية الرابط...
             </h1>
             <p className="mt-1 text-xs text-slate-500">
-              يرجى الانتظار لحظات لتأكيد تفعيل الحساب
+              التحقق من الرابط لا يفعّل الحساب؛ يتطلب التفعيل تأكيدك.
             </p>
           </div>
         </div>
       )}
 
-      {/* 3. Success State */}
       {state === "success" && (
         <div className="space-y-4">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-emerald-200 bg-emerald-100 text-emerald-700">
@@ -155,8 +123,8 @@ export function EmployeeVerifyEmailScreen() {
               تم تفعيل بريدك الإلكتروني بنجاح!
             </h1>
             <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-              أصبح حسابك نشطاً الآن ومؤهلاً للبدء في تنفيذ مهام الموظفين وإدارة
-              المحفظة المالية.
+              تم تأكيد البريد الإلكتروني. سجل الدخول لعرض صلاحيات حسابك؛ التفعيل
+              لا يمنح اشتراكاً مدفوعاً.
             </p>
           </div>
 
@@ -172,44 +140,81 @@ export function EmployeeVerifyEmailScreen() {
           </div>
         </div>
       )}
-
-      {/* 4. Expired State */}
-      {state === "expired" && (
-        <div className="space-y-4">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-600">
-            <AlertCircle size={32} aria-hidden="true" />
-          </div>
-
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900">
-              رابط التفعيل غير صالح أو منتهي الصلاحية
-            </h1>
-            <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">
-              يبدو أن الرابط المستخدم قد انتهت صلاحيته أو تم استهلاكه مسبقاً.
-              يمكنك طلب رابط تفعيل جديد إلى بريدك.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 pt-2">
-            <Button
-              variant="primary"
-              size="default"
-              fullWidth
-              icon={Send}
-              onClick={handleResendLink}
-            >
-              طلب رابط تفعيل جديد
-            </Button>
-
-            <Link
-              href="/employee/auth/login"
-              className="py-1 text-xs text-slate-500 hover:text-slate-800"
-            >
-              الرجوع لصفحة تسجيل الدخول
-            </Link>
-          </div>
-        </div>
-      )}
     </div>
+  );
+}
+
+function VerificationRecovery({
+  flow,
+}: {
+  readonly flow: ReturnType<typeof useEmailVerification>;
+}) {
+  return (
+    <>
+      {flow.error && (
+        <p className="text-xs font-medium text-rose-600" role="alert">
+          {flow.error}
+        </p>
+      )}
+      {flow.notice && (
+        <p className="text-xs text-slate-600" role="status">
+          {flow.notice}
+        </p>
+      )}
+      {flow.stage === "unavailable" && (
+        <Button
+          variant="outline"
+          fullWidth
+          disabled={flow.previewBlocked}
+          onClick={() => {
+            void flow.preview();
+          }}
+        >
+          إعادة المحاولة
+        </Button>
+      )}
+      <form
+        className="flex flex-col gap-2 pt-2"
+        onSubmit={(event) => {
+          void flow.resendLink(event);
+        }}
+      >
+        <label
+          htmlFor="verification-email"
+          className="text-right text-xs font-semibold text-slate-700"
+        >
+          البريد الإلكتروني للحساب
+        </label>
+        <input
+          id="verification-email"
+          type="email"
+          autoComplete="email"
+          dir="ltr"
+          value={flow.email}
+          onChange={(event) => {
+            flow.setEmail(event.target.value);
+          }}
+          required
+          className="min-h-[48px] w-full rounded-md border border-slate-300 px-3.5 py-2.5 text-base focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+        />
+        <Button
+          type="submit"
+          variant={flow.stage === "invalid" ? "primary" : "outline"}
+          size="default"
+          fullWidth
+          disabled={flow.resending || flow.resendUncertain}
+          loading={flow.resending}
+          icon={flow.stage === "invalid" ? Send : RefreshCw}
+        >
+          إعادة إرسال رابط التفعيل
+        </Button>
+        <Link
+          href="/employee/auth/login"
+          className="py-1 text-xs text-slate-500 hover:text-slate-800"
+        >
+          الرجوع لصفحة تسجيل الدخول
+        </Link>
+      </form>
+    </>
   );
 }

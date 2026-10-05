@@ -11,7 +11,7 @@ const schema = readFileSync(
   "utf8",
 );
 
-describe("authentication-only Prisma schema", () => {
+describe("authentication and financial foundation Prisma schema", () => {
   it("contains exactly the required application models and enums", () => {
     const models = [...schema.matchAll(/^model\s+(\w+)/gmu)].map(
       (match) => match[1],
@@ -19,8 +19,36 @@ describe("authentication-only Prisma schema", () => {
     const enums = [...schema.matchAll(/^enum\s+(\w+)/gmu)].map(
       (match) => match[1],
     );
-    expect(models).toEqual(["User", "RefreshToken"]);
-    expect(enums).toEqual(["UserRole", "UserStatus"]);
+    expect(models).toEqual([
+      "User",
+      "RefreshToken",
+      "AuthSession",
+      "AdminSetupState",
+      "AdminInvitation",
+      "IdentityAuditRecord",
+      "Wallet",
+      "FinancialOperation",
+      "RequestIdentity",
+      "LedgerPosting",
+      "ReservationAllocation",
+      "AuditRecord",
+      "Package",
+      "ReferralSettings",
+      "ConfigurationChange",
+      "PurchaseQuote",
+      "Purchase",
+      "Subscription",
+      "ReferralDecision",
+    ]);
+    expect(enums).toEqual([
+      "UserRole",
+      "UserStatus",
+      "FinancialOperationKind",
+      "FinancialOrigin",
+      "FinancialActorType",
+      "FundSource",
+      "ReservationState",
+    ]);
   });
 
   it("contains no demo or business-specific model inventory", () => {

@@ -10,6 +10,7 @@ import type { z } from "zod";
 
 import { FormField } from "@/components/forms/form-field";
 import { useLogin } from "@/features/auth/hooks/auth.hooks";
+import { useCredentialFieldCleanup } from "@/features/auth/hooks/credential-commands.hooks";
 import { resolvePostLoginPath } from "@/features/auth/utils/safe-return-path";
 import { applyApiFormError } from "@/shared/forms/form";
 
@@ -25,19 +26,26 @@ export function LoginForm() {
     handleSubmit,
     getValues,
     register,
+    resetField,
     setError,
   } = useForm<LoginInput, unknown, LoginBody>({
     resolver: zodResolver(loginBodySchema),
     defaultValues: { email: "", password: "", rememberMe: false },
   });
 
+  useCredentialFieldCleanup(() => {
+    resetField("password");
+  }, login.isCurrentFlow);
+
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
     try {
-      await login.mutateAsync(values);
-      router.replace(
-        resolvePostLoginPath(searchParams.get("returnTo")),
-      );
+      const account = await login.mutateAsync(values);
+      resetField("password");
+      if (login.isCurrentFlow())
+        router.replace(
+          resolvePostLoginPath(searchParams.get("returnTo"), account.user.role),
+        );
     } catch (error) {
       setFormError(applyApiFormError(error, { getValues, setError }));
     }

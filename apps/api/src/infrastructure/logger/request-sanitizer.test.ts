@@ -7,6 +7,47 @@ import {
 } from "./request-sanitizer.js";
 
 describe("request log sanitization", () => {
+  it("redacts repeated and encoded credential keys without retaining referrer spelling variants", () => {
+    const sanitized = sanitizeRequestForLog({
+      url: "/auth/validate-admin-invitation?%74oken=sentinel-one&TOKEN=sentinel-two&locale=ar",
+      headers: {
+        ReFeReR: "https://web.test/?token=sentinel-three",
+        Referrer: "sentinel-four",
+        "user-agent": "Privacy Browser",
+      },
+      query: { credentials: [{ resetToken: "sentinel-five", locale: "ar" }] },
+    });
+    const serialized = JSON.stringify(sanitized);
+    expect(serialized).not.toContain("sentinel-");
+    expect(serialized).toContain("locale=ar");
+    expect(sanitized["headers"]).toEqual({ "user-agent": "Privacy Browser" });
+  });
+  it("omits credential-bearing referrers while preserving safe metadata", () => {
+    const output = sanitizeRequestForLog({
+      url: "/auth/validate-reset-token?token=sentinel-query",
+      headers: {
+        referer: "https://web.test/reset?token=sentinel-referrer",
+        "user-agent": "Browser",
+        authorization: "sentinel-header",
+      },
+    });
+    expect(JSON.stringify(output)).not.toContain("sentinel-referrer");
+    expect(output["headers"]).toMatchObject({ "user-agent": "Browser" });
+    expect(JSON.stringify(output)).not.toContain("sentinel-query");
+  });
+  it("redacts nested credential query fields and fragments", () => {
+    expect(
+      JSON.stringify(
+        sanitizeRequestQuery({
+          filter: { token: "sentinel-nested", page: "1" },
+        }),
+      ),
+    ).not.toContain("sentinel-nested");
+    expect(
+      sanitizeRequestUrl("/reset?locale=en#token=sentinel-fragment"),
+    ).not.toContain("sentinel-fragment");
+    expect(sanitizeRequestUrl("/reset#token=sentinel-fragment")).toBe("/reset");
+  });
   it.each([
     "token",
     "access_token",
@@ -15,6 +56,10 @@ describe("request log sanitization", () => {
     "code",
     "secret",
     "password",
+    "RESEND_API_KEY",
+    "AUTH_JWT_SECRET",
+    "signingPayload",
+    "private_key",
   ])("redacts the %s URL query value", (key) => {
     const result = sanitizeRequestUrl(
       `/auth/reset-password?${key}=secret-value&locale=en`,

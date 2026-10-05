@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { nonEmptyBoundedString } from "../http/http.schema.ts";
+import { optionalReferralCodeSchema } from "../identity/identity.schema.ts";
 
 export const PASSWORD_MIN_LENGTH = 15;
 export const PASSWORD_MAX_LENGTH = 128;
@@ -27,6 +28,7 @@ export const registerBodySchema = z
     email: emailSchema,
     phone: phoneSchema.optional().default(null),
     password: passwordSchema,
+    referralCode: optionalReferralCodeSchema,
   })
   .strict();
 
@@ -40,7 +42,9 @@ export const loginBodySchema = z
 
 export const emailRequestBodySchema = z.object({ email: emailSchema }).strict();
 
-export const tokenQuerySchema = z.object({ token: z.string().min(1) }).strict();
+export const tokenQuerySchema = z
+  .object({ token: z.string().min(1).max(4096) })
+  .strict();
 
 export const resetPasswordBodySchema = z
   .object({

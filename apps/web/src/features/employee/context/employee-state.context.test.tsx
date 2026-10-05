@@ -66,65 +66,6 @@ describe("employee mock state", () => {
     expect(result.current.taskHistory).toEqual(history);
   });
 
-  it("reports the approved S1 to O1 funding shortfall without changing state", () => {
-    const { result } = renderHook(useEmployeeState, { wrapper });
-    const balance = result.current.balance;
-    const ledger = result.current.transactions;
-
-    act(() => {
-      expect(result.current.upgradeToPackage("O1")).toEqual({
-        success: false,
-        message:
-          "الرصيد المتاح (40.00 USDT) غير كافٍ. يتطلب إيداع إضافي قدره 500.00 USDT.",
-      });
-    });
-    expect(result.current.currentPackage.id).toBe("S1");
-    expect(result.current.balance).toEqual(balance);
-    expect(result.current.transactions).toEqual(ledger);
-    expect(result.current.packageExpiryDays).toBe(22);
-  });
-
-  it.each(["open", "submitted", "approved", "rejected"] as const)(
-    "upgrades S1 to S2 while preserving historical rewards when today's task is %s",
-    (status) => {
-      const { result } = renderHook(useEmployeeState, { wrapper });
-      const history = result.current.taskHistory;
-
-      // The existing scenario action can reopen tasks in the local demo.
-      for (let index = 0; index < 10; index++) {
-        act(() => {
-          result.current.setTaskScenario("open");
-        });
-        vi.advanceTimersByTime(1);
-        act(() => {
-          result.current.submitTask(`blob:task-${index.toString()}`);
-        });
-      }
-      act(() => {
-        result.current.setTaskScenario(status);
-      });
-      const historicalLedger = result.current.transactions;
-      act(() => {
-        expect(result.current.upgradeToPackage("S2").success).toBe(true);
-      });
-
-      expect(result.current.currentPackage.id).toBe("S2");
-      expect(result.current.balance).toMatchObject({
-        total: 0,
-        available: 0,
-        reserved: 0,
-      });
-      expect(result.current.task.rewardAmount).toBe(status === "open" ? 4 : 2);
-      expect(result.current.taskHistory).toEqual(history);
-      expect(result.current.transactions.slice(1)).toEqual(historicalLedger);
-      expect(result.current.transactions[0]).toMatchObject({
-        type: "package_upgrade",
-        amount: -60,
-      });
-      expect(result.current.packageExpiryDays).toBe(22);
-    },
-  );
-
   it("reserves withdrawal funds and releases them with a reversal when rejected", () => {
     const { result } = renderHook(useEmployeeState, { wrapper });
     act(() => {

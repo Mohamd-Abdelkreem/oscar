@@ -22,6 +22,37 @@ const limit = (
 });
 
 export const authRouteLimits = Object.freeze({
+  invitationSource: limit(
+    "INVITATION_SOURCE",
+    "AUTH_LIMIT_INVITATION_PER_15_MIN",
+    20,
+    fifteenMinutesMs,
+  ),
+  invitationToken: limit(
+    "INVITATION_TOKEN",
+    "AUTH_LIMIT_INVITATION_TOKEN_MAX_ATTEMPTS",
+    5,
+    fifteenMinutesMs,
+    10,
+  ),
+  invitationActor: limit(
+    "INVITATION_ACTOR",
+    "AUTH_LIMIT_INVITATION_PER_HOUR_ACTOR",
+    5,
+    oneHourMs,
+  ),
+  invitationRecipient: limit(
+    "INVITATION_RECIPIENT",
+    "AUTH_LIMIT_INVITATION_PER_HOUR_RECIPIENT",
+    5,
+    oneHourMs,
+  ),
+  adminControlActor: limit(
+    "ADMIN_CONTROL_ACTOR",
+    "AUTH_LIMIT_ADMIN_CONTROL_PER_15_MIN",
+    30,
+    fifteenMinutesMs,
+  ),
   registerSource: limit(
     "REGISTER_SOURCE",
     "AUTH_LIMIT_REGISTER_PER_HOUR",
@@ -68,6 +99,18 @@ export const authRouteLimits = Object.freeze({
   ),
   refreshFamilySource: limit(
     "REFRESH_FAMILY_SOURCE",
+    "AUTH_LIMIT_REFRESH_PER_15_MIN",
+    60,
+    fifteenMinutesMs,
+  ),
+  refreshSource: limit(
+    "REFRESH_SOURCE",
+    "AUTH_LIMIT_REFRESH_PER_15_MIN",
+    60,
+    fifteenMinutesMs,
+  ),
+  refreshSessionSource: limit(
+    "REFRESH_SESSION_SOURCE",
     "AUTH_LIMIT_REFRESH_PER_15_MIN",
     60,
     fifteenMinutesMs,

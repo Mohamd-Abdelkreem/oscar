@@ -1,4 +1,3 @@
-import type { PackageId } from "@/features/employee/types/employee.types";
 import type {
   AdminAccount,
   AdminAuditLog,
@@ -98,12 +97,6 @@ export interface AdminStateContextValue {
     employeeId: string,
     reason: string,
   ) => { success: boolean; message: string };
-
-  // Package actions
-  readonly updatePackage: (
-    packageId: PackageId,
-    updates: Partial<AdminPackage>,
-  ) => void;
 
   // Deposit actions
   readonly manualCreditDeposit: (

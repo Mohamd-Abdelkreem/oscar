@@ -1,33 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { useEmployeeState } from "../../context/employee-state.context";
+import { useTeamMembers } from "../../hooks/referrals.hooks";
+import {
+  FinancialFeedback,
+  FinancialPages,
+} from "../common/financial-feedback";
 import { MoneyAmount } from "../common/money-amount";
 
 export function TeamMemberList() {
-  const { teamMembers } = useEmployeeState();
   const [selectedLevel, setSelectedLevel] = useState<number | "all">("all");
 
   const levels = ["all", 1, 2, 3, 4, 5] as const;
 
-  const filteredMembers = teamMembers.filter((m) => {
-    if (selectedLevel === "all") return true;
-    return m.level === selectedLevel;
-  });
+  const query = useTeamMembers(
+    selectedLevel === "all" ? {} : { level: selectedLevel },
+  );
+  const filteredMembers = query.data?.items ?? [];
 
   return (
     <div className="space-y-3">
       {/* Filter Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+      <div className="flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-1">
         {levels.map((lvl) => (
           <button
             key={lvl}
             type="button"
-            onClick={() => { setSelectedLevel(lvl); }}
-            className={`min-h-[44px] px-3.5 py-1.5 text-xs font-semibold rounded-md border transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+            onClick={() => {
+              setSelectedLevel(lvl);
+            }}
+            className={`min-h-[44px] shrink-0 rounded-md border px-3.5 py-1.5 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-emerald-600 ${
               selectedLevel === lvl
-                ? "bg-emerald-700 text-white border-emerald-700"
-                : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                ? "border-emerald-700 bg-emerald-700 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
             }`}
           >
             {lvl === "all" ? "جميع المستويات" : "المستوى " + lvl.toString()}
@@ -36,49 +41,68 @@ export function TeamMemberList() {
       </div>
 
       {/* Member Cards / Rows */}
-      {filteredMembers.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-lg p-8 text-center text-sm text-slate-500">
+      <FinancialFeedback
+        pending={query.isPending}
+        error={query.error}
+        retry={query.refetch}
+      />
+      {query.data && filteredMembers.length === 0 ? (
+        <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
           لا يوجد أعضاء مسجلين في هذا المستوى حالياً.
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-lg divide-y divide-slate-200 overflow-hidden">
+        <div className="divide-y divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white">
           {filteredMembers.map((member) => (
             <div
               key={member.id}
-              className="p-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition-colors"
+              className="flex items-center justify-between gap-3 p-4 transition-colors hover:bg-slate-50"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold shrink-0 text-sm">
-                  {member.name.slice(0, 1)}
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-600">
+                  {member.fullName.slice(0, 1)}
                 </div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-slate-900 truncate">
-                      {member.name}
+                    <h3 className="truncate text-sm font-semibold text-slate-900">
+                      {member.fullName}
                     </h3>
-                    <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
+                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-700">
                       L{member.level.toString()}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 truncate mt-0.5">
-                    انضم: <bdi dir="ltr">{member.joinedAt}</bdi> • باقة: {member.packageId}
+                  <p className="mt-0.5 truncate text-xs text-slate-500">
+                    انضم: <bdi dir="ltr">{member.joinedAt}</bdi> • باقة:{" "}
+                    {member.packageCode ?? "FREE"}
                   </p>
                 </div>
               </div>
 
-              <div className="text-left shrink-0">
-                <span className="text-[11px] text-slate-400 block mb-0.5">عمولات محققة</span>
+              <div className="shrink-0 text-left">
+                <span className="mb-0.5 block text-[11px] text-slate-400">
+                  عمولاتك من هذا العضو
+                </span>
                 <MoneyAmount
-                  amount={member.totalCommissionEarned}
+                  amount={member.viewerEarnedFromMember}
                   size="sm"
-                  color={member.totalCommissionEarned > 0 ? "positive" : "neutral"}
-                  showSign={member.totalCommissionEarned > 0}
+                  color={
+                    member.viewerEarnedFromMember !== "0"
+                      ? "positive"
+                      : "neutral"
+                  }
+                  showSign={member.viewerEarnedFromMember !== "0"}
                 />
               </div>
             </div>
           ))}
         </div>
+      )}
+      {query.data && (
+        <FinancialPages
+          page={query.page}
+          pages={query.data.pagination.totalPages}
+          setPage={query.setPage}
+        />
       )}
     </div>
   );

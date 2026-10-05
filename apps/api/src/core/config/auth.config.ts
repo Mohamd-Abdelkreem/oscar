@@ -3,17 +3,53 @@ import { getEnvVarAsInteger, getEnvVariable } from "./env.js";
 const nodeEnv = getEnvVariable("NODE_ENV", "development");
 const isProduction = nodeEnv === "production";
 
-const readSecret = (key: string, fallback?: string): string => {
-  const value = getEnvVariable(key, fallback);
-  if (value.length < 32) {
-    throw new Error(
-      `Environment variable ${key} must contain at least 32 characters.`,
-    );
-  }
-  return value;
+export const parseJwtSecrets = (
+  environment: Readonly<Record<string, string | undefined>>,
+  environmentName: string,
+) => {
+  const purposes = [
+    "AUTH_JWT_SECRET",
+    "AUTH_REFRESH_JWT_SECRET",
+    "AUTH_VERIFICATION_JWT_SECRET",
+    "AUTH_RESET_JWT_SECRET",
+  ] as const;
+  const production = environmentName === "production";
+  const readSecret = (key: string): string => {
+    const secret =
+      environment[key] ??
+      (production ? undefined : environment["AUTH_JWT_SECRET"]);
+    if (
+      secret === undefined ||
+      secret.length < 32 ||
+      /\s/u.test(secret) ||
+      secret.includes(String.fromCharCode(0)) ||
+      (production &&
+        /^(?:replace[-_ ]with|change[-_ ]?me|placeholder|your[-_ ]|test[-_ ]only|local[-_ ]|development[-_ ])/iu.test(
+          secret,
+        ))
+    )
+      throw new Error(
+        `${key} must contain an explicit valid signing key of at least 32 characters.`,
+      );
+    return secret;
+  };
+  const accessSecret = readSecret(purposes[0]);
+  const refreshSecret = readSecret(purposes[1]);
+  const verificationSecret = readSecret(purposes[2]);
+  const resetSecret = readSecret(purposes[3]);
+  if (
+    production &&
+    new Set([accessSecret, refreshSecret, verificationSecret, resetSecret])
+      .size !== 4
+  )
+    throw new Error("Signing purposes must have distinct keys.");
+  return Object.freeze({
+    accessSecret,
+    refreshSecret,
+    verificationSecret,
+    resetSecret,
+  });
 };
-
-const accessSecret = readSecret("AUTH_JWT_SECRET");
 export const authConfig = Object.freeze({
   nodeEnv,
   isProduction,
@@ -73,9 +109,4 @@ export const authConfig = Object.freeze({
   }),
 });
 
-export const jwtConfig = Object.freeze({
-  accessSecret,
-  refreshSecret: readSecret("AUTH_REFRESH_JWT_SECRET", accessSecret),
-  verificationSecret: readSecret("AUTH_VERIFICATION_JWT_SECRET", accessSecret),
-  resetSecret: readSecret("AUTH_RESET_JWT_SECRET", accessSecret),
-});
+export const jwtConfig = parseJwtSecrets(process.env, nodeEnv);

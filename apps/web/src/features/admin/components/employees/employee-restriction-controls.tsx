@@ -122,11 +122,6 @@ export function EmployeeRestrictionControls({
         variant={
           employee.accountStatus === "active" ? "destructive" : "primary"
         }
-        affectedRecord={{
-          id: employee.id,
-          label: employee.name,
-          subtitle: `البريد: ${employee.email} | الرصيد: ${employee.balance.toFixed(2)} USDT`,
-        }}
         requireReason={employee.accountStatus === "active"}
         reasonLabel="سبب تعليق الحساب لسجل التدقيق"
         onConfirm={() => {
@@ -162,11 +157,6 @@ export function EmployeeRestrictionControls({
             : "تأكيد حظر المهام"
         }
         variant={employee.restrictions.tasksBlocked ? "primary" : "destructive"}
-        affectedRecord={{
-          id: employee.id,
-          label: employee.name,
-          subtitle: `الحالة التشغيلية: ${employee.restrictions.tasksBlocked ? "المهام محظورة" : "المهام متاحة"}`,
-        }}
         requireReason={!employee.restrictions.tasksBlocked}
         reasonLabel="سبب حظر المهام لسجل التدقيق"
         onConfirm={() => {
@@ -203,11 +193,6 @@ export function EmployeeRestrictionControls({
         variant={
           employee.restrictions.withdrawalsBlocked ? "primary" : "destructive"
         }
-        affectedRecord={{
-          id: employee.id,
-          label: employee.name,
-          subtitle: `الرصيد المتاح للسحب: ${employee.balance.toFixed(2)} USDT`,
-        }}
         requireReason={!employee.restrictions.withdrawalsBlocked}
         reasonLabel="سبب حظر السحب لسجل التدقيق"
         onConfirm={() => {

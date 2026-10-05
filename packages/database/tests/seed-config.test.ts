@@ -63,26 +63,19 @@ describe("optional seed groups", () => {
     ).rejects.toThrow(/between 15 and 128/iu);
   });
 
-  it("upserts both roles into active verified state and clears stale tokens", async () => {
+  it("creates verified local admins while preserving existing identity and credentials", async () => {
     const decision = await parseSeedGroup("ADMIN", complete, "development");
     if (decision.kind !== "enabled") throw new Error("Expected enabled seed.");
     const now = new Date("2026-08-18T00:00:00.000Z");
     const args = buildSeedUpsert(decision, now);
-    expect(args.update).toMatchObject({
-      role: "ADMIN",
-      status: "ACTIVE",
-      emailVerifiedAt: now,
-      verificationTokenHash: null,
-      verificationTokenExpiresAt: null,
-      resetTokenHash: null,
-      resetTokenExpiresAt: null,
-    });
+    expect(args.update).toEqual({});
     expect(args.create).toMatchObject({
       email: "admin@example.com",
       role: "ADMIN",
       status: "ACTIVE",
       emailVerifiedAt: now,
     });
+    expect(args.create).not.toHaveProperty("wallet");
   });
 
   it("supports the generic USER group without defaults", async () => {
@@ -100,6 +93,10 @@ describe("optional seed groups", () => {
       group: "USER",
       email: "user@example.com",
       role: "USER",
+    });
+    if (decision.kind !== "enabled") throw new Error("Expected enabled seed.");
+    expect(buildSeedUpsert(decision, new Date()).create).toMatchObject({
+      wallet: { create: {} },
     });
   });
 });

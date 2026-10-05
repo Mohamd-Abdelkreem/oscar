@@ -3,18 +3,22 @@ import type { NextFunction, Request, Response } from "express";
 import { UserStatus, type DatabaseClient } from "@template/database";
 
 import { UnauthorizedException } from "../core/errors/unauthorized.error.js";
-import { mapSafeUser } from "../modules/users/users.mapper.js";
+import {
+  mapSafeUser,
+  SAFE_USER_SELECT,
+} from "../modules/users/users.mapper.js";
 import { verifyAccessToken } from "../infrastructure/security/jwt.service.js";
 
-type UserLookupClient = Pick<DatabaseClient, "user">;
+type SessionLookupClient = Pick<DatabaseClient, "authSession">;
 
 export const createAuthenticationMiddleware =
-  (database: UserLookupClient) =>
+  (database: SessionLookupClient) =>
   async (
     request: Request,
-    _response: Response,
+    response: Response,
     next: NextFunction,
   ): Promise<void> => {
+    response.setHeader("Cache-Control", "no-store");
     const [scheme, token] = request.headers.authorization?.split(" ") ?? [];
     if (scheme !== "Bearer" || token === undefined || token.length === 0) {
       throw new UnauthorizedException(
@@ -27,19 +31,32 @@ export const createAuthenticationMiddleware =
       throw new UnauthorizedException(verified.error);
     }
 
-    const user = await database.user.findUnique({
-      where: { id: verified.payload.userId },
+    const session = await database.authSession.findUnique({
+      where: { id: verified.payload.sessionId },
+      select: {
+        userId: true,
+        revokedAt: true,
+        expiresAt: true,
+        user: { select: SAFE_USER_SELECT },
+      },
     });
     if (
-      user === null ||
-      user.status !== UserStatus.ACTIVE ||
-      user.emailVerifiedAt === null
+      session === null ||
+      session.userId !== verified.payload.userId ||
+      session.revokedAt !== null ||
+      Date.now() >= session.expiresAt.getTime() ||
+      session.user.status !== UserStatus.ACTIVE ||
+      session.user.emailVerifiedAt === null
     ) {
       throw new UnauthorizedException(
         "The account is unavailable. Sign in again.",
       );
     }
 
-    request.user = mapSafeUser(user);
+    request.user = mapSafeUser(session.user);
+    request.authSession = {
+      userId: session.userId,
+      sessionId: verified.payload.sessionId,
+    };
     next();
   };

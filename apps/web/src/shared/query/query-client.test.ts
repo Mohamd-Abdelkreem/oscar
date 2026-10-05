@@ -6,6 +6,7 @@ import {
 import { describe, expect, it } from "vitest";
 
 import { createQueryClient, shouldRetryRequest } from "./query-client";
+import { safeApiError } from "@/services/api/safe-error";
 
 const httpError = (status: number): AxiosError => {
   const config: InternalAxiosRequestConfig = {
@@ -25,6 +26,27 @@ const httpError = (status: number): AxiosError => {
 };
 
 describe("query client defaults", () => {
+  it.each([
+    "contract",
+    "denied",
+    "cancelled",
+    "coordination",
+    "obsolete",
+    "request",
+  ] as const)("does not retry safe %s failures", (category) => {
+    expect(
+      shouldRetryRequest(0, safeApiError(category, "REQUEST_ERROR", 503)),
+    ).toBe(false);
+  });
+
+  it("allows at most two classified transient read retries", () => {
+    expect(
+      shouldRetryRequest(0, safeApiError("transient", "NETWORK_ERROR")),
+    ).toBe(true);
+    expect(
+      shouldRetryRequest(2, safeApiError("transient", "NETWORK_ERROR")),
+    ).toBe(false);
+  });
   it("creates isolated clients with a 30-second stale time", () => {
     const first = createQueryClient();
     const second = createQueryClient();

@@ -1,0 +1,8 @@
+- generic [active] [ref=e1]:
+  - status [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: أ
+      - generic [ref=e7]:
+        - heading "جارٍ تحميل أوسكار..." [level=1] [ref=e8]
+        - paragraph [ref=e9]: يرجى الانتظار قليلاً ريثما تكتمل تهيئة الواجهة
+  - alert [ref=e10]

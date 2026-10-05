@@ -2,6 +2,7 @@
 
 import {
   ChevronLeft,
+  Copy,
   HelpCircle,
   KeyRound,
   Lock,
@@ -12,24 +13,46 @@ import {
   User,
   Wallet,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useLogout, useCurrentSession } from "@/features/auth/hooks/auth.hooks";
+import { getApiError } from "@/services/api/api-client";
 import { AccountNavigationRow } from "@/features/employee/components/account/account-navigation-row";
 import { ChangePasswordModal } from "@/features/employee/components/account/change-password-modal";
 import { Button } from "@/features/employee/components/common/button";
-import { CopyAction } from "@/features/employee/components/common/copy-action";
-import { MoneyAmount } from "@/features/employee/components/common/money-amount";
 import { PageHeader } from "@/features/employee/components/navigation/page-header";
-import { useEmployeeState } from "@/features/employee/context/employee-state.context";
+
+import { useMembership } from "../../hooks/packages.hooks";
+import { useWallet } from "../../hooks/wallet.hooks";
+import { MoneyAmount } from "../common/money-amount";
+import { FinancialFeedback } from "../common/financial-feedback";
+import { SavedSubscriptionDetails } from "../packages/saved-subscription-details";
 
 export function EmployeeAccountScreen() {
-  const router = useRouter();
-  const { user, balance, currentPackage } = useEmployeeState();
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const session = useCurrentSession();
+  const membership = useMembership();
+  const wallet = useWallet();
+  const logout = useLogout();
+  const account = session.data?.user;
+  const checking = session.isPending || session.isFetching;
+  const user =
+    !checking &&
+    !session.isError &&
+    account?.role === "USER" &&
+    account.status === "ACTIVE" &&
+    account.emailVerifiedAt !== null
+      ? account
+      : undefined;
+  const [passwordAccountId, setPasswordAccountId] = useState<string | null>(
+    null,
+  );
 
-  const handleLogout = () => {
-    router.push("/employee/auth/login");
+  const handleLogout = async () => {
+    if (user === undefined || logout.isPending || logout.uncertain) return;
+    try {
+      await logout.mutateAsync();
+    } catch {
+      // The shared command owns safe failure and uncertainty feedback.
+    }
   };
 
   return (
@@ -48,13 +71,42 @@ export function EmployeeAccountScreen() {
             </div>
             <div className="min-w-0">
               <h2 className="truncate text-base font-bold text-slate-900">
-                {user.name}
+                {user?.fullName ??
+                  (checking
+                    ? "جارٍ تحميل بيانات الحساب…"
+                    : "بيانات الحساب غير متاحة")}
               </h2>
               <p className="mt-0.5 truncate text-xs text-slate-500">
-                <bdi dir="ltr">{user.email}</bdi>
+                <bdi dir="ltr">{user?.email}</bdi>
               </p>
             </div>
           </div>
+
+          {session.isError ? (
+            <div className="space-y-2">
+              <p role="alert" className="text-xs text-rose-600">
+                {getApiError(session.error).message}
+              </p>
+              <Button
+                variant="outline"
+                size="compact"
+                onClick={() => {
+                  void session.refetch();
+                }}
+              >
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : user === undefined ? (
+            <p
+              role={checking ? "status" : "alert"}
+              className="text-xs text-slate-500"
+            >
+              {checking
+                ? "جارٍ التحقق من بيانات الحساب…"
+                : "لا يمكن عرض بيانات الحساب دون جلسة موظف صالحة."}
+            </p>
+          ) : null}
 
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-md border border-slate-200/80 bg-slate-50 p-2.5">
@@ -62,7 +114,11 @@ export function EmployeeAccountScreen() {
                 المنصب المفعل
               </span>
               <span className="block font-bold text-slate-900">
-                {currentPackage.name}
+                {membership.data
+                  ? membership.data.effective === "PAID"
+                    ? membership.data.subscription?.terms.code
+                    : "حساب مجاني / منتهٍ"
+                  : "غير متاح حالياً"}
               </span>
             </div>
 
@@ -70,13 +126,28 @@ export function EmployeeAccountScreen() {
               <span className="mb-0.5 block text-[11px] font-medium text-slate-400">
                 الرصيد المتاح
               </span>
-              <MoneyAmount
-                amount={balance.available}
-                size="sm"
-                color="positive"
-              />
+              <span className="block font-bold text-slate-900">
+                {wallet.data ? (
+                  <MoneyAmount
+                    amount={wallet.data.purchaseEligibleAmount}
+                    size="sm"
+                  />
+                ) : (
+                  "غير متاح حالياً"
+                )}
+              </span>
             </div>
           </div>
+          {membership.data?.subscription && (
+            <SavedSubscriptionDetails
+              subscription={membership.data.subscription}
+            />
+          )}
+          <FinancialFeedback
+            pending={membership.isPending || wallet.isPending}
+            error={membership.error ?? wallet.error}
+            retry={() => Promise.all([membership.refetch(), wallet.refetch()])}
+          />
         </div>
 
         {/* Security & Address Section */}
@@ -90,8 +161,13 @@ export function EmployeeAccountScreen() {
           {/* Change Password */}
           <button
             type="button"
+            disabled={
+              user === undefined || logout.isPending || logout.uncertain
+            }
             onClick={() => {
-              setIsPasswordModalOpen(true);
+              if (user === undefined || logout.isPending || logout.uncertain)
+                return;
+              setPasswordAccountId(user.id);
             }}
             className="flex min-h-[48px] w-full cursor-pointer items-center justify-between p-4 text-right transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-emerald-600"
           >
@@ -104,7 +180,7 @@ export function EmployeeAccountScreen() {
                   تغيير كلمة المرور
                 </span>
                 <span className="mt-0.5 block text-xs text-slate-400">
-                  تحديث كلمة المرور المحلية (15 - 128 حرفاً)
+                  تحديث كلمة المرور (15 - 128 حرفاً)
                 </span>
               </div>
             </div>
@@ -126,32 +202,26 @@ export function EmployeeAccountScreen() {
                 />
                 <span>عنوان السحب المحفوظ (TRC20)</span>
               </span>
-              <Link
-                href="/employee/support"
+              <button
+                type="button"
+                disabled
                 className="font-semibold text-emerald-700 hover:text-emerald-800"
               >
                 طلب تغيير العنوان
-              </Link>
+              </button>
             </div>
 
-            {user.savedWithdrawalAddress ? (
-              <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-                <bdi
-                  dir="ltr"
-                  className="truncate font-mono text-xs text-slate-800 select-all"
-                >
-                  {user.savedWithdrawalAddress}
-                </bdi>
-                <CopyAction
-                  value={user.savedWithdrawalAddress}
-                  variant="icon"
-                />
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500 italic">
-                لم يتم حفظ وتأمين عنوان سحب حتى الآن. يمكنك حفظه في صفحة السحب.
-              </p>
-            )}
+            <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
+              <span className="text-xs text-slate-500">غير متاح حالياً</span>
+              <button
+                type="button"
+                disabled
+                aria-label="نسخ عنوان السحب"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-emerald-600"
+              >
+                <Copy size={18} aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -201,19 +271,33 @@ export function EmployeeAccountScreen() {
             size="default"
             fullWidth
             icon={LogOut}
-            onClick={handleLogout}
+            loading={logout.isPending}
+            disabled={
+              user === undefined || logout.isPending || logout.uncertain
+            }
+            onClick={() => {
+              void handleLogout();
+            }}
           >
             تسجيل الخروج من الحساب
           </Button>
+          {logout.error && (
+            <p role="alert" className="mt-2 text-xs text-rose-600">
+              {logout.error.message}
+            </p>
+          )}
         </div>
       </div>
 
-      <ChangePasswordModal
-        isOpen={isPasswordModalOpen}
-        onClose={() => {
-          setIsPasswordModalOpen(false);
-        }}
-      />
+      {user !== undefined && (
+        <ChangePasswordModal
+          key={user.id}
+          isOpen={passwordAccountId === user.id}
+          onClose={() => {
+            setPasswordAccountId(null);
+          }}
+        />
+      )}
     </div>
   );
 }

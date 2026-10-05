@@ -1,6 +1,11 @@
-import type { SafeUser } from "@template/contracts";
+import type { IdentityUser } from "@template/contracts";
 
-export type AuthenticatedUser = SafeUser;
+export type AuthenticatedUser = IdentityUser;
+
+export type AuthenticatedSession = Readonly<{
+  userId: string;
+  sessionId: string;
+}>;
 
 export interface ValidatedRequestData {
   body?: unknown;
