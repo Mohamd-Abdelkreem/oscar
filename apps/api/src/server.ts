@@ -1,4 +1,5 @@
 import type { Server } from "node:http";
+import { fileURLToPath } from "node:url";
 
 import { createDatabaseClient } from "@template/database";
 
@@ -6,9 +7,22 @@ import { createApp } from "./app.js";
 import { appConfig } from "./core/config/app.config.js";
 import { databaseConfig } from "./core/config/database.config.js";
 import { logger } from "./infrastructure/logger/logger.js";
+import { parseProofsEnvironment } from "./core/config/proofs.config.js";
+import { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 
 const database = createDatabaseClient(databaseConfig.url);
-const app = createApp({ database, logger });
+const proofs = new ProofsRuntime(
+  database,
+  parseProofsEnvironment(
+    process.env,
+    fileURLToPath(new URL("../../../", import.meta.url)),
+  ),
+  () => new Date(),
+  (code) => {
+    logger.warn({ code }, "Private image lifecycle failed.");
+  },
+);
+const app = createApp({ database, logger, proofs });
 
 let server: Server | undefined;
 let isShuttingDown = false;
@@ -27,6 +41,7 @@ const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
   forceShutdownTimer.unref();
 
   try {
+    await proofs.stop();
     if (server !== undefined) {
       await new Promise<void>((resolve, reject) => {
         server?.close((error) => {
@@ -51,6 +66,7 @@ const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
 const startServer = async (): Promise<void> => {
   try {
     await database.$connect();
+    await proofs.start();
 
     server = app.listen(appConfig.port, appConfig.host, (error?: Error) => {
       if (error !== undefined) {
@@ -75,6 +91,7 @@ const startServer = async (): Promise<void> => {
     server.keepAliveTimeout = appConfig.keepAliveTimeoutMs;
   } catch (error) {
     logger.fatal({ err: error }, "Failed to start the API server.");
+    await proofs.stop();
     await database.$disconnect();
     process.exit(1);
   }

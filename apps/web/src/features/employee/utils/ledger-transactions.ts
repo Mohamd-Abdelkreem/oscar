@@ -2,27 +2,6 @@ import type {
   LedgerTransaction,
   WithdrawalRequest,
 } from "../types/employee.types";
-import { formatLocalTime } from "./financial-calculations";
-
-export function createTaskRewardTransaction(
-  reward: number,
-  now: Date,
-): LedgerTransaction {
-  return {
-    id: "tx_" + now.getTime().toString(),
-    type: "task_reward",
-    title: "مكافأة مهمة يومية (قيد المراجعة التدقيقية)",
-    amount: reward,
-    currency: "USDT",
-    date: "اليوم " + formatLocalTime(now),
-    status: "pending",
-    reference:
-      "TSK-" +
-      now.getFullYear().toString() +
-      (now.getMonth() + 1).toString().padStart(2, "0") +
-      now.getDate().toString().padStart(2, "0"),
-  };
-}
 
 export function createWithdrawalReservationTransaction(
   request: WithdrawalRequest,

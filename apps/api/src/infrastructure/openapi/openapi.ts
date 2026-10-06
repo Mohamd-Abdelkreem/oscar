@@ -59,7 +59,53 @@ import {
   adminMemberFilterSchema,
   adminCommissionPageSchema,
   adminCommissionFilterSchema,
+  taskCreateSchema,
+  taskEditSchema,
+  taskStatusSchema,
+  taskListQuerySchema,
+  adminTaskDetailSchema,
+  adminTaskPageSchema,
+  taskCodeCreateSchema,
+  taskCodeStatusSchema,
+  taskCodeListQuerySchema,
+  taskCodeUsageQuerySchema,
+  taskCodeSummarySchema,
+  taskCodePageSchema,
+  taskCodeUsagePageSchema,
+  taskCodeAuditPageSchema,
+  taskCommandCancellationSchema,
+  commandObservationSchema,
+  commandCancellationOutcomeSchema,
+  employeeTaskDaySchema,
+  taskUnlockRequestSchema,
+  unlockOutcomeSchema,
+  submissionCreateSchema,
+  submissionDetailSchema,
+  submissionListQuerySchema,
+  submissionPageSchema,
+  evidenceReplaceSchema,
+  evidencePageSchema,
+  submissionReviewSchema,
+  adminSubmissionListQuerySchema,
+  adminSubmissionPageSchema,
+  adminSubmissionDetailSchema,
+  proofAssetSchema,
+  illustrationAssetSchema,
+  uploadObservationSchema,
+  uploadCancellationSchema,
 } from "@template/contracts";
+import {
+  taskParamsSchema,
+  taskCommandParamsSchema,
+  taskCommandQuerySchema,
+  taskDayQuerySchema,
+} from "../../modules/tasks/tasks.controller.js";
+import { taskCodeParamsSchema } from "../../modules/task-codes/task-codes.controller.js";
+import { submissionParamsSchema } from "../../modules/task-submissions/task-submissions.controller.js";
+import {
+  imageParamsSchema,
+  uploadParamsSchema,
+} from "../../modules/proofs/proofs.controller.js";
 
 import { appConfig } from "../../core/config/app.config.js";
 import {
@@ -138,6 +184,110 @@ const adminAuthority =
   "Requires current ACTIVE verified ADMIN and an owned unrevoked session. Responses use Cache-Control: no-store.";
 const adminCommandAuthority = `${adminAuthority} Also requires matching CSRF, confirmed intent, reason, current version where applicable, and transactional audit.`;
 
+const imageReadErrors = {
+  ...adminReadErrors,
+  "410": errorResponse(
+    "Retained metadata exists but permitted file cleanup removed bytes",
+  ),
+  "503": errorResponse("Private storage unavailable"),
+};
+const imageUploadErrors = {
+  ...adminCommandErrors,
+  "413": errorResponse("Input or aggregate bytes exceed the bound"),
+  "415": errorResponse("Unsupported format or animation"),
+  "503": errorResponse("Storage or image processing unavailable"),
+};
+function imageIntake(asset: z.ZodType, authority: string) {
+  return {
+    post: {
+      summary: "Upload one bounded private raster",
+      description: `${authority} CSRF and bounded admission precede parsing. Exactly file and commandId multipart parts; PNG/JPEG/WebP, 5,242,880-byte input and 5,259,264-byte aggregate limits. One frame, canonical PNG output at most 33,554,432 bytes. Purpose comes from the route. No automatic upload retry.`,
+      security: adminWriteSecurity,
+      requestBody: {
+        required: true,
+        content: {
+          "multipart/form-data": {
+            schema: z.strictObject({
+              commandId: z.uuid(),
+              file: z.string().meta({ format: "binary" }),
+            }),
+          },
+        },
+      },
+      responses: {
+        "201": successResponse("Accepted private asset", asset),
+        ...imageUploadErrors,
+      },
+    },
+  };
+}
+function imageObservation(authority: string) {
+  return {
+    get: {
+      summary: "Observe own purpose-bound upload key",
+      description: `${authority} PENDING and NOT_OBSERVED remain nonterminal; READY reflects retained metadata and current availability. FAILED/UPLOAD_CANCELLED never invent file facts.`,
+      security: adminReadSecurity,
+      requestParams: { path: uploadParamsSchema },
+      responses: {
+        "200": successResponse("Upload observation", uploadObservationSchema),
+        ...adminReadErrors,
+      },
+    },
+  };
+}
+function imageCancellation(authority: string) {
+  return {
+    post: {
+      summary: "Deliberately fence an unused own upload key",
+      description: `${authority} CSRF and confirmed:true required. Absent or STAGING intake resolves to FAILED with failureCode UPLOAD_CANCELLED, fencing late intake and READY completion. If READY already won, return its accepted metadata and current availability; acceptance cannot be reversed.`,
+      security: adminWriteSecurity,
+      requestParams: { path: uploadParamsSchema },
+      requestBody: jsonBody(uploadCancellationSchema),
+      responses: {
+        "200": successResponse(
+          "Terminal upload observation",
+          uploadObservationSchema,
+        ),
+        ...adminCommandErrors,
+      },
+    },
+  };
+}
+function imageMetadata(asset: z.ZodType, authority: string) {
+  return {
+    get: {
+      summary: "Read private purpose-bound metadata",
+      description: authority,
+      security: adminReadSecurity,
+      requestParams: { path: imageParamsSchema },
+      responses: {
+        "200": successResponse("Safe retained asset metadata", asset),
+        ...imageReadErrors,
+      },
+    },
+  };
+}
+const imageContent = {
+  get: {
+    summary: "Read retained canonical private PNG bytes",
+    description:
+      "Current authorized owner or ADMIN; illustrations also require current task or own accepted-history access. No public URL or optimizer. Success uses private,no-store, nosniff and a fixed inline filename. Wrong owner/purpose remains 404; only permitted removal is 410, unavailable storage is 503.",
+    security: adminReadSecurity,
+    requestParams: { path: imageParamsSchema },
+    responses: {
+      "200": {
+        description: "Canonical PNG, at most 33,554,432 bytes",
+        content: {
+          "image/png": {
+            schema: { type: "string" as const, format: "binary" },
+          },
+        },
+      },
+      ...imageReadErrors,
+    },
+  },
+};
+
 const emptyObjectSchema = z.object({}).strict();
 const messageSchema = z.object({ message: z.string() }).strict();
 const validCredentialSchema = z.object({ valid: z.literal(true) }).strict();
@@ -215,6 +365,400 @@ export const buildOpenApiDocument = () =>
       },
     },
     paths: {
+      "/proofs": imageIntake(
+        proofAssetSchema,
+        "Requires current ACTIVE verified USER and eligible work session.",
+      ),
+      "/proofs/uploads/{commandId}": imageObservation(
+        "Requires current ACTIVE verified uploading USER session.",
+      ),
+      "/proofs/uploads/{commandId}/cancel": imageCancellation(
+        "Requires current ACTIVE verified uploading USER session.",
+      ),
+      "/proofs/{assetId}": imageMetadata(
+        proofAssetSchema,
+        "Requires current ACTIVE verified owner or ADMIN and current session; paid entitlement is not required for retained history.",
+      ),
+      "/proofs/{assetId}/content": imageContent,
+      "/admin/task-illustrations": imageIntake(
+        illustrationAssetSchema,
+        adminAuthority,
+      ),
+      "/admin/task-illustrations/uploads/{commandId}":
+        imageObservation(adminAuthority),
+      "/admin/task-illustrations/uploads/{commandId}/cancel":
+        imageCancellation(adminAuthority),
+      "/task-illustrations/{assetId}": imageMetadata(
+        illustrationAssetSchema,
+        "Requires current ACTIVE verified ADMIN or employee with current-task/own accepted-history access and current session.",
+      ),
+      "/task-illustrations/{assetId}/content": imageContent,
+      "/tasks/today": {
+        get: {
+          summary: "Read the current Baghdad task day and own accepted work",
+          security: adminReadSecurity,
+          requestParams: { query: taskDayQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Current eligibility and retained claim",
+              employeeTaskDaySchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/tasks/{taskId}/unlock": {
+        post: {
+          summary: "Unlock eligible daily work with a task code",
+          security: adminWriteSecurity,
+          requestParams: { path: taskParamsSchema },
+          requestBody: jsonBody(taskUnlockRequestSchema),
+          responses: {
+            "200": successResponse(
+              "Durable unlock without a claim or credit",
+              unlockOutcomeSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/task-submissions": {
+        get: {
+          description: adminAuthority,
+          summary: "Read filtered submissions and consistent status totals",
+          security: adminReadSecurity,
+          requestParams: { query: adminSubmissionListQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Paged submissions",
+              adminSubmissionPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/task-submissions/{submissionId}": {
+        get: {
+          description: adminAuthority,
+          summary: "Inspect captured work and current evidence",
+          security: adminReadSecurity,
+          requestParams: { path: submissionParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Captured submission and review",
+              adminSubmissionDetailSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/task-submissions/{submissionId}/evidence": {
+        get: {
+          description: adminAuthority,
+          summary: "Read retained evidence versions",
+          security: adminReadSecurity,
+          requestParams: {
+            path: submissionParamsSchema,
+            query: boundedPageQuerySchema,
+          },
+          responses: {
+            "200": successResponse("Evidence history", evidencePageSchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/task-submissions/{submissionId}/review": {
+        post: {
+          summary: "Confirm one irreversible reasoned final review",
+          security: adminWriteSecurity,
+          description: `${adminAuthority} Confirmed:true, nonblank reason and both current reviewed versions. APPROVE posts the captured TASK_REWARD once; REJECT changes no funds. Later employee ban or expiry does not invalidate accepted work. Opposite/new-key/stale final commands conflict. No reversal or reward editing.`,
+          requestParams: { path: submissionParamsSchema },
+          requestBody: jsonBody(submissionReviewSchema),
+          responses: {
+            "200": successResponse(
+              "Saved final review",
+              adminSubmissionDetailSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/task-submissions": {
+        get: {
+          summary: "Read own retained submission history",
+          security: adminReadSecurity,
+          requestParams: { query: submissionListQuerySchema },
+          responses: {
+            "200": successResponse("Own paged history", submissionPageSchema),
+            ...adminReadErrors,
+          },
+        },
+        post: {
+          summary: "Accept one declared pending daily claim",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(submissionCreateSchema),
+          responses: {
+            "201": successResponse(
+              "Pending captured entitlement without credit",
+              submissionDetailSchema,
+            ),
+            "200": successResponse("Accepted replay", submissionDetailSchema),
+            "503": errorResponse("Private proof unavailable"),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/task-submissions/{submissionId}": {
+        get: {
+          summary: "Read own captured submission",
+          security: adminReadSecurity,
+          requestParams: { path: submissionParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Own submission and current evidence",
+              submissionDetailSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/task-submissions/{submissionId}/evidence": {
+        get: {
+          summary: "Read own retained evidence versions",
+          security: adminReadSecurity,
+          requestParams: {
+            path: submissionParamsSchema,
+            query: boundedPageQuerySchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Bounded evidence history",
+              evidencePageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+        patch: {
+          summary: "Replace pending evidence before its original deadline",
+          security: adminWriteSecurity,
+          requestParams: { path: submissionParamsSchema },
+          requestBody: jsonBody(evidenceReplaceSchema),
+          responses: {
+            "200": successResponse(
+              "Captured terms unchanged",
+              submissionDetailSchema,
+            ),
+            "503": errorResponse("Private proof unavailable"),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/tasks": {
+        get: {
+          summary: "List retained daily tasks",
+          description:
+            "Current ACTIVE verified ADMIN with an owned unrevoked session; fixed Baghdad display states, complete associated totals and one RepeatableRead filtered rows/count snapshot. Bounded pages ordered publication date/id descending; private/no-store.",
+          security: adminReadSecurity,
+          requestParams: { query: taskListQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Task page with matching envelope paginationMeta",
+              adminTaskPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+        post: {
+          summary: "Publish one weekday opportunity",
+          description:
+            "Current ACTIVE verified ADMIN with an owned unrevoked session, CSRF and confirmed intent. One retained weekday date across all states; READY TASK_ILLUSTRATION only. Actor/kind/key binds normalized payload; replay returns 200. TASK_DATE_OCCUPIED, ASSET_NOT_READY, IDEMPOTENCY_CONFLICT or COMMAND_CANCELLED returns 409. No scheduler or link fetch; audit actor/time is server-derived.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(taskCreateSchema),
+          responses: {
+            "201": successResponse("Created task", adminTaskDetailSchema),
+            "503": errorResponse(
+              "Illustration storage unavailable; no new attachment",
+            ),
+            "200": successResponse(
+              "Original replayed task",
+              adminTaskDetailSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/tasks/{taskId}": {
+        get: {
+          summary: "Read task and participation facts",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: taskParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Task detail with fixed window and dateEditable",
+              adminTaskDetailSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+        patch: {
+          summary: "Edit current task revision",
+          description:
+            "Confirmed current ACTIVE verified ADMIN with an owned unrevoked session/CSRF. TASK_REVISION_CONFLICT, TASK_DATE_LOCKED after participation, TASK_DATE_OCCUPIED, ASSET_NOT_READY or IDEMPOTENCY_CONFLICT returns 409. PATCH omission preserves values; null removes illustration. Accepted content, claims and original dates remain captured.",
+          security: adminWriteSecurity,
+          requestParams: { path: taskParamsSchema },
+          requestBody: jsonBody(taskEditSchema),
+          responses: {
+            "200": successResponse("Saved task", adminTaskDetailSchema),
+            "503": errorResponse(
+              "Illustration storage unavailable; no new attachment",
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/tasks/{taskId}/status": {
+        patch: {
+          summary: "Set publication state at reviewed revision",
+          description:
+            "Confirmed current ACTIVE verified ADMIN with an owned unrevoked session/CSRF; PUBLISHED, PAUSED or CLOSED only. TASK_REVISION_CONFLICT on stale version. Preserves accepted work and first participation; replay uses original saved outcome.",
+          security: adminWriteSecurity,
+          requestParams: { path: taskParamsSchema },
+          requestBody: jsonBody(taskStatusSchema),
+          responses: {
+            "200": successResponse("Saved task", adminTaskDetailSchema),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/task-codes": {
+        get: {
+          summary: "List retained normalized codes",
+          description:
+            "Current ACTIVE verified ADMIN with an owned unrevoked session; bounded filtered snapshot ordered createdAt/id descending. Counts reflect successful unlocks only, not submissions or rejected attempts.",
+          security: adminReadSecurity,
+          requestParams: { query: taskCodeListQuerySchema },
+          responses: {
+            "200": successResponse(
+              "Code page with matching envelope paginationMeta",
+              taskCodePageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+        post: {
+          summary: "Create globally unique retained code",
+          description:
+            "Confirmed current ACTIVE verified ADMIN with an owned unrevoked session/CSRF, no reason required. Shared trim/uppercase normalization includes accepted Unicode. CODE_ALREADY_EXISTS includes paused codes on any task. Text/task are immutable; no cap or independent expiry. Accepted same-key replay returns 200; payload mismatch or cancelled key returns 409. Domain audit derives admin/time.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(taskCodeCreateSchema),
+          responses: {
+            "201": successResponse("Created code", taskCodeSummarySchema),
+            "200": successResponse(
+              "Replayed original code",
+              taskCodeSummarySchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/task-codes/{codeId}": {
+        get: {
+          summary: "Read code and complete usage totals",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: taskCodeParamsSchema },
+          responses: {
+            "200": successResponse("Code detail", taskCodeSummarySchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/task-codes/{codeId}/status": {
+        patch: {
+          summary: "Enable or pause reviewed code",
+          description:
+            "Confirmed current ACTIVE verified ADMIN with an owned unrevoked session/CSRF, no reason required. CODE_VERSION_CONFLICT on stale version. Task-then-code locks; preserves accepted unlocks, immutable text/task and retained uniqueness. No reversal or deletion.",
+          security: adminWriteSecurity,
+          requestParams: { path: taskCodeParamsSchema },
+          requestBody: jsonBody(taskCodeStatusSchema),
+          responses: {
+            "200": successResponse("Saved code", taskCodeSummarySchema),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/task-codes/{codeId}/usages": {
+        get: {
+          summary: "Page successful code unlocks",
+          description:
+            "Current ACTIVE verified ADMIN with an owned unrevoked session; employee name/email/id search. One snapshot, unlockedAt/id descending, associated employee/date submission status or null; unlock never implies submission.",
+          security: adminReadSecurity,
+          requestParams: {
+            path: taskCodeParamsSchema,
+            query: taskCodeUsageQuerySchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Successful usage page with matching paginationMeta",
+              taskCodeUsagePageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/task-codes/{codeId}/changes": {
+        get: {
+          summary: "Page committed domain code audit",
+          description:
+            "Current ACTIVE verified ADMIN with an owned unrevoked session; occurredAt/id descending. Safe actor/time and state/version before/after. Cancelled keys and replay do not inflate business audit.",
+          security: adminReadSecurity,
+          requestParams: {
+            path: taskCodeParamsSchema,
+            query: boundedPageQuerySchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Code audit page with matching paginationMeta",
+              taskCodeAuditPageSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/task-commands/{commandId}": {
+        get: {
+          summary: "Observe own task command key",
+          description:
+            "Current active verified role/session and operation-role matrix. Actor-scoped lookup; OBSERVED is committed, CANCELLED is an immutable unused-key fence, NOT_OBSERVED is nonterminal and cannot release an outstanding guard. Private/no-store; no business effects.",
+          security: adminReadSecurity,
+          requestParams: {
+            path: taskCommandParamsSchema,
+            query: taskCommandQuerySchema,
+          },
+          responses: {
+            "200": successResponse("Own observation", commandObservationSchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/task-commands/{commandId}/cancel": {
+        post: {
+          summary: "Resolve own unused command key",
+          description:
+            "Current active verified role/session, CSRF, bounded limit and confirmed:true. USER: TASK_UNLOCK/SUBMISSION_CREATE/EVIDENCE_REPLACE; ADMIN: TASK_CREATE/TASK_EDIT/TASK_STATUS/CODE_CREATE/CODE_STATUS/FINAL_REVIEW. No paid/task eligibility needed to abandon unused work. Actor-lock fence returns OBSERVED if commit won, otherwise CANCELLED; late execution returns COMMAND_CANCELLED. Cancellation never reverses committed business or money.",
+          security: adminWriteSecurity,
+          requestParams: { path: taskCommandParamsSchema },
+          requestBody: jsonBody(taskCommandCancellationSchema),
+          responses: {
+            "200": successResponse(
+              "Terminal key-matched outcome",
+              commandCancellationOutcomeSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
       "/wallet/me": {
         get: {
           summary: "Read walletView",

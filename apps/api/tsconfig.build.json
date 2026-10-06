@@ -16,6 +16,9 @@
     "src/modules/ledger/testing/**",
     "src/modules/auth/testing/**",
     "src/modules/subscriptions/testing/**",
+    "src/modules/tasks/testing/**",
+    "src/modules/task-submissions/testing/**",
+    "src/modules/proofs/testing/**",
     "**/*.test.ts",
     "**/*.spec.ts"
   ]

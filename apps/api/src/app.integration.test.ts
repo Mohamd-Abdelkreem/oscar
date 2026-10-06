@@ -69,6 +69,10 @@ const app = createApp({
 });
 
 describe("P04 private projection route composition", () => {
+  it("exposes canonical private image headers to an allowed browser origin", async () => {
+    const response = await request(app).get("/api/v1/health").set("Origin", "http://localhost:3000");
+    expect(response.headers["access-control-expose-headers"]).toBe("Content-Disposition,X-Content-Type-Options");
+  });
   it("mounts every read with authentication before query parsing and no-store errors", async () => {
     for (const path of [
       "/wallet/me",

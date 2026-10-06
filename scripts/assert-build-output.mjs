@@ -6,6 +6,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const requiredArtifacts = [
   "apps/api/dist/server.js",
   "apps/api/dist/app.js",
+  "apps/api/dist/infrastructure/files/image-decoder-child.js",
   "apps/api/dist/modules/admins/admin-bootstrap.cli.js",
   "packages/contracts/dist/index.js",
   "packages/contracts/dist/index.d.ts",
@@ -48,7 +49,9 @@ const emittedFiles = (
 ).flat();
 const testArtifacts = emittedFiles
   .map((file) => relative(repositoryRoot, file).split(sep).join("/"))
-  .filter((file) => testArtifactPattern.test(file));
+  .filter(
+    (file) => testArtifactPattern.test(file) || file.includes("/testing/"),
+  );
 
 if (missingArtifacts.length > 0 || testArtifacts.length > 0) {
   const failures = [

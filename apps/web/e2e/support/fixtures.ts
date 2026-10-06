@@ -25,14 +25,21 @@ export type Scenario = {
 };
 const apiDirectory = fileURLToPath(new URL("../../../api/", import.meta.url));
 
-const startApi = async (): Promise<{
+const startApi = async (
+  nativeProofs = false,
+): Promise<{
   child: ChildProcess;
   scenario: Scenario;
 }> => {
   await requireFreePort(4103);
   const child = spawn(
     process.execPath,
-    ["--conditions=development", "--import", "tsx", "tests/e2e/server.ts"],
+    [
+      "--conditions=development",
+      "--import",
+      "tsx",
+      nativeProofs ? "tests/e2e/p05-linux.ts" : "tests/e2e/server.ts",
+    ],
     {
       cwd: apiDirectory,
       env: { ...process.env },
@@ -64,7 +71,14 @@ const startApi = async (): Promise<{
       };
       observers.set(id, (reply) => {
         clear();
-        if (reply.status === "failed") reject(new Error("P03_API_FAILED"));
+        if (reply.status === "failed")
+          reject(
+            new Error(
+              reply.data && "nativeFailure" in reply.data
+                ? "P05_FIXTURE_" + reply.data.nativeFailure
+                : "P03_API_FAILED",
+            ),
+          );
         else resolve(reply);
       });
       child.once("exit", exited);
@@ -72,9 +86,16 @@ const startApi = async (): Promise<{
     });
   try {
     await waitFor(0, 240_000);
-  } catch {
+  } catch (failure: unknown) {
     if (child.connected) child.disconnect();
     await stopOwnedProcess(child);
+    if (
+      failure instanceof Error &&
+      /^P05_FIXTURE_(?:DATABASE|MIGRATION|SNAPSHOT|LINUX_LAUNCH|DEPENDENCIES|API_BOOT)$/u.test(
+        failure.message,
+      )
+    )
+      throw failure;
     throw new Error("P03_API_START_FAILED");
   }
   return {
@@ -101,10 +122,10 @@ export const test = base.extend<
       // Playwright 1.63 copies private DOM/source into error-context.md even with tracing off.
       for (const error of testInfo.errors) {
         const infrastructureCode = error.message?.match(
-          /\bP03_(?:BUILD_FAILED|WEB_START_FAILED|API_START_FAILED|API_FAILED|IPC_TIMEOUT|API_EXITED)\b/u,
+          /\b(?:P03_(?:BUILD_FAILED|WEB_START_FAILED|API_START_FAILED|API_FAILED|IPC_TIMEOUT|API_EXITED)|P05_FIXTURE_(?:DATABASE|MIGRATION|SNAPSHOT|LINUX_LAUNCH|DEPENDENCIES|API_BOOT))\b/u,
         )?.[0];
         const location = error.stack?.match(
-          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals)\.spec\.ts:(\d+):(\d+)/u,
+          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals|tasks-codes-and-review)\.spec\.ts:(\d+):(\d+)/u,
         );
         error.message =
           infrastructureCode ??
@@ -127,8 +148,10 @@ export const test = base.extend<
     { scope: "worker" },
   ],
   scenario: [
-    async ({ builtWeb: _builtWeb, context }, runFixture) => {
-      const { child, scenario } = await startApi();
+    async ({ builtWeb: _builtWeb, context }, runFixture, testInfo) => {
+      const { child, scenario } = await startApi(
+        testInfo.file.endsWith("tasks-codes-and-review.spec.ts"),
+      );
       let web: ChildProcess | undefined;
       try {
         web = await startWeb();

@@ -10,6 +10,33 @@ const local = (instant: string) =>
 
 describe("Baghdad business boundaries", () => {
   it.each([
+    ["2026-10-09T08:59:59.999Z", "UPCOMING", "2026-10-09T09:00:00.000Z"],
+    ["2026-10-09T09:00:00Z", "OPEN", "2026-10-12T09:00:00.000Z"],
+    ["2026-10-09T14:59:59.999Z", "OPEN", "2026-10-12T09:00:00.000Z"],
+    ["2026-10-09T15:00:00Z", "CLOSED", "2026-10-12T09:00:00.000Z"],
+    ["2026-10-10T09:00:00Z", "HOLIDAY", "2026-10-12T09:00:00.000Z"],
+    ["2026-10-11T09:00:00Z", "HOLIDAY", "2026-10-12T09:00:00.000Z"],
+  ])(
+    "projects the calendar at %s without consulting the host clock",
+    (instant, state, next) => {
+      const observed = clock.taskCalendar(instant);
+      expect(observed).toMatchObject({
+        calendarState: state,
+        window: { nextOpeningAt: next },
+      });
+      expect(
+        clock.taskCalendar(
+          DateTime.fromISO(instant).setZone("America/New_York").toISO(),
+        ),
+      ).toEqual(observed);
+      expect(clock.taskWindow("2026-10-09", instant)).toMatchObject({
+        opensAt: "2026-10-09T09:00:00.000Z",
+        closesAt: "2026-10-09T15:00:00.000Z",
+        nextOpeningAt: next,
+      });
+    },
+  );
+  it.each([
     [1, "2026-10-02"],
     [2, "2026-10-05"],
     [5, "2026-10-08"],

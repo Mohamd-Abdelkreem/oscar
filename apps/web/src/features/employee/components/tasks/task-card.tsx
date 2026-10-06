@@ -8,11 +8,10 @@ import {
   RefreshCw,
   Send,
 } from "lucide-react";
-import { useState } from "react";
+import type { EmployeeTaskDay, SubmissionDetail } from "@template/contracts";
+import { usePrivateProof } from "@/features/proofs/hooks/use-private-proof";
 import { FINANCIAL_RULES } from "../../constants/branding";
-import { useEmployeeState } from "../../context/employee-state.context";
 import { useTaskSubmission } from "../../hooks/use-task-submission";
-import { useTaskCodeGate } from "@/features/admin/hooks/use-task-code-gate";
 import { Button } from "../common/button";
 import { MoneyAmount } from "../common/money-amount";
 import { StatusBadge } from "../common/status-badge";
@@ -21,13 +20,12 @@ import { TaskAvailabilityCard } from "./task-availability-card";
 import { TaskCodeGate } from "./task-code-gate";
 
 interface TaskCardProps {
-  readonly currentScenario?: string | undefined;
+  readonly day?: EmployeeTaskDay;
+  readonly savedSubmission?: SubmissionDetail;
 }
-
-export function TaskCard({ currentScenario }: TaskCardProps) {
-  const { user, task, currentPackage } = useEmployeeState();
-  const { isTaskUnlocked, unlockTaskWithCode } = useTaskCodeGate(task.id, user.id);
-  const [unlockedLocally, setUnlockedLocally] = useState(false);
+export function TaskCard({ day, savedSubmission }: TaskCardProps) {
+  const submission = savedSubmission ?? day?.submission ?? null;
+  const workflow = useTaskSubmission(day ?? null, submission);
   const {
     screenshotFile,
     setScreenshotFile,
@@ -37,31 +35,46 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
     feedback,
     handleSubmit,
     handleReplaceScreenshot,
-  } = useTaskSubmission();
-  const effectiveStatus = currentScenario || task.status;
-
-  if (currentPackage.id === "FREE" || effectiveStatus === "free") {
-    return <TaskAvailabilityCard status="free" task={task} />;
-  }
-  if (effectiveStatus === "before_window" || effectiveStatus === "closed") {
-    return <TaskAvailabilityCard status={effectiveStatus} task={task} />;
-  }
-
-  // Code Gate: If task requires unlock code and is not yet unlocked
-  const unlocked =
-    !task.isCodeRequired ||
-    unlockedLocally ||
-    isTaskUnlocked;
-
-  if (!unlocked) {
-    return (
-      <TaskCodeGate
-        taskId={task.id}
-        unlockFn={unlockTaskWithCode}
-        onUnlocked={() => { setUnlockedLocally(true); }}
-      />
-    );
-  }
+  } = workflow;
+  const proof = usePrivateProof({
+    purpose: "PROOF",
+    assetId: submission?.evidence.assetId ?? null,
+    evidenceIdentity: submission
+      ? submission.id + ":" + String(submission.currentEvidenceVersion)
+      : "",
+    role: "USER",
+    open: submission !== null,
+  });
+  const illustration = usePrivateProof({
+    purpose: "TASK_ILLUSTRATION",
+    assetId: submission ? null : (day?.task?.illustration?.id ?? null),
+    evidenceIdentity: day?.task?.id ?? "",
+    role: "USER",
+    open: submission === null,
+  });
+  if (!submission && day && !day.canSubmit && !day.canUnlock)
+    return <TaskAvailabilityCard day={day} />;
+  if (!submission && day?.canUnlock) return <TaskCodeGate day={day} />;
+  const content = submission?.snapshot.capturedTaskContent ?? day?.task;
+  if (!content) return null;
+  const task = {
+    ...content,
+    rewardAmount: submission?.reward ?? day?.currentEntitlement.dailyReward,
+    submittedAt: submission?.submittedAt,
+    instructions: content.description.split("\n").filter(Boolean),
+  };
+  const packageLabel =
+    submission?.snapshot.capturedSubscriptionTerms.code ??
+    day?.currentEntitlement.packageLabel;
+  const effectiveStatus =
+    submission?.status === "PENDING"
+      ? "submitted"
+      : submission?.status === "APPROVED"
+        ? "approved"
+        : submission?.status === "REJECTED"
+          ? "rejected"
+          : "open";
+  const disabled = isSubmitting || workflow.unresolved || !workflow.allowed;
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
       {/* Header */}
@@ -69,7 +82,7 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
         <div className="mb-3 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
           <div className="flex items-center gap-2">
             <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
-              {currentPackage.name}
+              {packageLabel}
             </span>
             <span className="text-xs text-slate-500">
               النافذة: {FINANCIAL_RULES.taskTimeWindow.start} -{" "}
@@ -107,25 +120,29 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
           <span className="font-medium text-slate-500">
             مكافأة إتمام المهمة:
           </span>
-          <MoneyAmount
-            amount={task.rewardAmount}
-            size="lg"
-            color="positive"
-            showSign
-          />
+          {task.rewardAmount && (
+            <MoneyAmount
+              amount={task.rewardAmount}
+              size="lg"
+              color="positive"
+              showSign
+            />
+          )}
         </div>
       </div>
 
       {/* Task Image Preview & External action */}
       <div className="border-b border-slate-200 bg-slate-50 p-4 sm:p-5">
-        <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={task.previewImageUrl}
-            alt="نموذج توضيحي لتنفيذ المهمة"
-            className="max-h-48 w-full object-cover"
-          />
-        </div>
+        {illustration.url && (
+          <div className="overflow-hidden rounded-md border border-slate-200 bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={illustration.url}
+              alt="نموذج توضيحي لتنفيذ المهمة"
+              className="max-h-48 w-full object-cover"
+            />
+          </div>
+        )}
         <div className="mt-3 flex items-center justify-between">
           <span className="text-xs font-medium text-slate-600">
             {task.platform}
@@ -150,11 +167,10 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
             <span>سبب رفض المهمة من قبل فريق التدقيق:</span>
           </div>
           <p className="text-xs text-rose-700">
-            {task.rejectionReason ??
-              "لقطة الشاشة المرفقة غير مطابقة للشروط المطلوبة."}
+            {submission?.finalDecision?.reason ?? "تم رفض المهمة نهائياً."}
           </p>
           <p className="pt-1 text-[11px] text-rose-600">
-            تم عكس مكافأة المهمة وإلغاؤها من الرصيد لعدم صحة التوثيق.
+            لم تُصرف مكافأة هذه المهمة، ولا يُخصم شيء من رصيدك.
           </p>
         </div>
       )}
@@ -188,16 +204,15 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
                 </span>
               </div>
               <p className="text-xs leading-relaxed text-emerald-700">
-                أضيفت المكافأة ({task.rewardAmount.toFixed(2)} USDT) إلى رصيدك
-                وهي قيد المراجعة التدقيقية. يمكنك استبدال لقطة الشاشة أدناه في
+                المكافأة ({task.rewardAmount} USDT) قيد المراجعة، ولا تُضاف إلى
+                الرصيد قبل الاعتماد النهائي. يمكنك استبدال لقطة الشاشة أدناه في
                 حال رغبت بتعديل التوثيق دون تغيير المكافأة.
               </p>
             </div>
 
             <ScreenshotUpload
-              initialPreview={
-                task.submittedScreenshot || "/employee/task-preview.svg"
-              }
+              initialPreview={proof.url ?? undefined}
+              disabled={disabled || !submission?.canReplace}
               onFileSelected={(file) => {
                 setScreenshotFile(file);
               }}
@@ -208,7 +223,10 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
               fullWidth
               size="default"
               icon={RefreshCw}
-              onClick={handleReplaceScreenshot}
+              disabled={disabled || !screenshotFile || !submission?.canReplace}
+              onClick={() => {
+                void handleReplaceScreenshot();
+              }}
             >
               تحديث لقطة الشاشة المرفقة
             </Button>
@@ -227,9 +245,15 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
               تم التحقق من لقطة الشاشة وصحة التقييم بنجاح.
             </p>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+        ) : effectiveStatus === "rejected" ? null : (
+          <form
+            onSubmit={(event) => {
+              void handleSubmit(event);
+            }}
+            className="space-y-4"
+          >
             <ScreenshotUpload
+              disabled={disabled || !day?.canSubmit}
               onFileSelected={(file) => {
                 setScreenshotFile(file);
               }}
@@ -257,44 +281,82 @@ export function TaskCard({ currentScenario }: TaskCardProps) {
               </label>
             </div>
 
-            {feedback && (
-              <div
-                className={`flex items-center gap-2 rounded-md p-3 text-xs font-medium ${
-                  feedback.success
-                    ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-                    : "border border-rose-200 bg-rose-50 text-rose-800"
-                }`}
-                role="alert"
-              >
-                {feedback.success ? (
-                  <CheckCircle2
-                    size={16}
-                    className="shrink-0"
-                    aria-hidden="true"
-                  />
-                ) : (
-                  <AlertTriangle
-                    size={16}
-                    className="shrink-0"
-                    aria-hidden="true"
-                  />
-                )}
-                <span>{feedback.message}</span>
-              </div>
-            )}
-
             <Button
               type="submit"
               variant="primary"
               size="default"
               fullWidth
               loading={isSubmitting}
-              disabled={!screenshotFile || !acknowledged}
+              disabled={
+                disabled || !screenshotFile || !acknowledged || !day?.canSubmit
+              }
               icon={Send}
             >
               تأكيد وإرسال المهمة للاعتماد
             </Button>
           </form>
+        )}
+        {feedback && (
+          <div
+            className={`flex items-center gap-2 rounded-md p-3 text-xs font-medium ${
+              feedback.success
+                ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border border-rose-200 bg-rose-50 text-rose-800"
+            }`}
+            role="alert"
+          >
+            {feedback.success ? (
+              <CheckCircle2 size={16} className="shrink-0" aria-hidden="true" />
+            ) : (
+              <AlertTriangle
+                size={16}
+                className="shrink-0"
+                aria-hidden="true"
+              />
+            )}
+            <span>{feedback.message}</span>
+          </div>
+        )}
+        {submission && (
+          <div className="text-xs text-slate-500" role="status">
+            الإقرار بالتنفيذ محفوظ.{" "}
+            {proof.availability === "REMOVED"
+              ? "حُذفت الصورة بعد انتهاء مدة الاحتفاظ."
+              : proof.availability === "STORAGE_UNAVAILABLE" || proof.error
+                ? "الصورة غير متاحة حالياً."
+                : proof.isPending
+                  ? "جارٍ تحميل الصورة..."
+                  : ""}
+          </div>
+        )}
+        {submission && effectiveStatus !== "submitted" && proof.url && (
+          <ScreenshotUpload
+            initialPreview={proof.url}
+            onFileSelected={() => {}}
+            disabled
+          />
+        )}
+        {workflow.unresolved && (
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={() => {
+                void workflow.observe();
+              }}
+            >
+              التحقق من الطلب
+            </Button>
+            <Button
+              variant="outline"
+              disabled={isSubmitting}
+              onClick={() => {
+                void workflow.cancel();
+              }}
+            >
+              إلغاء الطلب غير المؤكد
+            </Button>
+          </div>
         )}
       </div>
     </div>

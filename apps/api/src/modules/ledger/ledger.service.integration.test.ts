@@ -11,6 +11,13 @@ import {
 import { afterAll, describe, expect, it } from "vitest";
 
 import { LedgerService } from "./ledger.service.js";
+import { TaskReviewService } from "../task-submissions/task-review.service.js";
+import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
+import {
+  withTaskDatabase,
+  withTaskFileFixture,
+  taskIdentity,
+} from "../tasks/testing/task-fixtures.js";
 import { LedgerError } from "./ledger.errors.js";
 import { acceptedTermsSchema } from "./ledger.types.js";
 import { financialOperationResultSchema } from "@template/contracts";
@@ -38,6 +45,64 @@ const RECORDED_AT = "2026-10-02T09:00:00.000Z";
 const service = new LedgerService(database, {
   businessNamespaces: [NAMESPACE],
   processIds: [PROCESS],
+});
+
+describe("P05 composed reward reconciliation", () => {
+  it("reconciles one captured task credit and its administrator audit after employee ban", async () => {
+    await withTaskDatabase(async (isolated) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(isolated, root);
+        await isolated.user.update({
+          where: { id: fixture.employee.user.id },
+          data: { status: "BANNED" },
+        });
+        await new TaskReviewService(isolated, fixture.clock).review(
+          taskIdentity(fixture.admin),
+          fixture.submission.id,
+          fixture.intent,
+        );
+        const operation = await isolated.financialOperation.findFirstOrThrow({
+          where: { businessNamespace: "p05.task-reward" },
+        });
+        expect(operation).toMatchObject({
+          businessKey: fixture.submission.id,
+          magnitudeUnits: 2_000_000n,
+          origin: "TASK_REWARD",
+          actorUserId: fixture.admin.user.id,
+        });
+        expect(
+          await isolated.ledgerPosting.findMany({
+            where: { operationId: operation.id },
+          }),
+        ).toMatchObject([
+          {
+            source: "NON_REFERRAL",
+            availableDeltaUnits: 2_000_000n,
+            reservedDeltaUnits: 0n,
+          },
+        ]);
+        expect(
+          await isolated.auditRecord.findUniqueOrThrow({
+            where: { operationId: operation.id },
+          }),
+        ).toMatchObject({
+          actorUserId: fixture.admin.user.id,
+          action: "CREDIT",
+        });
+        const reconciliation = await new LedgerService(isolated, {
+          businessNamespaces: ["p05.task-reward"],
+          processIds: [],
+        }).reconcileWallet(operation.walletId, {
+          actor: { type: "USER", userId: fixture.admin.user.id },
+          observe: async () => {},
+        });
+        expect(reconciliation).toMatchObject({
+          consistent: true,
+          discrepancies: [],
+        });
+      }),
+    );
+  });
 });
 
 const fixture = async () => {

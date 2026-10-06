@@ -66,6 +66,18 @@ model User {
   purchases               Purchase[]
   subscriptions           Subscription[]
   referralDecisions       ReferralDecision[]
+  createdTasks            Task[]                @relation("TaskCreator")
+  updatedTasks            Task[]                @relation("TaskEditor")
+  createdTaskCodes        TaskCode[]            @relation("TaskCodeCreator")
+  updatedTaskCodes        TaskCode[]            @relation("TaskCodeEditor")
+  taskUnlocks             TaskUnlock[]
+  imageAssets             ImageAsset[]
+  taskSubmissions         TaskSubmission[]
+  submissionEvidence      SubmissionEvidence[]  @relation("EvidenceOwner")
+  acceptedEvidence        SubmissionEvidence[]  @relation("EvidenceAcceptor")
+  reviewedSubmissions     FinalReview[]         @relation("ReviewActor")
+  finalReviews            FinalReview[]         @relation("ReviewEmployee")
+  taskCommands            TaskCommandRecord[]
 
   @@index([status, role], map: "users_status_role_idx")
   @@index([sponsorUserId], map: "users_sponsor_idx")
@@ -98,6 +110,7 @@ model AuthSession {
   revokedAt     DateTime?      @map("revoked_at") @db.Timestamptz(6)
   user          User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   refreshTokens RefreshToken[]
+  imageAssets   ImageAsset[]
 
   @@unique([id, userId], map: "auth_sessions_id_user_key")
   @@index([userId, revokedAt], map: "auth_sessions_user_revoked_idx")
@@ -224,10 +237,12 @@ model Wallet {
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  owner       User                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  operations  FinancialOperation[]
-  allocations ReservationAllocation[]
+  owner        User                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  operations   FinancialOperation[]
+  allocations  ReservationAllocation[]
+  finalReviews FinalReview[]
 
+  @@unique([id, ownerUserId], map: "wallets_id_owner_key")
   @@map("wallets")
 }
 
@@ -257,6 +272,7 @@ model FinancialOperation {
   referencedByAudits AuditRecord[]          @relation("CorrectionReference")
   packagePurchase    Purchase?
   referralDecision   ReferralDecision?
+  finalReview        FinalReview?
 
   @@unique([id, walletId])
   @@unique([kind, businessNamespace, businessKey], map: "financial_operations_business_key")
@@ -496,6 +512,7 @@ model Subscription {
   observedByQuotes      PurchaseQuote[]    @relation("QuoteObservedSubscription")
   previousForPurchases  Purchase[]         @relation("PurchasePreviousSubscription")
   referralDecisions     ReferralDecision[]
+  taskSubmissions       TaskSubmission[]
 
   @@unique([id, ownerUserId], map: "subscriptions_id_owner_key")
   @@unique([purchaseId, ownerUserId], map: "subscriptions_purchase_owner_key")
@@ -528,4 +545,275 @@ model ReferralDecision {
   @@unique([purchaseId, level], map: "referral_decisions_purchase_level_key")
   @@index([recipientUserId, occurredAt, id], map: "referral_decisions_recipient_time_idx")
   @@map("referral_decisions")
+}
+
+enum TaskPublicationState {
+  PUBLISHED
+  PAUSED
+  CLOSED
+
+  @@map("task_publication_state")
+}
+
+enum TaskCodeState {
+  ENABLED
+  PAUSED
+
+  @@map("task_code_state")
+}
+
+enum ImageAssetPurpose {
+  PROOF
+  TASK_ILLUSTRATION
+
+  @@map("image_asset_purpose")
+}
+
+enum ImageAssetState {
+  STAGING
+  READY
+  FAILED
+  DELETING
+  DELETED
+
+  @@map("image_asset_state")
+}
+
+enum TaskSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("task_submission_status")
+}
+
+enum TaskCommandKind {
+  TASK_CREATE
+  TASK_EDIT
+  TASK_STATUS
+  CODE_CREATE
+  CODE_STATUS
+  TASK_UNLOCK
+  SUBMISSION_CREATE
+  EVIDENCE_REPLACE
+  FINAL_REVIEW
+
+  @@map("task_command_kind")
+}
+
+enum TaskCommandTerminalState {
+  COMMITTED
+  CANCELLED
+
+  @@map("task_command_terminal_state")
+}
+
+model Task {
+  id                   String               @id @default(uuid()) @db.Uuid
+  publicationDate      DateTime             @unique(map: "tasks_publication_date_key") @map("publication_date") @db.Date
+  publicationState     TaskPublicationState @map("publication_state")
+  revision             Int                  @default(1)
+  firstParticipationAt DateTime?            @map("first_participation_at") @db.Timestamptz(6)
+  title                String               @db.VarChar(150)
+  description          String               @db.VarChar(10000)
+  targetUrl            String               @map("target_url") @db.VarChar(2000)
+  platform             String               @db.VarChar(80)
+  illustrationAssetId  String?              @map("illustration_asset_id") @db.Uuid
+  illustrationPurpose  ImageAssetPurpose?   @map("illustration_purpose")
+  isCodeRequired       Boolean              @map("is_code_required")
+  createdAt            DateTime             @map("created_at") @db.Timestamptz(6)
+  createdByUserId      String               @map("created_by_user_id") @db.Uuid
+  updatedAt            DateTime             @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId      String               @map("updated_by_user_id") @db.Uuid
+  creator              User                 @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  editor               User                 @relation("TaskEditor", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  illustration         ImageAsset?          @relation(fields: [illustrationAssetId, illustrationPurpose], references: [id, purpose], onDelete: Restrict, onUpdate: Restrict)
+  codes                TaskCode[]
+  unlocks              TaskUnlock[]
+  submissions          TaskSubmission[]
+  commands             TaskCommandRecord[]
+
+  @@unique([id, publicationDate], map: "tasks_id_date_key")
+  @@index([publicationDate, id], map: "tasks_date_id_idx")
+  @@map("tasks")
+}
+
+model TaskCode {
+  id              String              @id @default(uuid()) @db.Uuid
+  taskId          String              @map("task_id") @db.Uuid
+  normalizedText  String              @unique(map: "task_codes_normalized_text_key") @map("normalized_text") @db.VarChar(64)
+  state           TaskCodeState
+  version         Int                 @default(1)
+  description     String?             @db.VarChar(500)
+  createdAt       DateTime            @map("created_at") @db.Timestamptz(6)
+  createdByUserId String              @map("created_by_user_id") @db.Uuid
+  updatedAt       DateTime            @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId String              @map("updated_by_user_id") @db.Uuid
+  task            Task                @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creator         User                @relation("TaskCodeCreator", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  editor          User                @relation("TaskCodeEditor", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  unlocks         TaskUnlock[]
+  commands        TaskCommandRecord[]
+
+  @@unique([id, taskId], map: "task_codes_id_task_key")
+  @@index([taskId, state, id], map: "task_codes_task_state_id_idx")
+  @@map("task_codes")
+}
+
+model TaskUnlock {
+  id           String   @id @default(uuid()) @db.Uuid
+  employeeId   String   @map("employee_id") @db.Uuid
+  taskId       String   @map("task_id") @db.Uuid
+  codeId       String   @map("code_id") @db.Uuid
+  businessDate DateTime @map("business_date") @db.Date
+  unlockedAt   DateTime @map("unlocked_at") @db.Timestamptz(6)
+  employee     User     @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task         Task     @relation(fields: [taskId, businessDate], references: [id, publicationDate], onDelete: Restrict, onUpdate: Restrict)
+  code         TaskCode @relation(fields: [codeId, taskId], references: [id, taskId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([employeeId, taskId, businessDate], map: "task_unlocks_employee_task_date_key")
+  @@index([codeId, unlockedAt, id], map: "task_unlocks_code_time_idx")
+  @@index([employeeId, businessDate, id], map: "task_unlocks_employee_date_idx")
+  @@map("task_unlocks")
+}
+
+model ImageAsset {
+  id                       String               @id @default(uuid()) @db.Uuid
+  ownerUserId              String               @map("owner_user_id") @db.Uuid
+  purpose                  ImageAssetPurpose
+  uploadCommandId          String               @map("upload_command_id") @db.Uuid
+  uploadIntentHash         String?              @map("upload_intent_hash") @db.Char(64)
+  state                    ImageAssetState
+  receivedAt               DateTime?            @map("received_at") @db.Timestamptz(6)
+  uploadedBySessionId      String?              @map("uploaded_by_session_id") @db.Uuid
+  processingLeaseId        String?              @map("processing_lease_id") @db.Uuid
+  processingLeaseExpiresAt DateTime?            @map("processing_lease_expires_at") @db.Timestamptz(6)
+  uploadedAt               DateTime?            @map("uploaded_at") @db.Timestamptz(6)
+  readyAt                  DateTime?            @map("ready_at") @db.Timestamptz(6)
+  storageKey               String?              @unique(map: "image_assets_storage_key_key") @map("storage_key") @db.VarChar(128)
+  inputByteCount           Int?                 @map("input_byte_count")
+  storedByteCount          Int?                 @map("stored_byte_count")
+  format                   String?              @db.VarChar(8)
+  width                    Int?
+  height                   Int?
+  contentHash              String?              @map("content_hash") @db.Char(64)
+  failureCode              String?              @map("failure_code") @db.VarChar(40)
+  failedAt                 DateTime?            @map("failed_at") @db.Timestamptz(6)
+  deletionLeaseId          String?              @map("deletion_lease_id") @db.Uuid
+  deletionLeaseExpiresAt   DateTime?            @map("deletion_lease_expires_at") @db.Timestamptz(6)
+  deletedAt                DateTime?            @map("deleted_at") @db.Timestamptz(6)
+  owner                    User                 @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  uploadSession            AuthSession?         @relation(fields: [uploadedBySessionId, ownerUserId], references: [id, userId], onDelete: Restrict, onUpdate: Restrict)
+  illustratedTasks         Task[]
+  evidence                 SubmissionEvidence[]
+
+  @@unique([ownerUserId, purpose, uploadCommandId], map: "image_assets_owner_purpose_upload_key")
+  @@unique([id, ownerUserId, purpose], map: "image_assets_id_owner_purpose_key")
+  @@unique([id, purpose], map: "image_assets_id_purpose_key")
+  @@index([purpose, state, uploadedAt, id], map: "image_assets_retention_idx")
+  @@index([state, deletionLeaseExpiresAt, id], map: "image_assets_deletion_lease_idx")
+  @@map("image_assets")
+}
+
+model TaskSubmission {
+  id                        String               @id @default(uuid()) @db.Uuid
+  employeeId                String               @map("employee_id") @db.Uuid
+  taskId                    String               @map("task_id") @db.Uuid
+  businessDate              DateTime             @map("business_date") @db.Date
+  capturedTaskRevision      Int                  @map("captured_task_revision")
+  capturedTaskContent       Json                 @map("captured_task_content")
+  subscriptionId            String               @map("subscription_id") @db.Uuid
+  capturedSubscriptionTerms Json                 @map("captured_subscription_terms")
+  rewardUnits               BigInt               @map("reward_units")
+  executionDeclared         Boolean              @map("execution_declared")
+  submittedAt               DateTime             @map("submitted_at") @db.Timestamptz(6)
+  deadlineAt                DateTime             @map("deadline_at") @db.Timestamptz(6)
+  status                    TaskSubmissionStatus @default(PENDING)
+  version                   Int                  @default(1)
+  currentEvidenceVersion    Int                  @map("current_evidence_version")
+  employee                  User                 @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task                      Task                 @relation(fields: [taskId, businessDate], references: [id, publicationDate], onDelete: Restrict, onUpdate: Restrict)
+  subscription              Subscription         @relation(fields: [subscriptionId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  evidence                  SubmissionEvidence[]
+  finalReview               FinalReview?
+  commands                  TaskCommandRecord[]
+
+  // SQL owns the deferred (id, current_evidence_version) evidence reference.
+  @@unique([employeeId, businessDate], map: "task_submissions_employee_date_key")
+  @@unique([id, employeeId], map: "task_submissions_id_employee_key")
+  @@unique([id, taskId, businessDate], map: "task_submissions_id_task_date_key")
+  @@index([status, submittedAt, id], map: "task_submissions_status_time_idx")
+  @@index([taskId, status, submittedAt, id], map: "task_submissions_task_status_time_idx")
+  @@index([employeeId, submittedAt, id], map: "task_submissions_employee_time_idx")
+  @@map("task_submissions")
+}
+
+model SubmissionEvidence {
+  id               String            @id @default(uuid()) @db.Uuid
+  submissionId     String            @map("submission_id") @db.Uuid
+  employeeId       String            @map("employee_id") @db.Uuid
+  version          Int
+  assetId          String            @map("asset_id") @db.Uuid
+  assetPurpose     ImageAssetPurpose @map("asset_purpose")
+  acceptedAt       DateTime          @map("accepted_at") @db.Timestamptz(6)
+  acceptedByUserId String            @map("accepted_by_user_id") @db.Uuid
+  submission       TaskSubmission    @relation(fields: [submissionId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  employee         User              @relation("EvidenceOwner", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  acceptedBy       User              @relation("EvidenceAcceptor", fields: [acceptedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asset            ImageAsset        @relation(fields: [assetId, employeeId, assetPurpose], references: [id, ownerUserId, purpose], onDelete: Restrict, onUpdate: Restrict)
+  finalReviews     FinalReview[]
+
+  @@unique([submissionId, version], map: "submission_evidence_submission_version_key")
+  @@index([assetId, submissionId], map: "submission_evidence_asset_submission_idx")
+  @@map("submission_evidence")
+}
+
+model FinalReview {
+  id                  String               @id @default(uuid()) @db.Uuid
+  submissionId        String               @unique(map: "final_reviews_submission_key") @map("submission_id") @db.Uuid
+  employeeId          String               @map("employee_id") @db.Uuid
+  decision            TaskSubmissionStatus
+  submissionVersion   Int                  @map("submission_version")
+  evidenceVersion     Int                  @map("evidence_version")
+  actorUserId         String               @map("actor_user_id") @db.Uuid
+  decidedAt           DateTime             @map("decided_at") @db.Timestamptz(6)
+  reason              String               @db.VarChar(500)
+  walletId            String?              @map("wallet_id") @db.Uuid
+  approvalOperationId String?              @unique(map: "final_reviews_approval_operation_key") @map("approval_operation_id") @db.Uuid
+  submission          TaskSubmission       @relation(fields: [submissionId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  employee            User                 @relation("ReviewEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor               User                 @relation("ReviewActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evidence            SubmissionEvidence   @relation(fields: [submissionId, evidenceVersion], references: [submissionId, version], onDelete: Restrict, onUpdate: Restrict)
+  wallet              Wallet?              @relation(fields: [walletId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  operation           FinancialOperation?  @relation(fields: [approvalOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([submissionId, employeeId], map: "final_reviews_submission_employee_key")
+  @@unique([approvalOperationId, walletId], map: "final_reviews_operation_wallet_key")
+  @@map("final_reviews")
+}
+
+model TaskCommandRecord {
+  id             String                   @id @default(uuid()) @db.Uuid
+  actorUserId    String                   @map("actor_user_id") @db.Uuid
+  kind           TaskCommandKind
+  commandId      String                   @map("command_id") @db.Uuid
+  terminalState  TaskCommandTerminalState @map("terminal_state")
+  intentHash     String?                  @map("intent_hash") @db.Char(64)
+  taskId         String?                  @map("task_id") @db.Uuid
+  codeId         String?                  @map("code_id") @db.Uuid
+  submissionId   String?                  @map("submission_id") @db.Uuid
+  occurredAt     DateTime                 @map("occurred_at") @db.Timestamptz(6)
+  reason         String?                  @db.VarChar(500)
+  beforeSnapshot Json?                    @map("before_snapshot")
+  afterSnapshot  Json?                    @map("after_snapshot")
+  safeOutcome    Json?                    @map("safe_outcome")
+  actor          User                     @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task           Task?                    @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  code           TaskCode?                @relation(fields: [codeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  submission     TaskSubmission?          @relation(fields: [submissionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([actorUserId, kind, commandId], map: "task_commands_actor_kind_command_key")
+  @@index([actorUserId, occurredAt, id], map: "task_commands_actor_time_idx")
+  @@index([codeId, occurredAt, id], map: "task_commands_code_time_idx")
+  @@map("task_command_records")
 }

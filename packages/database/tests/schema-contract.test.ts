@@ -39,6 +39,14 @@ describe("authentication and financial foundation Prisma schema", () => {
       "Purchase",
       "Subscription",
       "ReferralDecision",
+      "Task",
+      "TaskCode",
+      "TaskUnlock",
+      "ImageAsset",
+      "TaskSubmission",
+      "SubmissionEvidence",
+      "FinalReview",
+      "TaskCommandRecord",
     ]);
     expect(enums).toEqual([
       "UserRole",
@@ -48,6 +56,13 @@ describe("authentication and financial foundation Prisma schema", () => {
       "FinancialActorType",
       "FundSource",
       "ReservationState",
+      "TaskPublicationState",
+      "TaskCodeState",
+      "ImageAssetPurpose",
+      "ImageAssetState",
+      "TaskSubmissionStatus",
+      "TaskCommandKind",
+      "TaskCommandTerminalState",
     ]);
   });
 

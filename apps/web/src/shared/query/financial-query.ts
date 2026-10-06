@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { skipToken, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useCurrentSession,
@@ -18,6 +18,8 @@ import {
 
 export const financialQueryKey = (scope: SessionScope) =>
   ["p04", scope.accountId, scope.role, scope.epoch, scope.check] as const;
+export const taskQueryKey = (scope: SessionScope) =>
+  ["p05", scope.accountId, scope.role, scope.epoch, scope.check] as const;
 export function recheckFinancialDenial(scope: SessionScope, failure: unknown) {
   const error = getApiError(failure);
   if (
@@ -45,6 +47,8 @@ export function useFinancialScope(role: "USER" | "ADMIN") {
       getSessionRuntime().onRetire(() => {
         void client.cancelQueries({ queryKey: ["p04"] });
         client.removeQueries({ queryKey: ["p04"] });
+        void client.cancelQueries({ queryKey: ["p05"] });
+        client.removeQueries({ queryKey: ["p05"] });
       }),
     [client],
   );
@@ -58,13 +62,24 @@ export function useFinancialScope(role: "USER" | "ADMIN") {
   return { scope, allowed };
 }
 
-export function useFinancialRead<T>(options: {
+type PrivateReadOptions<T> = {
   domain: string;
   role: "USER" | "ADMIN";
   selection: readonly unknown[];
   read: (scope: SessionScope, signal: AbortSignal) => Promise<T>;
   enabled?: boolean;
-}) {
+  pending?: (data: NoInfer<T>) => boolean;
+};
+export function useFinancialRead<T>(options: PrivateReadOptions<T>) {
+  return usePrivateRead("p04", options);
+}
+export function useTaskRead<T>(options: PrivateReadOptions<T>) {
+  return usePrivateRead("p05", options);
+}
+function usePrivateRead<T>(
+  namespace: "p04" | "p05",
+  options: PrivateReadOptions<T>,
+) {
   const { scope, allowed } = useFinancialScope(options.role);
   const client = useQueryClient();
   const denialIdentity = JSON.stringify([
@@ -76,7 +91,21 @@ export function useFinancialRead<T>(options: {
   ]);
   // Route revalidation can unmount this reader. Keep denial with its private
   // actor/domain selection so remounting cannot start another denial loop.
-  const denialKey = ["p04", "denial", denialIdentity] as const;
+  const denialKey = [namespace, "denial", denialIdentity] as const;
+  const reportDenial = useCallback(
+    (failure: unknown) => {
+      const runtime = getSessionRuntime();
+      const error = getApiError(failure);
+      if (
+        runtime.isCurrentCheck(scope) &&
+        (error.statusCode === 401 || error.statusCode === 403)
+      ) {
+        client.setQueryData([namespace, "denial", denialIdentity], error);
+        runtime.beginCheck();
+      }
+    },
+    [client, namespace, denialIdentity, scope],
+  );
   const denied = useQuery<ApiError | null>({
     queryKey: denialKey,
     enabled: false,
@@ -84,15 +113,24 @@ export function useFinancialRead<T>(options: {
   });
   const denial = denied.data ?? undefined;
   const enabled = allowed && options.enabled !== false && denial === undefined;
-  const query = useQuery({
+  const query = useQuery<T, ApiError>({
     queryKey: [
-      ...financialQueryKey(scope),
+      ...(namespace === "p04" ? financialQueryKey(scope) : taskQueryKey(scope)),
       options.domain,
       ...options.selection,
     ],
     enabled,
     staleTime: 0,
     gcTime: 0,
+    refetchInterval: (current) =>
+      namespace === "p05" &&
+      enabled &&
+      current.state.data !== undefined &&
+      current.state.dataUpdateCount < 20 &&
+      options.pending?.(current.state.data)
+        ? 15_000
+        : false,
+    refetchIntervalInBackground: false,
     queryFn: async ({ signal }) => {
       assertFinancialScope(scope, options.role);
       if (!allowed) throw safeApiError("denied", "FORBIDDEN", 403);
@@ -105,10 +143,7 @@ export function useFinancialRead<T>(options: {
       } catch (failure: unknown) {
         assertFinancialScope(scope, options.role);
         const error = getApiError(failure);
-        if (error.statusCode === 401 || error.statusCode === 403) {
-          client.setQueryData(denialKey, error);
-          getSessionRuntime().beginCheck();
-        }
+        reportDenial(error);
         throw error;
       }
     },
@@ -116,12 +151,14 @@ export function useFinancialRead<T>(options: {
   return {
     ...query,
     data: enabled && !query.isError ? query.data : undefined,
+    acceptedData: enabled ? query.data : undefined,
     error: denial ?? query.error,
     isError: denial !== undefined || query.isError,
     isPending: denial === undefined && query.isPending,
     isSuccess: denial === undefined && query.isSuccess,
     allowed: enabled,
     scope,
+    reportDenial,
     refetch: () => {
       client.setQueryData(denialKey, null);
       return query.refetch();
@@ -143,6 +180,45 @@ export function useFinancialList<
     signal: AbortSignal,
   ) => Promise<T>;
 }) {
+  return usePrivateList("p04", 25, options);
+}
+
+export function useTaskList<
+  T extends { pagination: { totalPages: number } },
+  F extends object,
+>(options: {
+  domain: string;
+  role: "USER" | "ADMIN";
+  filters: F;
+  resource?: string | null;
+  limit?: 10 | 25;
+  read: (
+    scope: SessionScope,
+    query: F & { page: number; limit: number },
+    signal: AbortSignal,
+  ) => Promise<T>;
+}) {
+  return usePrivateList("p05", options.limit ?? 25, options);
+}
+
+function usePrivateList<
+  T extends { pagination: { totalPages: number } },
+  F extends object,
+>(
+  namespace: "p04" | "p05",
+  limit: number,
+  options: {
+    domain: string;
+    role: "USER" | "ADMIN";
+    filters: F;
+    resource?: string | null;
+    read: (
+      scope: SessionScope,
+      query: F & { page: number; limit: number },
+      signal: AbortSignal,
+    ) => Promise<T>;
+  },
+) {
   const scope = useSessionScope();
   const identity = JSON.stringify([
     scope.epoch,
@@ -153,13 +229,13 @@ export function useFinancialList<
   ]);
   const [selection, select] = useState({ identity, page: 1 });
   const page = selection.identity === identity ? selection.page : 1;
-  const query = useFinancialRead({
+  const query = usePrivateRead(namespace, {
     domain: options.domain,
     role: options.role,
-    selection: [options.resource, options.filters, page, 25],
+    selection: [options.resource, options.filters, page, limit],
     enabled: options.resource !== null,
     read: (current, signal) =>
-      options.read(current, { ...options.filters, page, limit: 25 }, signal),
+      options.read(current, { ...options.filters, page, limit }, signal),
   });
   useEffect(() => {
     const lastPage = query.data?.pagination.totalPages;

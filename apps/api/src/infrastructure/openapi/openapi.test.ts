@@ -3,6 +3,26 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "./openapi.js";
 
 const expectedPaths = [
+  "/proofs",
+  "/proofs/uploads/{commandId}",
+  "/proofs/uploads/{commandId}/cancel",
+  "/proofs/{assetId}",
+  "/proofs/{assetId}/content",
+  "/admin/task-illustrations",
+  "/admin/task-illustrations/uploads/{commandId}",
+  "/admin/task-illustrations/uploads/{commandId}/cancel",
+  "/task-illustrations/{assetId}",
+  "/task-illustrations/{assetId}/content",
+  "/admin/tasks",
+  "/admin/tasks/{taskId}",
+  "/admin/tasks/{taskId}/status",
+  "/admin/task-codes",
+  "/admin/task-codes/{codeId}",
+  "/admin/task-codes/{codeId}/status",
+  "/admin/task-codes/{codeId}/usages",
+  "/admin/task-codes/{codeId}/changes",
+  "/task-commands/{commandId}",
+  "/task-commands/{commandId}/cancel",
   "/wallet/me",
   "/wallet/me/ledger",
   "/wallet/me/ledger/{operationId}",
@@ -58,6 +78,69 @@ const expectedPaths = [
 ] as const;
 
 describe("OpenAPI document", () => {
+  it("documents private binary and confirmed version-bound final review without reversal routes", () => {
+    const paths = buildOpenApiDocument().paths;
+    expect(
+      paths?.["/proofs/{assetId}/content"]?.get?.responses?.["200"],
+    ).toHaveProperty(["content", "image/png", "schema", "format"], "binary");
+    const review =
+      paths?.["/admin/task-submissions/{submissionId}/review"]?.post;
+    expect(review?.requestBody).toHaveProperty(
+      ["content", "application/json", "schema", "required"],
+      expect.arrayContaining([
+        "confirmed",
+        "reason",
+        "expectedSubmissionVersion",
+        "expectedEvidenceVersion",
+        "decision",
+        "commandId",
+      ]),
+    );
+    expect(review?.requestBody).toHaveProperty(
+      ["content", "application/json", "schema", "additionalProperties"],
+      false,
+    );
+    for (const path of [
+      "/admin/task-submissions/{submissionId}",
+      "/admin/task-submissions/{submissionId}/review",
+    ]) {
+      expect(paths?.[path]?.patch).toBeUndefined();
+      expect(paths?.[path]?.delete).toBeUndefined();
+    }
+  });
+  it("documents confirmed publication/code writes and terminal cancellation without delete or reversal", () => {
+    const paths = buildOpenApiDocument().paths;
+    for (const [path, method] of [
+      ["/admin/tasks", "post"],
+      ["/admin/tasks/{taskId}", "patch"],
+      ["/admin/tasks/{taskId}/status", "patch"],
+      ["/admin/task-codes", "post"],
+      ["/admin/task-codes/{codeId}/status", "patch"],
+      ["/task-commands/{commandId}/cancel", "post"],
+    ] as const) {
+      expect(paths?.[path]?.[method]?.security).toEqual([
+        { BearerAuth: [], CsrfHeader: [] },
+      ]);
+      expect(paths?.[path]?.[method]?.responses).toHaveProperty("409");
+      expect(paths?.[path]?.delete).toBeUndefined();
+      expect(paths?.[path]?.[method]?.requestBody).toBeDefined();
+    }
+    expect(paths?.["/admin/tasks"]?.post?.responses).toHaveProperty("201");
+    expect(paths?.["/admin/tasks"]?.post?.responses).toHaveProperty("200");
+    expect(paths?.["/task-commands/{commandId}"]?.get?.description).toContain(
+      "NOT_OBSERVED is nonterminal",
+    );
+    expect(
+      paths?.["/task-commands/{commandId}/cancel"]?.post?.description,
+    ).toContain("never reverses");
+    for (const path of [
+      "/admin/tasks",
+      "/admin/task-codes",
+      "/admin/task-codes/{codeId}/usages",
+      "/admin/task-codes/{codeId}/changes",
+    ])
+      expect(paths?.[path]?.get?.security).toEqual([{ BearerAuth: [] }]);
+  });
   it("documents reviewed configuration writes and nonterminal actor-scoped observation", () => {
     const paths = buildOpenApiDocument().paths;
     for (const path of [
@@ -261,7 +344,18 @@ describe("OpenAPI document", () => {
   it("documents every public route and authentication scheme", () => {
     const document = buildOpenApiDocument();
     expect(Object.keys(document.paths ?? {}).sort()).toEqual(
-      [...expectedPaths].sort(),
+      [
+        ...expectedPaths,
+        "/tasks/today",
+        "/tasks/{taskId}/unlock",
+        "/task-submissions",
+        "/task-submissions/{submissionId}",
+        "/task-submissions/{submissionId}/evidence",
+        "/admin/task-submissions",
+        "/admin/task-submissions/{submissionId}",
+        "/admin/task-submissions/{submissionId}/evidence",
+        "/admin/task-submissions/{submissionId}/review",
+      ].sort(),
     );
     expect(document.components?.securitySchemes).toMatchObject({
       BearerAuth: { type: "http", scheme: "bearer" },

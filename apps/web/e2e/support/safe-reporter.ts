@@ -21,6 +21,10 @@ export default class SafeReporter implements Reporter {
     const message = error?.message ?? "";
     const locationCode = message.match(/^P03_CHECK_FAILED_AT_\d+_\d+$/u)?.[0];
     if (locationCode !== undefined) return locationCode;
+    const fixtureCode = message.match(
+      /^P05_FIXTURE_(?:DATABASE|MIGRATION|SNAPSHOT|LINUX_LAUNCH|DEPENDENCIES|API_BOOT)$/u,
+    )?.[0];
+    if (fixtureCode !== undefined) return fixtureCode;
     const known = [
       "P03_BUILD_FAILED",
       "P03_WEB_START_FAILED",

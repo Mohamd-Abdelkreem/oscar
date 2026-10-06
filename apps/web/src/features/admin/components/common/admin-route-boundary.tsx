@@ -15,7 +15,12 @@ export function AdminRouteBoundary({
   const pathname = usePathname();
   if (isPublicAdminPath(pathname)) return children;
   return (
-    <ProtectedRoute allowedRoles={["ADMIN"]}>
+    <ProtectedRoute
+      allowedRoles={["ADMIN"]}
+      preserveStateDuringCheck={/^\/admin\/tasks\/[0-9a-f-]+\/edit$/u.test(
+        pathname,
+      )}
+    >
       <AdminShell>{children}</AdminShell>
     </ProtectedRoute>
   );

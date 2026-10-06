@@ -9,6 +9,13 @@ export {
   ReservationState,
   UserRole,
   UserStatus,
+  TaskPublicationState,
+  TaskCodeState,
+  ImageAssetPurpose,
+  ImageAssetState,
+  TaskSubmissionStatus,
+  TaskCommandKind,
+  TaskCommandTerminalState,
 } from "./generated/prisma/client.js";
 export type {
   PrismaClient,
@@ -31,4 +38,12 @@ export type {
   Purchase,
   Subscription,
   ReferralDecision,
+  Task,
+  TaskCode,
+  TaskUnlock,
+  ImageAsset,
+  TaskSubmission,
+  SubmissionEvidence,
+  FinalReview,
+  TaskCommandRecord,
 } from "./generated/prisma/client.js";

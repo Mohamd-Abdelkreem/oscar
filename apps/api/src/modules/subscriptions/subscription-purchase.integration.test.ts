@@ -6,6 +6,14 @@ import { PackageConfigurationService } from "../packages/package-configuration.s
 import { EmployeeRestrictionsService } from "../users/employee-restrictions.service.js";
 import * as referralCommissions from "../referrals/referral-commissions.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import { TaskReviewService } from "../task-submissions/task-review.service.js";
+import { TaskSubmissionsService } from "../task-submissions/task-submissions.service.js";
+import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
+import {
+  withTaskDatabase,
+  withTaskFileFixture,
+  taskIdentity,
+} from "../tasks/testing/task-fixtures.js";
 import { createIdentityFixture } from "../auth/testing/identity-fixtures.js";
 import { PurchaseQuoteService } from "./purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "./subscription-purchase.service.js";
@@ -51,6 +59,91 @@ async function purchaseState(database: DatabaseClient) {
 }
 
 describe("atomic full-price purchases", () => {
+  it("keeps an S1 daily claim and rewards two USDT after full-price O1 upgrade and future catalog edits", async () => {
+    await withTaskDatabase(async (database) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(database, root);
+        await fundSubscriptionFixture(database, fixture.employee, {
+          referral: "10",
+          nonReferral: "600",
+        });
+        const identity = taskIdentity(fixture.employee);
+        const quote = await new PurchaseQuoteService(
+          database,
+          fixture.clock,
+        ).create(identity, { packageCode: "O1" });
+        const upgrade = await new SubscriptionPurchaseService(
+          database,
+          fixture.clock,
+        ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
+        expect(upgrade.purchase).toMatchObject({
+          fullDebit: "600",
+          commissionBase: "540",
+          subscriptionAtPurchase: { terms: { dailyReward: "16" } },
+        });
+        const before = await database.wallet.findUniqueOrThrow({
+          where: { ownerUserId: identity.userId },
+        });
+        expect(before).toMatchObject({
+          availableReferralUnits: 0n,
+          availableNonReferralUnits: 10_000_000n,
+        });
+        await expect(
+          new TaskSubmissionsService(
+            database,
+            fixture.clock,
+            fixture.reads,
+          ).create(identity, {
+            commandId: randomUUID(),
+            taskId: fixture.task.id,
+            expectedTaskRevision: 1,
+            proofAssetId: fixture.replacement.id,
+            declaredExecuted: true,
+          }),
+        ).rejects.toMatchObject({ code: "DAILY_CLAIM_EXISTS" });
+        const configured = await database.package.findUniqueOrThrow({
+          where: { code: "S1" },
+        });
+        const editAt = new Date(configured.updatedAt.getTime() + 1000);
+        await database.authSession.update({
+          where: { id: fixture.admin.session.id },
+          data: { expiresAt: new Date(editAt.getTime() + 86_400_000) },
+        });
+        await new PackageConfigurationService(
+          database,
+          () => editAt,
+        ).editPackage(taskIdentity(fixture.admin), "S1", {
+          commandId: randomUUID(),
+          expectedVersion: configured.version,
+          confirmed: true,
+          reason: "Future terms only",
+          dailyReward: "3",
+        });
+        await new TaskReviewService(database, () => editAt).review(
+          taskIdentity(fixture.admin),
+          fixture.submission.id,
+          fixture.intent,
+        );
+        expect(
+          await database.taskSubmission.findUniqueOrThrow({
+            where: { id: fixture.submission.id },
+          }),
+        ).toMatchObject({
+          subscriptionId: fixture.subscription.id,
+          rewardUnits: 2_000_000n,
+          capturedSubscriptionTerms: { dailyReward: "2" },
+        });
+        expect(
+          await database.wallet.findUniqueOrThrow({ where: { id: before.id } }),
+        ).toMatchObject({
+          availableNonReferralUnits: 12_000_000n,
+          availableReferralUnits: 0n,
+          reservedReferralUnits: before.reservedReferralUnits,
+          reservedNonReferralUnits: before.reservedNonReferralUnits,
+        });
+      }),
+    );
+  });
   it.each([
     [
       "weekday cutoff",
@@ -162,7 +255,20 @@ describe("atomic full-price purchases", () => {
       const savedFirst = await database.subscription.findUniqueOrThrow({
         where: { id: first.purchase.subscriptionAtPurchase.id },
       });
-      await new PackageConfigurationService(database, () => now).editPackage(
+      const seededPackage = await database.package.findUniqueOrThrow({
+        where: { code: "S1" },
+      });
+      const configurationAt = new Date(
+        Math.max(now.getTime(), seededPackage.updatedAt.getTime()) + 1,
+      );
+      await database.authSession.update({
+        where: { id: admin.session.id },
+        data: { expiresAt: new Date(configurationAt.getTime() + 86_400_000) },
+      });
+      await new PackageConfigurationService(
+        database,
+        () => configurationAt,
+      ).editPackage(
         { userId: admin.user.id, sessionId: admin.session.id },
         "S1",
         {
@@ -388,8 +494,27 @@ describe("atomic full-price purchases", () => {
         ).create(identity, { packageCode: "S1" });
         const configuration = new PackageConfigurationService(
           database,
-          () => now,
+          // The fresh migration's seed timestamp is independent of the quote's fixed business clock.
+          () => configurationAt,
         );
+        const seededPackage = await database.package.findUniqueOrThrow({
+          where: { code: "S1" },
+        });
+        const seededSettings =
+          await database.referralSettings.findUniqueOrThrow({
+            where: { id: 1 },
+          });
+        const configurationAt = new Date(
+          Math.max(
+            now.getTime(),
+            seededPackage.updatedAt.getTime(),
+            seededSettings.updatedAt.getTime(),
+          ) + 1,
+        );
+        await database.authSession.update({
+          where: { id: admin.session.id },
+          data: { expiresAt: new Date(configurationAt.getTime() + 86_400_000) },
+        });
         const adminIdentity = {
           userId: admin.user.id,
           sessionId: admin.session.id,

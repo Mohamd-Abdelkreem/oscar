@@ -14,7 +14,8 @@ export function ScreenshotUpload({
   initialPreview,
   disabled = false,
 }: ScreenshotUploadProps) {
-  const [preview, setPreview] = useState<string | null>(initialPreview ?? null);
+  const [selectedPreview, setPreview] = useState<string | null>(null);
+  const preview = selectedPreview ?? initialPreview ?? null;
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeObjectUrlRef = useRef<string | null>(null);
@@ -33,7 +34,10 @@ export function ScreenshotUpload({
       setError(null);
 
       // Validate type
-      if (!file.type.startsWith("image/")) {
+      if (
+        disabled ||
+        !["image/png", "image/jpeg", "image/webp"].includes(file.type)
+      ) {
         setError("يرجى اختيار ملف صورة صالح (PNG أو JPG أو WebP).");
         return;
       }
@@ -54,7 +58,7 @@ export function ScreenshotUpload({
       setPreview(objectUrl);
       onFileSelected(file);
     },
-    [onFileSelected],
+    [onFileSelected, disabled],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +69,7 @@ export function ScreenshotUpload({
   };
 
   const handleClear = () => {
+    if (disabled) return;
     if (activeObjectUrlRef.current) {
       URL.revokeObjectURL(activeObjectUrlRef.current);
       activeObjectUrlRef.current = null;

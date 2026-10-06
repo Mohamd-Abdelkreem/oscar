@@ -24,10 +24,77 @@ import {
   P04_FIXTURE_NOW,
 } from "../subscriptions/testing/subscription-fixtures.js";
 import { WalletsService } from "./wallets.service.js";
+import { TaskReviewService } from "../task-submissions/task-review.service.js";
+import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
+import {
+  withTaskDatabase,
+  withTaskFileFixture,
+  taskIdentity,
+} from "../tasks/testing/task-fixtures.js";
 import { PurchaseQuoteService } from "../subscriptions/purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "../subscriptions/subscription-purchase.service.js";
 
 describe("source-aware wallet projections", () => {
+  it("shows only approved captured rewards as non-referral funds after expiry and retains ban restrictions", async () => {
+    await withTaskDatabase(async (database) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(database, root);
+        await fundSubscriptionFixture(database, fixture.employee, {
+          referral: "10",
+          nonReferral: "0",
+        });
+        const expiry = fixture.subscription.expiresAt;
+        await database.authSession.updateMany({
+          data: { expiresAt: new Date(expiry.getTime() + 86_400_000) },
+        });
+        const clock = () => expiry;
+        const wallets = new WalletsService(database, clock);
+        expect(
+          await wallets.wallet(taskIdentity(fixture.employee)),
+        ).toMatchObject({
+          withdrawalFunds: {
+            eligibleReferral: "0",
+            lockedReferral: "10",
+            total: "0",
+          },
+        });
+        await new TaskReviewService(database, clock).review(
+          taskIdentity(fixture.admin),
+          fixture.submission.id,
+          fixture.intent,
+        );
+        expect(
+          await wallets.wallet(taskIdentity(fixture.employee)),
+        ).toMatchObject({
+          withdrawalFunds: {
+            eligibleReferral: "0",
+            lockedReferral: "10",
+            total: "2",
+          },
+        });
+        const history = await wallets.history(taskIdentity(fixture.employee), {
+          origin: "TASK_REWARD",
+        });
+        expect(history.items).toHaveLength(1);
+        await database.user.update({
+          where: { id: fixture.employee.user.id },
+          data: { status: "BANNED" },
+        });
+        await expect(
+          wallets.wallet(taskIdentity(fixture.employee)),
+        ).rejects.toMatchObject({ statusCode: 401 });
+        expect(
+          await wallets.employeeWallet(
+            taskIdentity(fixture.admin),
+            fixture.employee.user.id,
+          ),
+        ).toMatchObject({
+          restrictions: { accountUnavailable: true },
+          withdrawalFunds: { lockedReferral: "10" },
+        });
+      }),
+    );
+  });
   it("retains four components at expiry, separates restrictions and restores referral eligibility on paid reactivation", async () => {
     await withSubscriptionDatabase(async (database) => {
       const owner = await createIdentityFixture(database, {

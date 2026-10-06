@@ -24,12 +24,14 @@ import {
   requestId,
 } from "./middlewares/index.js";
 import { createApiRouter } from "./router.js";
+import type { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 
 type AppDependencies = Readonly<{
   database: DatabaseClient;
   logger: Logger;
   emailDelivery?: EmailDelivery;
   financialClock?: () => Date;
+  proofs?: ProofsRuntime;
 }>;
 
 const buildCorsOriginValidator = (): CorsOptions["origin"] => {
@@ -50,6 +52,7 @@ export const createApp = ({
   logger,
   emailDelivery = createEmailDelivery(),
   financialClock = () => new Date(),
+  proofs,
 }: AppDependencies): Application => {
   const app = express();
 
@@ -60,6 +63,7 @@ export const createApp = ({
   const corsOptions: CorsOptions = {
     origin: buildCorsOriginValidator(),
     credentials: corsConfig.credentials,
+    exposedHeaders: ["Content-Disposition", "X-Content-Type-Options"],
   };
 
   // Global middleware
@@ -76,7 +80,12 @@ export const createApp = ({
   app.use(
     appConfig.apiPrefix,
     apiRateLimitMiddleware,
-    createApiRouter(database, new EmailService(emailDelivery), financialClock),
+    createApiRouter(
+      database,
+      new EmailService(emailDelivery),
+      financialClock,
+      proofs,
+    ),
   );
 
   // Final middleware

@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  CheckCircle2,
-  Eye,
-  Search,
-  X,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle2, Eye, Search, X, XCircle } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
 import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
@@ -17,72 +11,162 @@ import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
-import { useAdminState } from "../../context/admin-state.context";
-import type {
-  AdminSubmission,
-  AdminSubmissionStatus,
-} from "../../types/admin.types";
+import { submissionStatusSchema } from "@template/contracts";
+import {
+  useAdminTaskSubmissions,
+  useAdminTaskSubmission,
+  useAdminSubmissionEvidence,
+} from "../../hooks/task-submissions.hooks";
+import { useAdminTaskCommand } from "../../hooks/tasks.hooks";
+import { useSubmissionReviewDialog } from "../../hooks/use-submission-review-dialog";
+import { adminTaskSubmissionsApi } from "../../api/task-submissions.api";
+import { usePrivateProof } from "@/features/proofs/hooks/use-private-proof";
+import { PrivateTaskImage } from "../common/private-task-image";
+import { TaskCommandFeedback } from "../common/task-command-feedback";
+import { TaskQueryState } from "../common/task-query-state";
+import { AdminPagination } from "../common/admin-pagination";
+import { useSearchParams } from "next/navigation";
+import { SubmissionReviewContext } from "./submission-review-context";
 
 // Function-size exception: preview and rejection share one selected submission and
 // review workflow. Revisit when either dialog gains independent state or reuse.
 export function SubmissionsScreen() {
-  const { submissions, approveSubmission, rejectSubmission } = useAdminState();
+  const params = useSearchParams();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedSubmission, setSelectedSubmission] =
-    useState<AdminSubmission | null>(null);
+  const [selectedId, setSelectedSubmission] = useState<string | null>(
+    params.get("submission"),
+  );
 
   // Rejection modal
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const filteredSubmissions = useMemo(() => {
-    return submissions.filter((sub) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        if (
-          !sub.employeeName.toLowerCase().includes(q) &&
-          !sub.employeeEmail.toLowerCase().includes(q) &&
-          !sub.taskTitle.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
+  const parsedStatus = submissionStatusSchema.safeParse(
+    statusFilter.toUpperCase(),
+  );
+  const query = useAdminTaskSubmissions({
+    ...(searchQuery.trim() ? { search: searchQuery.trim() } : {}),
+    ...(parsedStatus.success ? { status: parsedStatus.data } : {}),
+  });
+  const filteredSubmissions = query.data?.items ?? [],
+    counts = query.data?.statusCounts;
+  const detail = useAdminTaskSubmission(selectedId);
+  const selectedSubmission = detail.data
+    ? {
+        ...detail.data.submission,
+        employee: detail.data.employee,
+        review: detail.data.review,
       }
-
-      if (statusFilter !== "all" && sub.status !== statusFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [submissions, searchQuery, statusFilter]);
-
-  const handleApprove = (sub: AdminSubmission) => {
-    approveSubmission(sub.id);
-    setFeedback(`تم اعتماد تسليم ${sub.employeeName} بنجاح.`);
+    : null;
+  const evidenceHistory = useAdminSubmissionEvidence(
+    selectedSubmission?.id ?? null,
+    selectedSubmission?.currentEvidenceVersion ?? null,
+  );
+  const command = useAdminTaskCommand({
+    kind: "FINAL_REVIEW",
+    targetId: selectedId,
+  });
+  const [decision, setDecision] = useState<"APPROVE" | "REJECT">("REJECT");
+  const [reviewed, setReviewed] = useState<{
+    id: string;
+    version: number;
+    evidence: number;
+  } | null>(null);
+  const proof = usePrivateProof({
+    purpose: "PROOF",
+    assetId: selectedSubmission?.evidence.assetId ?? null,
+    evidenceIdentity:
+      (selectedId ?? "") +
+      ":" +
+      String(selectedSubmission?.currentEvidenceVersion),
+    role: "ADMIN",
+    open: !!selectedSubmission && !rejectModalOpen,
+  });
+  const closeReview = useCallback(() => {
     setSelectedSubmission(null);
-  };
-
-  const handleOpenReject = (sub: AdminSubmission) => {
-    setSelectedSubmission(sub);
+    setReviewed(null);
+  }, []);
+  const dialogRef = useSubmissionReviewDialog(
+    !!selectedSubmission && !rejectModalOpen,
+    closeReview,
+  );
+  const contextReady =
+    detail.allowed &&
+    detail.isSuccess &&
+    !detail.isFetching &&
+    evidenceHistory.allowed &&
+    evidenceHistory.isSuccess &&
+    !evidenceHistory.isFetching;
+  const readyToReview =
+    contextReady &&
+    !!selectedSubmission &&
+    selectedSubmission.status === "PENDING" &&
+    !!proof.url &&
+    !command.retained &&
+    command.allowed;
+  const beginReview = (intent: "APPROVE" | "REJECT") => {
+    if (!selectedSubmission || !readyToReview) return;
+    setReviewed({
+      id: selectedSubmission.id,
+      version: selectedSubmission.version,
+      evidence: selectedSubmission.currentEvidenceVersion,
+    });
+    setDecision(intent);
     setRejectModalOpen(true);
   };
-
-  const statusBadgeMap: Record<
-    AdminSubmissionStatus,
-    { label: string; variant: "success" | "warning" | "danger" }
-  > = {
-    pending: { label: "قيد المراجعة والتدقيق", variant: "warning" },
-    approved: { label: "معتمد ومصروف", variant: "success" },
-    rejected: { label: "مرفوض وتم عكس المكافأة", variant: "danger" },
+  const stale =
+    !selectedSubmission ||
+    reviewed?.id !== selectedSubmission.id ||
+    reviewed.version !== selectedSubmission.version ||
+    reviewed.evidence !== selectedSubmission.currentEvidenceVersion ||
+    selectedSubmission.status !== "PENDING";
+  const confirm = async (reason?: string) => {
+    if (
+      !selectedSubmission ||
+      !contextReady ||
+      stale ||
+      !reason ||
+      command.retained ||
+      !command.allowed
+    )
+      return false;
+    try {
+      const result = await command.execute((commandId) =>
+        adminTaskSubmissionsApi.review(selectedSubmission.id, {
+          commandId,
+          confirmed: true,
+          decision,
+          reason,
+          expectedSubmissionVersion: selectedSubmission.version,
+          expectedEvidenceVersion: selectedSubmission.currentEvidenceVersion,
+        }),
+      );
+      if (result?.state !== "OBSERVED") return false;
+      setFeedback(
+        decision === "APPROVE"
+          ? "تم اعتماد التسليم وصرف المكافأة بنجاح."
+          : "تم رفض التسليم نهائياً دون خصم من الرصيد.",
+      );
+      setRejectModalOpen(false);
+      setSelectedSubmission(null);
+      return true;
+    } catch {
+      await detail.refetch();
+      return false;
+    }
   };
-
+  const statusBadgeMap = {
+    PENDING: { label: "قيد المراجعة والتدقيق", variant: "warning" },
+    APPROVED: { label: "معتمد ومصروف", variant: "success" },
+    REJECTED: { label: "مرفوض دون صرف مكافأة", variant: "danger" },
+  } as const;
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="مراجعة وتدقيق مهام الموظفين"
-        description="طابور فحص لقطات الشاشة، اعتماد المهام المطابقة، أو رفض المخالفات مع عكس المكافأة تلقائياً"
+        description="طابور فحص لقطات الشاشة، اعتماد المهام المطابقة وصرف المكافأة، أو الرفض النهائي دون خصم من الرصيد"
         breadcrumbs={[{ label: "مراجعة التنفيذ" }]}
       />
 
@@ -124,18 +208,21 @@ export function SubmissionsScreen() {
               value={statusFilter}
               onValueChange={setStatusFilter}
               options={[
-                { value: "all", label: `كل الحالات (${String(submissions.length)})` },
+                {
+                  value: "all",
+                  label: `كل الحالات (${String(counts?.all ?? 0)})`,
+                },
                 {
                   value: "pending",
-                  label: `قيد المراجعة (${String(submissions.filter((s) => s.status === "pending").length)})`,
+                  label: `قيد المراجعة (${String(counts?.pending ?? 0)})`,
                 },
                 {
                   value: "approved",
-                  label: `المعتمدة (${String(submissions.filter((s) => s.status === "approved").length)})`,
+                  label: `المعتمدة (${String(counts?.approved ?? 0)})`,
                 },
                 {
                   value: "rejected",
-                  label: `المرفوضة (${String(submissions.filter((s) => s.status === "rejected").length)})`,
+                  label: `المرفوضة (${String(counts?.rejected ?? 0)})`,
                 },
               ]}
               ariaLabel="تصفية حسب حالة التسليم"
@@ -145,153 +232,180 @@ export function SubmissionsScreen() {
       </div>
 
       {/* Submissions Table */}
-      <AdminTableShell>
-        {filteredSubmissions.length === 0 ? (
-          <AdminEmptyState
-            title="لا توجد تسليمات في هذا الطابور"
-            description="لا توجد مهام مطابقة لمعايير البحث والتصفية المحددة."
-          />
-        ) : (
-          <table className="w-full text-right text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
-              <tr>
-                <th className="px-4 py-3">الموظف</th>
-                <th className="px-4 py-3">المهمة المرتبطة</th>
-                <th className="px-4 py-3">توقيت الإرسال</th>
-                <th className="px-4 py-3">لقطة الشاشة</th>
-                <th className="px-4 py-3">مكافأة المهمة</th>
-                <th className="px-4 py-3">الحالة</th>
-                <th className="px-4 py-3 text-center">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredSubmissions.map((sub) => {
-                const statusMeta = statusBadgeMap[sub.status];
+      <TaskCommandFeedback command={command} />
+      {!query.data && (
+        <TaskQueryState error={query.error?.message} retry={query.refetch} />
+      )}
+      {selectedId && !detail.data && (
+        <TaskQueryState error={detail.error?.message} retry={detail.refetch} />
+      )}
+      {query.data && (
+        <AdminTableShell
+          footer={
+            <AdminPagination
+              currentPage={query.page}
+              totalPages={query.data.pagination.totalPages}
+              totalItems={query.data.pagination.total}
+              pageSize={25}
+              onPageChange={query.setPage}
+            />
+          }
+        >
+          {filteredSubmissions.length === 0 ? (
+            <AdminEmptyState
+              title="لا توجد تسليمات في هذا الطابور"
+              description="لا توجد مهام مطابقة لمعايير البحث والتصفية المحددة."
+            />
+          ) : (
+            <table className="w-full text-right text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
+                <tr>
+                  <th className="px-4 py-3">الموظف</th>
+                  <th className="px-4 py-3">المهمة المرتبطة</th>
+                  <th className="px-4 py-3">توقيت الإرسال</th>
+                  <th className="px-4 py-3">لقطة الشاشة</th>
+                  <th className="px-4 py-3">مكافأة المهمة</th>
+                  <th className="px-4 py-3">الحالة</th>
+                  <th className="px-4 py-3 text-center">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredSubmissions.map((sub) => {
+                  const statusMeta = statusBadgeMap[sub.status];
 
-                return (
-                  <tr key={sub.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3">
-                      <div className="space-y-0.5">
+                  return (
+                    <tr key={sub.id} className="hover:bg-slate-50/70">
+                      <td className="px-4 py-3">
+                        <div className="space-y-0.5">
+                          <Link
+                            href={`/admin/employees/${sub.employee.id}`}
+                            className="block font-bold text-slate-900 hover:text-emerald-700 hover:underline"
+                          >
+                            {sub.employee.fullName}
+                          </Link>
+                          <bdi
+                            dir="ltr"
+                            className="block text-[11px] text-slate-500"
+                          >
+                            {sub.employee.email}
+                          </bdi>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-3 font-bold text-slate-800">
                         <Link
-                          href={`/admin/employees/${sub.employeeId}`}
-                          className="block font-bold text-slate-900 hover:text-emerald-700 hover:underline"
+                          href={`/admin/tasks/${sub.taskId}`}
+                          className="hover:underline"
                         >
-                          {sub.employeeName}
+                          {sub.taskTitle}
                         </Link>
-                        <bdi
-                          dir="ltr"
-                          className="block text-[11px] text-slate-500"
-                        >
-                          {sub.employeeEmail}
-                        </bdi>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="px-4 py-3 font-bold text-slate-800">
-                      <Link
-                        href={`/admin/tasks/${sub.taskId}`}
-                        className="hover:underline"
-                      >
-                        {sub.taskTitle}
-                      </Link>
-                    </td>
+                      <td className="px-4 py-3 text-slate-500" dir="ltr">
+                        {sub.submittedAt}
+                      </td>
 
-                    <td className="px-4 py-3 text-slate-500" dir="ltr">
-                      {sub.submittedAt}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedSubmission(sub);
-                        }}
-                        className="group relative flex h-10 w-16 overflow-hidden rounded border border-slate-200 bg-slate-100"
-                        title="انقر لمعاينة لقطة الشاشة بالحجم الكامل"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={sub.screenshotUrl}
-                          alt="لقطة الشاشة"
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                        />
-                      </button>
-                    </td>
-
-                    <td
-                      className="px-4 py-3 font-mono font-bold text-emerald-700"
-                      dir="ltr"
-                    >
-                      +{sub.rewardAmount.toFixed(2)} USDT
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <AdminBadge variant={statusMeta.variant} size="sm" dot>
-                        {statusMeta.label}
-                      </AdminBadge>
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <AdminButton
-                          variant="outline"
-                          size="sm"
-                          icon={Eye}
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
                           onClick={() => {
-                            setSelectedSubmission(sub);
+                            setSelectedSubmission(sub.id);
                           }}
+                          className="group relative flex h-10 w-16 overflow-hidden rounded border border-slate-200 bg-slate-100"
+                          title="انقر لمعاينة لقطة الشاشة بالحجم الكامل"
                         >
-                          معاينة
-                        </AdminButton>
+                          {}
+                          <PrivateTaskImage
+                            assetId={sub.evidence.assetId}
+                            identity={
+                              sub.id + ":" + String(sub.currentEvidenceVersion)
+                            }
+                            alt="لقطة الشاشة"
+                            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          />
+                        </button>
+                      </td>
 
-                        {sub.status === "pending" && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleApprove(sub);
-                              }}
-                              className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
-                              title="اعتماد التسليم وصرف المكافأة"
-                            >
-                              <CheckCircle2 size={13} aria-hidden="true" />
-                              <span>اعتماد</span>
-                            </button>
+                      <td
+                        className="px-4 py-3 font-mono font-bold text-emerald-700"
+                        dir="ltr"
+                      >
+                        +{sub.reward} USDT
+                      </td>
 
-                            <button
-                              type="button"
-                              onClick={() => {
-                                handleOpenReject(sub);
-                              }}
-                              className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
-                              title="رفض التسليم وعكس المكافأة"
-                            >
-                              <XCircle size={13} aria-hidden="true" />
-                              <span>رفض</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-      </AdminTableShell>
+                      <td className="px-4 py-3">
+                        <AdminBadge variant={statusMeta.variant} size="sm" dot>
+                          {statusMeta.label}
+                        </AdminBadge>
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <AdminButton
+                            variant="outline"
+                            size="sm"
+                            icon={Eye}
+                            onClick={() => {
+                              setSelectedSubmission(sub.id);
+                            }}
+                          >
+                            معاينة
+                          </AdminButton>
+
+                          {sub.status === "PENDING" && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSubmission(sub.id);
+                                }}
+                                className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                                title="اعتماد التسليم وصرف المكافأة"
+                              >
+                                <CheckCircle2 size={13} aria-hidden="true" />
+                                <span>اعتماد</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedSubmission(sub.id);
+                                }}
+                                className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                                title="رفض التسليم نهائياً"
+                              >
+                                <XCircle size={13} aria-hidden="true" />
+                                <span>رفض</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </AdminTableShell>
+      )}
 
       {/* Submission Review Drawer / Modal */}
       {selectedSubmission && !rejectModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
+          aria-label="تدقيق تسليم المهمة"
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-[2px]"
           onClick={(e) => {
             if (e.target === e.currentTarget) setSelectedSubmission(null);
           }}
         >
-          <div className="w-full max-w-2xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+          <div
+            ref={dialogRef}
+            tabIndex={-1}
+            className="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-lg border border-slate-200 bg-white shadow-xl"
+          >
             <div className="flex items-center justify-between border-b border-slate-100 p-4">
               <h2 className="text-base font-bold text-slate-900">
                 تدقيق تسليم المهمة: {selectedSubmission.taskTitle}
@@ -312,10 +426,10 @@ export function SubmissionsScreen() {
                 <div>
                   <span className="block text-slate-500">الموظف:</span>
                   <Link
-                    href={`/admin/employees/${selectedSubmission.employeeId}`}
+                    href={`/admin/employees/${selectedSubmission.employee.id}`}
                     className="font-bold text-slate-900 hover:text-emerald-700 hover:underline"
                   >
-                    {selectedSubmission.employeeName}
+                    {selectedSubmission.employee.fullName}
                   </Link>
                 </div>
                 <div>
@@ -326,7 +440,7 @@ export function SubmissionsScreen() {
                     className="font-mono font-bold text-emerald-700"
                     dir="ltr"
                   >
-                    +{selectedSubmission.rewardAmount.toFixed(2)} USDT
+                    +{selectedSubmission.reward} USDT
                   </span>
                 </div>
                 <div>
@@ -341,44 +455,77 @@ export function SubmissionsScreen() {
                   </span>
                   <AdminBadge
                     variant={
-                      selectedSubmission.status === "approved"
+                      selectedSubmission.status === "APPROVED"
                         ? "success"
-                        : selectedSubmission.status === "rejected"
+                        : selectedSubmission.status === "REJECTED"
                           ? "danger"
                           : "warning"
                     }
                     size="sm"
                   >
-                    {selectedSubmission.status === "approved"
+                    {selectedSubmission.status === "APPROVED"
                       ? "معتمد"
-                      : selectedSubmission.status === "rejected"
+                      : selectedSubmission.status === "REJECTED"
                         ? "مرفوض"
                         : "قيد المراجعة"}
                   </AdminBadge>
                 </div>
               </div>
 
+              <div className="text-xs leading-relaxed text-slate-700">
+                <p>
+                  {selectedSubmission.snapshot.capturedTaskContent.description}
+                </p>
+                <a
+                  href={
+                    selectedSubmission.snapshot.capturedTaskContent.targetUrl
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-emerald-700 underline"
+                >
+                  فتح رابط المهمة المسجل
+                </a>
+                <p>
+                  إقرار التنفيذ محفوظ — الإصدار {selectedSubmission.version} —
+                  الدليل {selectedSubmission.currentEvidenceVersion}
+                </p>
+              </div>
               {/* Full Screenshot Preview */}
+              <SubmissionReviewContext
+                submission={selectedSubmission}
+                history={evidenceHistory}
+              />
               <div>
                 <span className="mb-2 block text-xs font-bold text-slate-700">
                   لقطة الشاشة المرفقة من الموظف:
                 </span>
                 <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-900/5 p-2 text-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={selectedSubmission.screenshotUrl}
-                    alt="لقطة الشاشة بالحجم الكامل"
-                    className="mx-auto max-h-80 rounded object-contain"
-                  />
+                  {proof.url && (
+                    // Authenticated transient URLs must bypass the image optimizer.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={proof.url}
+                      alt="لقطة الشاشة بالحجم الكامل"
+                      className="mx-auto max-h-80 rounded object-contain"
+                    />
+                  )}
+                  {!proof.url && (
+                    <p role="status">
+                      {proof.availability === "REMOVED"
+                        ? "حُذفت الصورة بعد مدة الاحتفاظ"
+                        : "الصورة غير متاحة حالياً"}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {selectedSubmission.rejectionReason && (
+              {selectedSubmission.review?.reason && (
                 <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
                   <span className="mb-1 block font-bold">
-                    سبب الرفض المسجل:
+                    سبب القرار المسجل:
                   </span>
-                  <p>{selectedSubmission.rejectionReason}</p>
+                  <p>{selectedSubmission.review.reason}</p>
                 </div>
               )}
             </div>
@@ -394,24 +541,26 @@ export function SubmissionsScreen() {
                 إغلاق
               </AdminButton>
 
-              {selectedSubmission.status === "pending" && (
+              {selectedSubmission.status === "PENDING" && (
                 <div className="flex items-center gap-2">
                   <AdminButton
                     variant="destructive"
                     size="sm"
                     icon={XCircle}
+                    disabled={!readyToReview}
                     onClick={() => {
-                      handleOpenReject(selectedSubmission);
+                      beginReview("REJECT");
                     }}
                   >
-                    رفض وعكس المكافأة
+                    رفض نهائي
                   </AdminButton>
                   <AdminButton
                     variant="primary"
                     size="sm"
                     icon={CheckCircle2}
+                    disabled={!readyToReview}
                     onClick={() => {
-                      handleApprove(selectedSubmission);
+                      beginReview("APPROVE");
                     }}
                   >
                     اعتماد وصرف المكافأة
@@ -427,39 +576,41 @@ export function SubmissionsScreen() {
       {selectedSubmission && (
         <AdminConfirmDialog
           isOpen={rejectModalOpen}
-          title="رفض تسليم المهمة وعكس المكافأة"
-          description={
-            <div className="space-y-2">
-              <p>
-                سيؤدي الرفض إلى خصم مكافأة المهمة (
-                <strong className="font-mono text-rose-700">
-                  {selectedSubmission.rewardAmount.toFixed(2)} USDT
-                </strong>
-                ) من رصيد الموظف <strong>{selectedSubmission.employeeName}</strong> وتسجيل قيد عكسي في السجل المالي وسجل التدقيق لمرة واحدة فقط.
-              </p>
-              <p className="text-slate-500">
-                الموظف: {selectedSubmission.employeeEmail} | المهمة: {selectedSubmission.taskTitle}
-              </p>
-            </div>
+          title={
+            decision === "APPROVE"
+              ? "اعتماد تسليم المهمة وصرف المكافأة"
+              : "رفض تسليم المهمة نهائياً"
           }
-          confirmLabel="تأكيد الرفض وعكس المكافأة"
-          variant="destructive"
+          description={
+            decision === "APPROVE"
+              ? "سيصرف الاعتماد المكافأة المسجلة مرة واحدة: " +
+                selectedSubmission.reward +
+                " USDT"
+              : "الرفض نهائي، ولا يصرف مكافأة أو يخصم من الرصيد."
+          }
+          confirmLabel={
+            decision === "APPROVE"
+              ? "تأكيد الاعتماد وصرف المكافأة"
+              : "تأكيد الرفض النهائي"
+          }
+          variant={decision === "APPROVE" ? "primary" : "destructive"}
           affectedRecord={{
             id: selectedSubmission.id,
-            label: selectedSubmission.employeeName,
-            subtitle: `المهمة: ${selectedSubmission.taskTitle} | المكافأة: ${selectedSubmission.rewardAmount.toFixed(2)} USDT`,
+            label: selectedSubmission.employee.fullName,
+            subtitle: `المهمة: ${selectedSubmission.taskTitle} | المكافأة: ${selectedSubmission.reward} USDT`,
           }}
           requireReason={true}
-          reasonLabel="سبب الرفض الإلزامي لسجل التدقيق"
-          onConfirm={(reason) => {
-            if (!reason) return;
-            const res = rejectSubmission(selectedSubmission.id, reason);
-            if (res.success) {
-              setFeedback(res.message);
-              setRejectModalOpen(false);
-              setSelectedSubmission(null);
-            }
-          }}
+          reasonLabel="سبب القرار الإلزامي لسجل التدقيق"
+          isLoading={command.isPending}
+          confirmDisabled={
+            stale || !contextReady || !command.allowed || !!command.retained
+          }
+          error={
+            stale
+              ? "تغير التسليم أو الدليل؛ أغلق التأكيد وراجع النسخة الحالية."
+              : (command.error?.message ?? null)
+          }
+          onConfirm={confirm}
           onClose={() => {
             setRejectModalOpen(false);
           }}
