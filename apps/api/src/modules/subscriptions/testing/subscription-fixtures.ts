@@ -15,13 +15,17 @@ import type {
   LedgerContext,
   LedgerGuardScope,
 } from "../../ledger/ledger.types.js";
-import { fixedFinancialClock } from "../../ledger/testing/financial-fixtures.js";
+import {
+  fixedFinancialClock,
+  financialFixtureAdmission,
+  admitCleanDisposableFinancialBoot,
+} from "../../ledger/testing/financial-fixtures.js";
 
 export {
   financialRaceBarrier as subscriptionRaceBarrier,
-  withIndependentFinancialClients as withIndependentSubscriptionClients,
+  withAdmittedIndependentFinancialClients as withIndependentSubscriptionClients,
 } from "../../ledger/testing/financial-fixtures.js";
-export { withIdentityDatabase as withSubscriptionDatabase } from "../../auth/testing/identity-fixtures.js";
+export { withAdmittedFinancialDatabase as withSubscriptionDatabase } from "../../ledger/testing/financial-fixtures.js";
 export type SubscriptionAccountFixture = Awaited<
   ReturnType<typeof createIdentityFixture>
 >;
@@ -29,10 +33,14 @@ export const P04_FIXTURE_NOW = new Date("2026-10-05T09:00:00.000Z");
 const FIXTURE_FUNDING = "p04.fixture.funding";
 const FIXTURE_PROCESS = "p04-fixture";
 const ledger = (database: DatabaseClient) =>
-  new LedgerService(database, {
-    businessNamespaces: [FIXTURE_FUNDING, "p04.purchase"],
-    processIds: [FIXTURE_PROCESS],
-  });
+  new LedgerService(
+    database,
+    {
+      businessNamespaces: [FIXTURE_FUNDING, "p04.purchase"],
+      processIds: [FIXTURE_PROCESS],
+    },
+    financialFixtureAdmission(database),
+  );
 
 const fixtureWalletGuard =
   (walletId: string) =>
@@ -52,6 +60,7 @@ export async function fundSubscriptionFixture(
   amounts: { referral: string; nonReferral: string },
   now = P04_FIXTURE_NOW,
 ) {
+  await admitCleanDisposableFinancialBoot(database);
   if (account.wallet === null)
     throw new Error("Employee wallet fixture is required.");
   const walletId = account.wallet.id;
@@ -111,6 +120,7 @@ export async function activateSubscriptionFixture(
   packageCode: PackageCode = "S1",
   now = P04_FIXTURE_NOW,
 ) {
+  await admitCleanDisposableFinancialBoot(database);
   if (account.wallet === null)
     throw new Error("Employee wallet fixture is required.");
   const configured = await database.package.findUniqueOrThrow({

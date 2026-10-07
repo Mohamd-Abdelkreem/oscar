@@ -11,6 +11,11 @@ import {
 import { afterAll, describe, expect, it } from "vitest";
 
 import { LedgerService } from "./ledger.service.js";
+import {
+  FinancialRuntimeAdmission,
+  acknowledgeFinancialBoot,
+  fenceFinancialRuntime,
+} from "../custody/runtime-control.js";
 import { TaskReviewService } from "../task-submissions/task-review.service.js";
 import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
 import {
@@ -33,19 +38,26 @@ import {
   createFinancialAccount,
   financialIdentity,
   fixedFinancialClock,
+  financialFixtureAdmission,
+  admitCleanDisposableFinancialBoot,
 } from "./testing/financial-fixtures.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined)
   throw new Error("Missing isolated PostgreSQL URL.");
 const database = createDatabaseClient(databaseUrl);
+await admitCleanDisposableFinancialBoot(database);
 const NAMESPACE = "financial-test";
 const PROCESS = "verified-events";
 const RECORDED_AT = "2026-10-02T09:00:00.000Z";
-const service = new LedgerService(database, {
-  businessNamespaces: [NAMESPACE],
-  processIds: [PROCESS],
-});
+const service = new LedgerService(
+  database,
+  {
+    businessNamespaces: [NAMESPACE],
+    processIds: [PROCESS],
+  },
+  financialFixtureAdmission(database),
+);
 
 describe("P05 composed reward reconciliation", () => {
   it("reconciles one captured task credit and its administrator audit after employee ban", async () => {
@@ -56,7 +68,12 @@ describe("P05 composed reward reconciliation", () => {
           where: { id: fixture.employee.user.id },
           data: { status: "BANNED" },
         });
-        await new TaskReviewService(isolated, fixture.clock).review(
+        await new TaskReviewService(
+          isolated,
+          fixture.clock,
+          undefined,
+          financialFixtureAdmission(isolated),
+        ).review(
           taskIdentity(fixture.admin),
           fixture.submission.id,
           fixture.intent,
@@ -89,10 +106,14 @@ describe("P05 composed reward reconciliation", () => {
           actorUserId: fixture.admin.user.id,
           action: "CREDIT",
         });
-        const reconciliation = await new LedgerService(isolated, {
-          businessNamespaces: ["p05.task-reward"],
-          processIds: [],
-        }).reconcileWallet(operation.walletId, {
+        const reconciliation = await new LedgerService(
+          isolated,
+          {
+            businessNamespaces: ["p05.task-reward"],
+            processIds: [],
+          },
+          financialFixtureAdmission(isolated),
+        ).reconcileWallet(operation.walletId, {
           actor: { type: "USER", userId: fixture.admin.user.id },
           observe: async () => {},
         });
@@ -180,6 +201,164 @@ const records = async (walletId: string) => ({
 
 afterAll(async () => {
   await database.$disconnect();
+});
+
+describe("P06 financial boot and observation admission", () => {
+  it("returns an unbound outcome after a real identity abort without invoking a domain write", async () => {
+    const account = await fixture();
+    const intent = credit(account.wallet.id, "1");
+    const original = await service.execute(intent, account.context);
+    const alias = await database.requestIdentity.findFirstOrThrow({
+      where: { operationId: original.result.operationId },
+    });
+    const fresh = { ...intent, requestKey: randomUUID() };
+    const before = await records(account.wallet.id);
+    let observations = 0;
+    let writes = 0;
+    const context: LedgerContext = {
+      ...account.context,
+      observe: async (scope) => {
+        await account.context.observe(scope);
+        observations++;
+        if (observations === 1) {
+          // Inject an actual PostgreSQL request-identity uniqueness failure inside
+          // the first transaction, then permit its post-abort observation.
+          await scope.transaction.requestIdentity.create({
+            data: { ...alias, id: randomUUID() },
+          });
+        }
+      },
+    };
+    expect(
+      await service.execute(fresh, context, () => {
+        writes++;
+        return Promise.resolve();
+      }),
+    ).toEqual({ result: original.result, replayed: true });
+    expect(observations).toBe(2);
+    expect(writes).toBe(0);
+    expect(await records(account.wallet.id)).toEqual(before);
+  });
+  it("keeps missing/new/stale boots closed and recovers without alias or money writes", async () => {
+    await withTaskDatabase(async (isolated) => {
+      const account = await createFinancialAccount(isolated);
+      const context: LedgerContext = {
+        actor: { type: "USER", userId: account.ownerUserId },
+        walletIds: [account.wallet.id],
+        clock: fixedFinancialClock(new Date(RECORDED_AT)),
+        observe: ({ actor, wallet }) => {
+          if (actor.type !== "USER" || actor.userId !== wallet.ownerUserId)
+            return Promise.reject(new LedgerError("LEDGER_FORBIDDEN"));
+          return Promise.resolve();
+        },
+        mutate: async () => {},
+      };
+      const policy = { businessNamespaces: [NAMESPACE], processIds: [] };
+      const admitted = new LedgerService(
+        isolated,
+        policy,
+        financialFixtureAdmission(isolated),
+      );
+      const intent = credit(account.wallet.id, "1.000001");
+      let domainWrites = 0;
+      const domainWrite = () => {
+        domainWrites++;
+        return Promise.resolve();
+      };
+      const original = await admitted.execute(intent, context, domainWrite);
+      const freshIntent = { ...intent, requestKey: randomUUID() };
+      const freshBoot = new FinancialRuntimeAdmission(isolated, "API");
+      await freshBoot.register();
+      const pending = new LedgerService(isolated, policy, freshBoot);
+      const unbound = new LedgerService(isolated, policy);
+      const snapshot = async () => ({
+        wallet: await isolated.wallet.findUniqueOrThrow({
+          where: { id: account.wallet.id },
+        }),
+        operations: await isolated.financialOperation.findMany(),
+        postings: await isolated.ledgerPosting.findMany(),
+        audits: await isolated.auditRecord.findMany(),
+        aliases: await isolated.requestIdentity.findMany(),
+      });
+      const before = await snapshot();
+      for (const observer of [unbound, pending, admitted]) {
+        expect(
+          (await observer.recoverOperation(freshIntent, context))?.result,
+        ).toEqual(original.result);
+        expect(await snapshot()).toEqual(before);
+      }
+      for (const closed of [unbound, pending]) {
+        await expect(
+          closed.execute(freshIntent, context, domainWrite),
+        ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+        await expect(
+          closed.runInTransaction(context, async (_tx, ledger) =>
+            ledger.credit(freshIntent, domainWrite),
+          ),
+        ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      }
+      await fenceFinancialRuntime(isolated, {
+        operatorIdentity: "fixture-operator",
+        reason: "restore generation",
+      });
+      for (const observer of [unbound, pending, admitted]) {
+        expect(
+          (await observer.recoverOperation(freshIntent, context))?.result,
+        ).toEqual(original.result);
+        expect(await snapshot()).toEqual(before);
+      }
+      await expect(
+        admitted.execute(freshIntent, context),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      const cutoff = new Date();
+      await acknowledgeFinancialBoot(isolated, {
+        bootId: freshBoot.bootId,
+        operatorIdentity: "fixture-operator",
+        reason: "recovered disposable generation",
+        evidence: {
+          financialHistoryReference: "fixture-history",
+          assignmentInventoryReference: "fixture-assignments",
+          attemptInventoryReference: "fixture-attempts",
+          reconciliationReference: "fixture-reconciliation",
+          reconciliationCutoff: cutoff,
+          financialHistoryRecoveredThrough: cutoff,
+        },
+      });
+      await expect(
+        admitted.execute(freshIntent, context),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      expect(
+        (await pending.recoverOperation(freshIntent, context))?.result,
+      ).toEqual(original.result);
+      expect(await snapshot()).toEqual(before);
+      expect(
+        (await pending.execute(freshIntent, context, domainWrite)).result,
+      ).toEqual(original.result);
+      const transactionAlias = { ...intent, requestKey: randomUUID() };
+      await pending.runInTransaction(context, async (_tx, ledger) =>
+        ledger.credit(transactionAlias, domainWrite),
+      );
+      const after = await snapshot();
+      expect({ ...after, aliases: before.aliases }).toEqual(before);
+      expect(after.aliases).toHaveLength(before.aliases.length + 2);
+      expect(domainWrites).toBe(1);
+      await expect(
+        unbound.recoverOperation({ ...intent, amount: "2" }, context),
+      ).rejects.toMatchObject({ code: "LEDGER_IDENTITY_CONFLICT" });
+      await expect(
+        unbound.recoverOperation(intent, {
+          ...context,
+          actor: { type: "USER", userId: randomUUID() },
+        }),
+      ).rejects.toMatchObject({ code: "LEDGER_FORBIDDEN" });
+      await expect(
+        unbound.recoverOperation(
+          { ...intent, businessKey: randomUUID() },
+          context,
+        ),
+      ).rejects.toMatchObject({ code: "LEDGER_IDENTITY_CONFLICT" });
+    });
+  });
 });
 
 describe("audited available-source corrections", () => {

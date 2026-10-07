@@ -6,6 +6,15 @@ import { openApiRoutes } from "./infrastructure/openapi/openapi.routes.js";
 import type { EmailService } from "./infrastructure/email/email.service.js";
 import { createAuthenticationMiddleware } from "./middlewares/auth.middleware.js";
 import type { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
+import type { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
+import type { CustodyMetadata } from "./modules/custody/custody.service.js";
+import { DepositsService } from "./modules/deposits/deposits.service.js";
+import { ManualCreditService } from "./modules/deposits/manual-credit.service.js";
+import { DepositsController } from "./modules/deposits/deposits.controller.js";
+import {
+  depositsRoutes,
+  adminDepositsRoutes,
+} from "./modules/deposits/deposits.routes.js";
 import {
   TasksController,
   EmployeeTasksController,
@@ -83,13 +92,35 @@ export const createApiRouter = (
   database: DatabaseClient,
   emailService: EmailService,
   financialClock: () => Date = () => new Date(),
-  proofs?: ProofsRuntime,
+  runtime: {
+    proofs?: ProofsRuntime;
+    financialAdmission?: FinancialRuntimeAdmission;
+    depositMetadata?: CustodyMetadata;
+  } = {},
 ): Router => {
+  const { proofs, financialAdmission } = runtime;
   const router = Router();
 
   const healthService = new HealthService(database);
   const healthController = new HealthController(healthService);
   const authenticationMiddleware = createAuthenticationMiddleware(database);
+  const depositsController = new DepositsController(
+    new DepositsService(
+      database,
+      financialClock,
+      runtime.depositMetadata,
+      financialAdmission,
+    ),
+    new ManualCreditService(database, financialClock, financialAdmission),
+  );
+  router.use(
+    "/deposits",
+    depositsRoutes(depositsController, authenticationMiddleware),
+  );
+  router.use(
+    "/admin/deposits",
+    adminDepositsRoutes(depositsController, authenticationMiddleware),
+  );
   router.use(
     "/admin/task-submissions",
     adminTaskSubmissionsRoutes(
@@ -97,7 +128,12 @@ export const createApiRouter = (
         new TaskSubmissionsService(database, financialClock, proofs?.reads),
         new TaskSubmissionsQueries(database, financialClock, proofs?.reads),
         undefined,
-        new TaskReviewService(database, financialClock, proofs?.reads),
+        new TaskReviewService(
+          database,
+          financialClock,
+          proofs?.reads,
+          financialAdmission,
+        ),
       ),
       authenticationMiddleware,
     ),
@@ -217,7 +253,11 @@ export const createApiRouter = (
   );
   const subscriptionsController = new SubscriptionsController(
     new PurchaseQuoteService(database, financialClock),
-    new SubscriptionPurchaseService(database, financialClock),
+    new SubscriptionPurchaseService(
+      database,
+      financialClock,
+      financialAdmission,
+    ),
     new SubscriptionsService(database, financialClock),
   );
   router.use(

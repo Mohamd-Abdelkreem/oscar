@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
@@ -29,7 +30,11 @@ import { PurchaseQuoteService } from "../subscriptions/purchase-quote.service.js
 import { SubscriptionPurchaseService } from "../subscriptions/subscription-purchase.service.js";
 import { fundSubscriptionFixture } from "../subscriptions/testing/subscription-fixtures.js";
 
-const clock = () => P04_FIXTURE_NOW;
+// Keep the fixed configuration clock after migration seed timestamps.
+const configurationNow = new Date(
+  Math.max(P04_FIXTURE_NOW.getTime(), Date.now()) + 86_400_000,
+);
+const clock = () => configurationNow;
 const identity = (
   account: Awaited<ReturnType<typeof createIdentityFixture>>,
 ) => ({
@@ -211,7 +216,11 @@ describe("future configuration commands", () => {
             const fragment =
               target === "package" ? "FROM packages" : "FROM referral_settings";
             await waitForConfigurationLocks(database, fragment);
-            const purchases = new SubscriptionPurchaseService(second, clock);
+            const purchases = new SubscriptionPurchaseService(
+              second,
+              clock,
+              financialFixtureAdmission(second),
+            );
             const purchasing = purchases.purchase(identity(buyer), {
               quoteId: originalQuote.quoteId,
               confirmed: true,

@@ -3,6 +3,11 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "./openapi.js";
 
 const expectedPaths = [
+  "/deposits/me/address",
+  "/deposits/me/history",
+  "/admin/deposits",
+  "/admin/deposits/manual-credits",
+  "/admin/deposits/manual-credits/{actionId}",
   "/proofs",
   "/proofs/uploads/{commandId}",
   "/proofs/uploads/{commandId}/cancel",

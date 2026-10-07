@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -440,10 +441,14 @@ describe("P05 command terminal identity", () => {
       );
       const identity = taskIdentity(scenario.admin);
       const service = new TaskCommandService(database, scenario.clock);
-      const ledger = new LedgerService(database, {
-        businessNamespaces: ["p05.task-reward"],
-        processIds: [],
-      });
+      const ledger = new LedgerService(
+        database,
+        {
+          businessNamespaces: ["p05.task-reward"],
+          processIds: [],
+        },
+        financialFixtureAdmission(database),
+      );
       const intent = {
         kind: "FINAL_REVIEW" as const,
         targetId: submission.id,

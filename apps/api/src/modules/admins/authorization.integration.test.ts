@@ -37,7 +37,11 @@ import {
 } from "../auth/testing/identity-fixtures.js";
 import { LedgerService } from "../ledger/ledger.service.js";
 import type { LedgerContext } from "../ledger/ledger.types.js";
-import { financialIdentity } from "../ledger/testing/financial-fixtures.js";
+import {
+  financialIdentity,
+  financialFixtureAdmission,
+  admitCleanDisposableFinancialBoot,
+} from "../ledger/testing/financial-fixtures.js";
 import { AdminLifecycleService } from "./admin-lifecycle.service.js";
 import { AdminsService } from "./admins.service.js";
 import { AdminInvitationsService } from "./admin-invitations.service.js";
@@ -48,6 +52,7 @@ const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined)
   throw new Error("The Testcontainers DATABASE_URL was not provided.");
 const database = createDatabaseClient(databaseUrl);
+await admitCleanDisposableFinancialBoot(database);
 const app = createApp({
   database,
   logger: pino({ level: "silent" }),
@@ -761,10 +766,14 @@ describe("P02 US4 employee controls", () => {
     const sponsor = await fixture();
     const { user, wallet } = await fixture({ sponsorUserId: sponsor.user.id });
     if (wallet === null) throw new Error("Employee wallet required");
-    const ledger = new LedgerService(database, {
-      businessNamespaces: ["financial-test"],
-      processIds: [],
-    });
+    const ledger = new LedgerService(
+      database,
+      {
+        businessNamespaces: ["financial-test"],
+        processIds: [],
+      },
+      financialFixtureAdmission(database),
+    );
     const context: LedgerContext = {
       actor: { type: "USER", userId: user.id },
       walletIds: [wallet.id],

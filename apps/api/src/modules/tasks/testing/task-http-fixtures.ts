@@ -6,6 +6,7 @@ import {
   errorEnvelopeSchema,
 } from "@template/contracts";
 import { createApp } from "../../../app.js";
+import { financialFixtureAdmission } from "../../ledger/testing/financial-fixtures.js";
 import { generateTokenPair } from "../../../infrastructure/security/index.js";
 import type { createIdentityFixture } from "../../auth/testing/identity-fixtures.js";
 import type { TaskClock } from "../task-transaction.js";
@@ -17,6 +18,7 @@ export function taskHttpApp(
   return createApp({
     database,
     financialClock,
+    financialAdmission: financialFixtureAdmission(database),
     logger: pino({ level: "silent" }),
     emailDelivery: {
       provider: "console",

@@ -1,3 +1,16 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
+import {
+  withAdmittedIndependentFinancialClients,
+  financialRaceBarrier,
+} from "../ledger/testing/financial-fixtures.js";
+import {
+  bindDepositAssignment,
+  depositRecipient,
+  rawDeposit,
+  withDepositProvider,
+} from "../deposits/testing/deposit-fixtures.js";
+import { DepositVerifier } from "../deposits/deposit-verifier.js";
+import { DepositCreditService } from "../deposits/deposit-credit.service.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import request from "supertest";
@@ -33,6 +46,88 @@ import { submissionFixtureReads } from "./testing/submission-fixtures.js";
 import { TaskReviewService } from "./task-review.service.js";
 
 describe("US2 captured final review", () => {
+  it("conserves an independently committed verified deposit and the captured reward exactly once", async () => {
+    await withTaskDatabase(async (database, url) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(database, root);
+        if (fixture.employee.wallet === null) throw new Error("Missing wallet");
+        const walletId = fixture.employee.wallet.id;
+        const before = await database.wallet.findUniqueOrThrow({
+          where: { id: walletId },
+        });
+        await withAdmittedIndependentFinancialClients(
+          url,
+          async (depositor, reviewer) => {
+            await bindDepositAssignment(
+              database,
+              {
+                ownerUserId: fixture.employee.user.id,
+                wallet: { id: walletId },
+              },
+              depositRecipient,
+              fixture.clock(),
+            );
+            const raw = rawDeposit();
+            raw.block.block_header.raw_data.timestamp =
+              fixture.clock().getTime() - 1000;
+            raw.info.blockTimeStamp = raw.block.block_header.raw_data.timestamp;
+            raw.solidified.block_header.raw_data.timestamp =
+              raw.info.blockTimeStamp;
+            await withDepositProvider(raw, async (provider, config) => {
+              const start = financialRaceBarrier(2);
+              const deposit = async () => {
+                await start();
+                return new DepositCreditService(
+                  depositor,
+                  new DepositVerifier(
+                    depositor,
+                    provider,
+                    config,
+                    fixture.clock,
+                  ),
+                  financialFixtureAdmission(depositor),
+                  fixture.clock,
+                ).process(raw.transactionId);
+              };
+              const review = async () => {
+                await start();
+                return new TaskReviewService(
+                  reviewer,
+                  fixture.clock,
+                  fixture.reads,
+                  financialFixtureAdmission(reviewer),
+                ).review(
+                  taskIdentity(fixture.admin),
+                  fixture.submission.id,
+                  fixture.intent,
+                );
+              };
+              const [credited] = await Promise.all([deposit(), review()]);
+              expect(credited.state).toBe("ACCOUNTED");
+            });
+          },
+        );
+        expect(
+          await database.wallet.findUniqueOrThrow({ where: { id: walletId } }),
+        ).toMatchObject({
+          availableNonReferralUnits:
+            before.availableNonReferralUnits +
+            1000001n +
+            fixture.submission.rewardUnits,
+          availableReferralUnits: before.availableReferralUnits,
+          reservedReferralUnits: before.reservedReferralUnits,
+          reservedNonReferralUnits: before.reservedNonReferralUnits,
+        });
+        expect(await database.depositReceipt.count()).toBe(1);
+        expect(
+          await database.financialOperation.count({
+            where: { businessNamespace: "p05.task-reward" },
+          }),
+        ).toBe(1);
+        expect(await database.finalReview.count()).toBe(1);
+      }),
+    );
+  });
   it("reviews actual canonical private proof through the emitted authenticated API and refreshes saved availability", async () => {
     await withTaskDatabase(async (database, url) => {
       const scenario = await createTaskScenario(database);
@@ -43,6 +138,7 @@ import {readFile,mkdtemp,rm,unlink} from 'node:fs/promises';import {tmpdir} from
 Object.assign(process.env,JSON.parse(await readFile('/fixture/environment.json','utf8')));
 const fixture=JSON.parse(await readFile('/fixture/fixtures.json','utf8'));
 const {createDatabaseClient}=await import('@template/database');const {createApp}=await import('./api/app.js');
+const {FinancialRuntimeAdmission,acknowledgeFinancialBoot}=await import('./api/modules/custody/runtime-control.js');
 const {ProofsRuntime}=await import('./api/modules/proofs/proofs.runtime.js');const {generateTokenPair}=await import('./api/infrastructure/security/jwt.service.js');
 const {default:pino}=await import('pino');const {default:sharp}=await import('sharp');
 const {adminSubmissionDetailSchema,commandObservationSchema}=await import('@template/contracts');
@@ -51,7 +147,12 @@ const clock=()=>new Date(fixture.now);
 const runtime=new ProofsRuntime(database,{storageRoot:root,processingSlots:2,uploadReservationBytes:41943040,stagingMaxBytes:268435456,inputDeadlineMs:30000},clock,()=>{});
 let server;
 try {
- await runtime.start();server=createApp({database,logger:pino({level:'silent'}),proofs:runtime,financialClock:clock}).listen(0,'127.0.0.1');
+ // Explicit protected admission of this fresh disposable process, never a reused parent UUID.
+ assert.equal(await database.depositAddressAssignment.count(),0);assert.equal(await database.transferAttempt.count(),0);
+ const financialAdmission=new FinancialRuntimeAdmission(database,'API');await financialAdmission.register();
+ const cutoff=new Date(),reference='disposable-linux-review:'+financialAdmission.bootId;
+ await acknowledgeFinancialBoot(database,{bootId:financialAdmission.bootId,operatorIdentity:'disposable-linux-fixture',reason:'Known disposable fixture history',evidence:{financialHistoryReference:reference,assignmentInventoryReference:reference,attemptInventoryReference:reference,reconciliationReference:reference,reconciliationCutoff:cutoff,financialHistoryRecoveredThrough:cutoff}});
+ await runtime.start();server=createApp({database,logger:pino({level:'silent'}),proofs:runtime,financialClock:clock,financialAdmission}).listen(0,'127.0.0.1');
  await new Promise(resolve=>server.once('listening',resolve));const base='http://127.0.0.1:'+server.address().port+'/api/v1';
  server.prependListener('request',(request,response)=>{if(request.headers['x-fixture-drop']==='review'){response.end=()=>{response.destroy();return response;};}});
  function token(identity,role){return generateTokenPair({...identity,role,tokenId:randomUUID(),email:'test@example.com',rememberMe:false,absoluteExpiresAt:new Date(Date.now()+86400000)}).accessToken;}
@@ -105,11 +206,15 @@ try {
       await withTaskDatabase(async (database) =>
         withTaskFileFixture(async (root) => {
           const fixture = await acceptedReviewFixture(database, root);
-          await new TaskReviewService(database, fixture.clock).review(
-            taskIdentity(fixture.admin),
-            fixture.submission.id,
-            { ...fixture.intent, decision },
-          );
+          await new TaskReviewService(
+            database,
+            fixture.clock,
+            undefined,
+            financialFixtureAdmission(database),
+          ).review(taskIdentity(fixture.admin), fixture.submission.id, {
+            ...fixture.intent,
+            decision,
+          });
           const before = await reviewState(database);
           await expect(
             new SubmissionEvidenceService(
@@ -175,7 +280,12 @@ try {
             where: { id: scenario.employee.user.id },
             data: { status: "BANNED" },
           });
-          const service = new TaskReviewService(database, scenario.clock);
+          const service = new TaskReviewService(
+            database,
+            scenario.clock,
+            undefined,
+            financialFixtureAdmission(database),
+          );
           const identity = taskIdentity(scenario.admin);
           const intent = {
             commandId: randomUUID(),
@@ -258,7 +368,12 @@ try {
         await database.$executeRawUnsafe(
           `CREATE TRIGGER fail_review_receipt BEFORE INSERT ON task_command_records FOR EACH ROW EXECUTE FUNCTION fail_review_receipt()`,
         );
-        const service = new TaskReviewService(database, fixture.clock);
+        const service = new TaskReviewService(
+          database,
+          fixture.clock,
+          undefined,
+          financialFixtureAdmission(database),
+        );
         try {
           await expect(
             service.review(
@@ -425,7 +540,12 @@ try {
           await commands.cancel({ ...lookup, confirmed: true }, identity),
         ).toMatchObject({ state: "CANCELLED" });
         const before = await reviewState(database);
-        const service = new TaskReviewService(database, fixture.clock);
+        const service = new TaskReviewService(
+          database,
+          fixture.clock,
+          undefined,
+          financialFixtureAdmission(database),
+        );
         await expect(
           service.review(identity, fixture.submission.id, fixture.intent),
         ).rejects.toMatchObject({ code: "COMMAND_CANCELLED" });

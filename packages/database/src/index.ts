@@ -16,6 +16,14 @@ export {
   TaskSubmissionStatus,
   TaskCommandKind,
   TaskCommandTerminalState,
+  TronNetwork,
+  DepositAssignmentState,
+  TronActivationState,
+  DepositCandidateState,
+  DepositScanMode,
+  ManualCreditReferenceKind,
+  TreasurySweepState,
+  FinancialProcessKind,
 } from "./generated/prisma/client.js";
 export type {
   PrismaClient,
@@ -46,4 +54,13 @@ export type {
   SubmissionEvidence,
   FinalReview,
   TaskCommandRecord,
+  DepositAddressAssignment,
+  DepositCandidate,
+  DepositScanProgress,
+  DepositReceipt,
+  ManualCredit,
+  TreasurySweep,
+  TransferAttempt,
+  FinancialRuntimeControl,
+  FinancialRuntimeAdmission,
 } from "./generated/prisma/client.js";

@@ -11,6 +11,7 @@ import { AuthSessionService } from "../auth/auth-session.service.js";
 import { readSessionAuthority } from "../auth/session-authority.js";
 import { LedgerError } from "../ledger/ledger.errors.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import type { FinancialRuntimeAdmission } from "../custody/runtime-control.js";
 import type {
   LedgerContext,
   LedgerGuardScope,
@@ -67,11 +68,16 @@ export class SubscriptionPurchaseService {
   constructor(
     private readonly database: DatabaseClient,
     private readonly clock: () => Date = () => new Date(),
+    admission?: FinancialRuntimeAdmission,
   ) {
-    this.ledger = new LedgerService(database, {
-      businessNamespaces: ["p04.purchase", "p04.referral"],
-      processIds: [],
-    });
+    this.ledger = new LedgerService(
+      database,
+      {
+        businessNamespaces: ["p04.purchase", "p04.referral"],
+        processIds: [],
+      },
+      admission,
+    );
   }
 
   async purchase(

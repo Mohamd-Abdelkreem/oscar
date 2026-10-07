@@ -3,6 +3,15 @@ import { createDocument } from "zod-openapi";
 
 import {
   identityUserSchema,
+  depositAddressDataSchema,
+  depositProvisionRequestSchema,
+  depositHistoryQuerySchema,
+  adminDepositHistoryQuerySchema,
+  depositHistoryEnvelopeSchema,
+  adminDepositHistoryEnvelopeSchema,
+  manualCreditBodySchema,
+  manualCreditOutcomeSchema,
+  manualCreditParamsSchema,
   identityUserDataSchema,
   identitySessionDataSchema,
   identityUserParamsSchema,
@@ -365,6 +374,138 @@ export const buildOpenApiDocument = () =>
       },
     },
     paths: {
+      "/deposits/me/address": {
+        get: {
+          summary: "Read own public deposit assignment without provisioning",
+          description:
+            "Current ACTIVE verified USER session. Cache-Control: no-store. UNASSIGNED/PROVISIONING/UNAVAILABLE expose no usable address. READY is separate from activation, resources and detection health.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Public assignment state",
+              depositAddressDataSchema,
+            ),
+            ...commonErrors,
+            "503": errorResponse(
+              "DEPOSIT_UNAVAILABLE: missing configuration or readiness boundary",
+            ),
+          },
+        },
+        post: {
+          summary: "Record own durable provisioning request",
+          description:
+            "Current USER session, CSRF and critical-action limit. Empty strict body. Unique employee/network binding; no key generation/signing inside HTTP. Restore admission precedes binding creation. Cache-Control: no-store.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(depositProvisionRequestSchema),
+          responses: {
+            "200": successResponse(
+              "Already READY assignment",
+              depositAddressDataSchema,
+            ),
+            "202": successResponse(
+              "Durable provisioning pending",
+              depositAddressDataSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse("FINANCIAL_WRITES_FENCED"),
+            "503": errorResponse("DEPOSIT_UNAVAILABLE"),
+          },
+        },
+      },
+      "/deposits/me/history": {
+        get: {
+          summary: "Read own confirmed chain and manual-credit history",
+          description:
+            "Current USER session; no-store. page defaults 1, limit defaults 25/max100. Inclusive recorded-time filters; recordedAt DESC, history id DESC. Rows/count share RepeatableRead; separate offset requests are live. confirmedAt is receipt verifiedAt, distinct from financial recordedAt and chain inclusion. Manual rows omit administrative reason/reference/actor and finality.",
+          security: adminReadSecurity,
+          requestParams: { query: depositHistoryQuerySchema },
+          responses: {
+            "200": {
+              description:
+                "Bounded owner history with matching paginationMeta and detection health",
+              content: {
+                "application/json": { schema: depositHistoryEnvelopeSchema },
+              },
+            },
+            ...commonErrors,
+            "409": errorResponse("DEPOSIT_UNRESOLVED"),
+            "503": errorResponse("DEPOSIT_UNAVAILABLE"),
+          },
+        },
+      },
+      "/admin/deposits": {
+        get: {
+          summary: "Read filtered employee chain and manual-credit history",
+          description:
+            adminAuthority +
+            " Inclusive recorded-time bounds, bounded employee/name/email/chain-TxID filters; transactionId cannot filter MANUAL_CREDIT. recordedAt DESC, history id DESC; rows/count in RepeatableRead, live offsets across requests. Manual rows include selected employee/actor/reason/reference.",
+          security: adminReadSecurity,
+          requestParams: { query: adminDepositHistoryQuerySchema },
+          responses: {
+            "200": {
+              description:
+                "Filtered bounded admin history and matching paginationMeta",
+              content: {
+                "application/json": {
+                  schema: adminDepositHistoryEnvelopeSchema,
+                },
+              },
+            },
+            ...commonErrors,
+            "409": errorResponse("DEPOSIT_UNRESOLVED"),
+          },
+        },
+      },
+      "/admin/deposits/manual-credits": {
+        post: {
+          summary:
+            "Commit a distinct confirmed administrative NON_REFERRAL grant",
+          description:
+            adminCommandAuthority +
+            " Durable global actionId and actor/request key bind normalized target/amount/reason/reference/confirmation. Same actor/action/payload with same/new key recovers one outcome; changed actor/payload or reused key conflicts. External reference permits first wallet credit; ledger reference must belong to the same wallet. CREDIT/ADMIN_ADJUSTMENT, available NON_REFERRAL, audit and ManualCredit commit atomically; no chain receipt.",
+          security: adminWriteSecurity,
+          requestParams: {
+            header: z.object({ "Idempotency-Key": financialRequestKeySchema }),
+          },
+          requestBody: jsonBody(manualCreditBodySchema),
+          responses: {
+            "201": successResponse(
+              "First committed grant",
+              manualCreditOutcomeSchema,
+            ),
+            "200": successResponse(
+              "Exact accepted replay",
+              manualCreditOutcomeSchema,
+            ),
+            ...commonErrors,
+            "400": errorResponse(
+              "VALIDATION_ERROR or MANUAL_CREDIT_REFERENCE_INVALID",
+            ),
+            "404": errorResponse("DEPOSIT_NOT_FOUND"),
+            "409": errorResponse(
+              "MANUAL_CREDIT_CONFLICT, FINANCIAL_AMOUNT_OVERFLOW, DEPOSIT_UNRESOLVED or FINANCIAL_WRITES_FENCED",
+            ),
+          },
+        },
+      },
+      "/admin/deposits/manual-credits/{actionId}": {
+        get: {
+          summary: "Observe original committed manual-credit outcome",
+          description:
+            adminAuthority +
+            " Read-only lost-response recovery; no request alias writes or new action identity. Absence does not authorize replacement.",
+          security: adminReadSecurity,
+          requestParams: { path: manualCreditParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Original committed outcome",
+              manualCreditOutcomeSchema,
+            ),
+            ...commonErrors,
+            "404": errorResponse("DEPOSIT_NOT_FOUND"),
+          },
+        },
+      },
       "/proofs": imageIntake(
         proofAssetSchema,
         "Requires current ACTIVE verified USER and eligible work session.",

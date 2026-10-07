@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "noEmit": true,
+    "tsBuildInfoFile": "../node_modules/.cache/tsconfig.testnet.tsbuildinfo"
+  },
+  "include": ["./**/*.ts", "../vitest.testnet.config.ts"],
+  "exclude": ["../node_modules", "../dist"]
+}

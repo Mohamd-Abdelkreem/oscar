@@ -13,7 +13,9 @@ import {
 describe("isolated P04 financial fixtures", () => {
   it("creates five immutable ancestors/current sessions and funds a saved term through the real ledger", async () => {
     await withSubscriptionDatabase(async (database) => {
+      const startedAt = Date.now();
       const scenario = await createSubscriptionScenario(database);
+      const completedAt = Date.now();
       expect(scenario.ancestors).toHaveLength(5);
       expect(scenario.buyer.user.sponsorUserId).toBe(
         scenario.ancestors[0]?.user.id,
@@ -25,8 +27,11 @@ describe("isolated P04 financial fixtures", () => {
         );
         expect(ancestor?.session.createdAt).toEqual(P04_FIXTURE_NOW);
       }
-      expect(scenario.buyer.session.expiresAt.getTime()).toBe(
-        P04_FIXTURE_NOW.getTime() + 86400000,
+      expect(scenario.buyer.session.expiresAt.getTime()).toBeGreaterThanOrEqual(
+        Math.max(P04_FIXTURE_NOW.getTime(), startedAt) + 86400000,
+      );
+      expect(scenario.buyer.session.expiresAt.getTime()).toBeLessThanOrEqual(
+        Math.max(P04_FIXTURE_NOW.getTime(), completedAt) + 86400000,
       );
       await fundSubscriptionFixture(database, scenario.buyer, {
         referral: "10",

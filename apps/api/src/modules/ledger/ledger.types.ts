@@ -3,6 +3,7 @@ import {
   fundSourceSchema,
   positiveUsdtAmountSchema,
   walletComponentsSchema,
+  manualCreditGrantSchema,
   type FinancialOperationResult,
   type FundSource,
 } from "@template/contracts";
@@ -53,13 +54,30 @@ const creditIntentSchema = z
     kind: z.literal("CREDIT"),
     amount: positiveUsdtAmountSchema,
     source: fundSourceSchema,
-    origin: z.enum(["DEPOSIT", "TASK_REWARD", "REFERRAL_COMMISSION"]),
+    origin: z.enum([
+      "DEPOSIT",
+      "TASK_REWARD",
+      "REFERRAL_COMMISSION",
+      "ADMIN_ADJUSTMENT",
+    ]),
+    grant: manualCreditGrantSchema
+      .extend({ actorUserId: z.uuid() })
+      .strict()
+      .optional(),
   })
   .strict()
   .refine(
     (intent) =>
       (intent.origin === "REFERRAL_COMMISSION") ===
       (intent.source === "REFERRAL"),
+  )
+  .refine((intent) =>
+    intent.origin === "ADMIN_ADJUSTMENT"
+      ? intent.source === "NON_REFERRAL" &&
+        intent.grant !== undefined &&
+        intent.businessNamespace === "p06.manual-credit" &&
+        intent.businessKey === intent.grant.actionId
+      : intent.grant === undefined,
   );
 export const ledgerIntentSchema = z.discriminatedUnion("kind", [
   creditIntentSchema,
@@ -110,6 +128,7 @@ export const acceptedTermsSchema = z.discriminatedUnion("kind", [
       kind: z.literal("CREDIT"),
       walletBefore: walletComponentsSchema,
       source: fundSourceSchema,
+      grant: manualCreditGrantSchema.optional(),
     })
     .strict(),
   z

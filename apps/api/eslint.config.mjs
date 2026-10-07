@@ -6,6 +6,7 @@ export default [
     allowDefaultProject: [
       "vitest.config.ts",
       "vitest.integration.config.ts",
+      "vitest.testnet.config.ts",
       "vitest.setup.ts",
     ],
   }),
@@ -15,6 +16,16 @@ export default [
       parserOptions: {
         projectService: false,
         project: "./tests/e2e/tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    files: ["testnet/*.ts"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+        project: "./testnet/tsconfig.json",
         tsconfigRootDir: import.meta.dirname,
       },
     },

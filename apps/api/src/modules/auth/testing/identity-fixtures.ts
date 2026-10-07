@@ -57,7 +57,9 @@ export async function createIdentityFixture(
         userId: user.id,
         rememberMe: false,
         createdAt: now,
-        expiresAt: new Date(now.getTime() + 86_400_000),
+        // Synthetic business dates must not accidentally expire an otherwise
+        // active HTTP fixture. Expiry/revocation tests arrange those states explicitly.
+        expiresAt: new Date(Math.max(now.getTime(), Date.now()) + 86_400_000),
       },
     });
     return { user, wallet, session };

@@ -11,8 +11,8 @@ import {
 } from "../../subscriptions/testing/subscription-fixtures.js";
 import { fixedFinancialClock } from "../../ledger/testing/financial-fixtures.js";
 
-export { withIdentityDatabase as withTaskDatabase } from "../../auth/testing/identity-fixtures.js";
-export { withIndependentFinancialClients as withIndependentTaskClients } from "../../ledger/testing/financial-fixtures.js";
+export { withAdmittedFinancialDatabase as withTaskDatabase } from "../../ledger/testing/financial-fixtures.js";
+export { withAdmittedIndependentFinancialClients as withIndependentTaskClients } from "../../ledger/testing/financial-fixtures.js";
 export const P05_FIXTURE_NOW = new Date("2026-10-05T09:00:00.000Z");
 export const taskIdentity = (
   account: Awaited<ReturnType<typeof createIdentityFixture>>,

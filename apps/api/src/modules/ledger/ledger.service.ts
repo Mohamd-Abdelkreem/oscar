@@ -14,6 +14,7 @@ import {
   type PlannedEffect,
 } from "./ledger.effects.js";
 import { LedgerError } from "./ledger.errors.js";
+import type { FinancialRuntimeAdmission } from "../custody/runtime-control.js";
 import {
   mapRecordedOutcome,
   mapSourceAllocation,
@@ -23,6 +24,7 @@ import {
   checkActorAccount,
   isIdentityUniqueConflict,
   runLedgerTransaction,
+  runLedgerObservation,
   validateLedgerContext,
   type LockedLedgerTransaction,
 } from "./ledger.transaction.js";
@@ -51,6 +53,8 @@ const intentFingerprint = (intent: LedgerIntent): string => {
   if (intent.kind !== "RELEASE") consequential.push(intent.amount);
   if (intent.kind === "CREDIT")
     consequential.push(intent.source, intent.origin);
+  if (intent.kind === "CREDIT" && intent.grant !== undefined)
+    consequential.push(JSON.stringify(intent.grant));
   if (intent.kind === "CORRECTION")
     consequential.push(
       intent.source,
@@ -86,6 +90,7 @@ export class LedgerService {
   constructor(
     private readonly database: DatabaseClient,
     policy: LedgerPolicy,
+    private readonly admission?: FinancialRuntimeAdmission,
   ) {
     this.policy = {
       businessNamespaces: [...policy.businessNamespaces],
@@ -105,8 +110,11 @@ export class LedgerService {
     const context = validateLedgerContext(rawContext, this.policy);
     const intent = this.validateIntent(rawIntent);
     try {
-      return await runLedgerTransaction(this.database, context, (locked) =>
-        this.apply(intent, context, locked, domainWrite),
+      return await runLedgerTransaction(
+        this.database,
+        context,
+        (locked) => this.apply(intent, context, locked, domainWrite),
+        this.admission,
       );
     } catch (error) {
       if (!isIdentityUniqueConflict(error)) throw error;
@@ -123,12 +131,12 @@ export class LedgerService {
     const context = validateLedgerContext(rawContext, this.policy);
     const intent = this.validateIntent(rawIntent);
     try {
-      return await runLedgerTransaction(
+      return await runLedgerObservation(
         this.database,
         context,
         async (locked) => {
           await this.observationScope(intent, context, locked);
-          return this.replay(intent, context, locked.transaction);
+          return this.findReplay(intent, context, locked.transaction);
         },
       );
     } catch (error) {
@@ -191,6 +199,7 @@ export class LedgerService {
           if (rollbackFailure !== undefined) throw rollbackFailure.error;
           return result;
         },
+        this.admission,
       );
     } catch (error) {
       if (isIdentityUniqueConflict(error))
@@ -241,8 +250,16 @@ export class LedgerService {
     domainWrite?: LedgerDomainWrite,
   ): Promise<LedgerReply> {
     const scope = await this.observationScope(intent, context, locked);
-    const replay = await this.replay(intent, context, locked.transaction);
-    if (replay !== null) return replay;
+    const replay = await this.findReplay(intent, context, locked.transaction);
+    if (replay !== null) {
+      await this.bindAlias(
+        locked.transaction,
+        intent,
+        context,
+        replay.result.operationId,
+      );
+      return replay;
+    }
     await runAuthorityGuard(() => context.mutate(scope));
     const effect = await planNewEffect(intent, context, scope);
     const recordedAt = financialInstantSchema.safeParse(
@@ -357,6 +374,15 @@ export class LedgerService {
               referenceOperationId: intent.referenceOperationId,
             }
           : {}),
+        ...(intent.kind === "CREDIT" && intent.grant !== undefined
+          ? {
+              reason: intent.grant.reason,
+              referenceOperationId:
+                intent.grant.reference.kind === "LEDGER_OPERATION"
+                  ? intent.grant.reference.operationId
+                  : null,
+            }
+          : {}),
         createdAt: recordedAt,
       },
     });
@@ -403,7 +429,7 @@ export class LedgerService {
     if (changed.count !== 1) throw new LedgerError("LEDGER_RESERVATION_CLOSED");
   }
 
-  private async replay(
+  private async findReplay(
     intent: LedgerIntent,
     context: LedgerContext,
     transaction: Prisma.TransactionClient,
@@ -440,7 +466,6 @@ export class LedgerService {
       throw new LedgerError("LEDGER_IDENTITY_CONFLICT");
     if (business === null) return null;
     this.assertMatchingOperation(business, intent, hash);
-    await this.bindAlias(transaction, intent, context, business.id);
     return { result: mapRecordedOutcome(business.outcome), replayed: true };
   }
 

@@ -12,6 +12,7 @@ import { AppError } from "../../core/errors/app.error.js";
 import { formatUsdtAmount } from "../../core/financial/money.js";
 import { readSessionAuthority } from "../auth/session-authority.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import type { FinancialRuntimeAdmission } from "../custody/runtime-control.js";
 import type {
   LedgerGuardScope,
   TransactionLedger,
@@ -36,11 +37,16 @@ export class TaskReviewService {
     private readonly database: DatabaseClient,
     private readonly clock: TaskClock,
     reads?: ProofReadService,
+    admission?: FinancialRuntimeAdmission,
   ) {
-    this.ledger = new LedgerService(database, {
-      businessNamespaces: ["p05.task-reward"],
-      processIds: [],
-    });
+    this.ledger = new LedgerService(
+      database,
+      {
+        businessNamespaces: ["p05.task-reward"],
+        processIds: [],
+      },
+      admission,
+    );
     this.commands = new TaskCommandService(database, clock, reads);
   }
 

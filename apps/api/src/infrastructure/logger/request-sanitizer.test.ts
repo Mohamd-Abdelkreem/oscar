@@ -7,6 +7,24 @@ import {
 } from "./request-sanitizer.js";
 
 describe("request log sanitization", () => {
+  it("removes nested custody sentinels and credential-bearing provider query values", () => {
+    const sentinel = "sentinel-private-provider-or-signing";
+    const sanitized = sanitizeRequestForLog({
+      url: "/deposits?api%5Fkey=" + sentinel,
+      query: {
+        diagnostics: [
+          {
+            signingPayload: sentinel,
+            private_key: sentinel,
+            nested: { apiKey: sentinel, safe: "UNAVAILABLE" },
+          },
+        ],
+      },
+      headers: { referer: "https://provider.test/?api_key=" + sentinel },
+    });
+    expect(JSON.stringify(sanitized)).not.toContain(sentinel);
+    expect(JSON.stringify(sanitized)).toContain("UNAVAILABLE");
+  });
   it("redacts repeated and encoded credential keys without retaining referrer spelling variants", () => {
     const sanitized = sanitizeRequestForLog({
       url: "/auth/validate-admin-invitation?%74oken=sentinel-one&TOKEN=sentinel-two&locale=ar",

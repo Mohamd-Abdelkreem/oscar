@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { TaskSubmissionsService } from "./task-submissions.service.js";
@@ -59,10 +60,14 @@ describe("US2 final decision races", () => {
           const wallet = await database.wallet.findUniqueOrThrow({
             where: { ownerUserId: fixture.employee.user.id },
           });
-          await new LedgerService(database, {
-            businessNamespaces: ["p05.fixture.reserve"],
-            processIds: ["fixture"],
-          }).execute(
+          await new LedgerService(
+            database,
+            {
+              businessNamespaces: ["p05.fixture.reserve"],
+              processIds: ["fixture"],
+            },
+            financialFixtureAdmission(database),
+          ).execute(
             {
               kind: "RESERVE",
               walletId: wallet.id,
@@ -91,22 +96,28 @@ describe("US2 final decision races", () => {
             const start = identityRaceBarrier(2);
             const results = await Promise.allSettled([
               start().then(() =>
-                new TaskReviewService(first, fixture.clock).review(
+                new TaskReviewService(
+                  first,
+                  fixture.clock,
+                  undefined,
+                  financialFixtureAdmission(first),
+                ).review(
                   taskIdentity(fixture.admin),
                   fixture.submission.id,
                   fixture.intent,
                 ),
               ),
               start().then(() =>
-                new TaskReviewService(second, fixture.clock).review(
-                  taskIdentity(otherAdmin),
-                  fixture.submission.id,
-                  {
-                    ...fixture.intent,
-                    commandId: randomUUID(),
-                    decision: competingDecision,
-                  },
-                ),
+                new TaskReviewService(
+                  second,
+                  fixture.clock,
+                  undefined,
+                  financialFixtureAdmission(second),
+                ).review(taskIdentity(otherAdmin), fixture.submission.id, {
+                  ...fixture.intent,
+                  commandId: randomUUID(),
+                  decision: competingDecision,
+                }),
               ),
             ]);
             expect(
@@ -180,7 +191,12 @@ describe("US2 final decision races", () => {
           const start = identityRaceBarrier(2);
           const [review, replacement] = await Promise.allSettled([
             start().then(() =>
-              new TaskReviewService(first, fixture.clock).review(
+              new TaskReviewService(
+                first,
+                fixture.clock,
+                undefined,
+                financialFixtureAdmission(first),
+              ).review(
                 taskIdentity(fixture.admin),
                 fixture.submission.id,
                 fixture.intent,
@@ -223,15 +239,16 @@ describe("US2 final decision races", () => {
               }),
             ).toBe(0);
             expect(await database.submissionEvidence.count()).toBe(2);
-            await new TaskReviewService(database, fixture.clock).review(
-              taskIdentity(fixture.admin),
-              fixture.submission.id,
-              {
-                ...fixture.intent,
-                expectedSubmissionVersion: 2,
-                expectedEvidenceVersion: 2,
-              },
-            );
+            await new TaskReviewService(
+              database,
+              fixture.clock,
+              undefined,
+              financialFixtureAdmission(database),
+            ).review(taskIdentity(fixture.admin), fixture.submission.id, {
+              ...fixture.intent,
+              expectedSubmissionVersion: 2,
+              expectedEvidenceVersion: 2,
+            });
             expect(await database.finalReview.findFirstOrThrow()).toMatchObject(
               { evidenceVersion: 2, submissionVersion: 2 },
             );
@@ -250,7 +267,12 @@ describe("US2 final decision races", () => {
           let outcome: Promise<PromiseSettledResult<unknown>[]> | undefined;
           await first.$transaction(async (transaction) => {
             await transaction.$queryRaw`SELECT id FROM users WHERE id=${fixture.admin.user.id}::uuid FOR UPDATE`;
-            const attempt = new TaskReviewService(second, fixture.clock).review(
+            const attempt = new TaskReviewService(
+              second,
+              fixture.clock,
+              undefined,
+              financialFixtureAdmission(second),
+            ).review(
               taskIdentity(fixture.admin),
               fixture.submission.id,
               fixture.intent,
@@ -427,10 +449,11 @@ describe("US1 independent daily claim races", () => {
               ),
             ),
             start().then(() =>
-              new SubscriptionPurchaseService(second, scenario.clock).purchase(
-                identity,
-                { quoteId: quote.quoteId, confirmed: true },
-              ),
+              new SubscriptionPurchaseService(
+                second,
+                scenario.clock,
+                financialFixtureAdmission(second),
+              ).purchase(identity, { quoteId: quote.quoteId, confirmed: true }),
             ),
           ]);
           expect(results.map((result) => result.status)).toEqual([

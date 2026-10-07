@@ -47,6 +47,16 @@ describe("authentication and financial foundation Prisma schema", () => {
       "SubmissionEvidence",
       "FinalReview",
       "TaskCommandRecord",
+      "DepositAddressAssignment",
+      "DepositCandidate",
+      "DepositCandidateDiscovery",
+      "DepositScanProgress",
+      "DepositReceipt",
+      "ManualCredit",
+      "TreasurySweep",
+      "TransferAttempt",
+      "FinancialRuntimeControl",
+      "FinancialRuntimeAdmission",
     ]);
     expect(enums).toEqual([
       "UserRole",
@@ -63,6 +73,14 @@ describe("authentication and financial foundation Prisma schema", () => {
       "TaskSubmissionStatus",
       "TaskCommandKind",
       "TaskCommandTerminalState",
+      "TronNetwork",
+      "DepositAssignmentState",
+      "TronActivationState",
+      "DepositCandidateState",
+      "DepositScanMode",
+      "ManualCreditReferenceKind",
+      "TreasurySweepState",
+      "FinancialProcessKind",
     ]);
   });
 

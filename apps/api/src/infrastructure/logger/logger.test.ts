@@ -1,8 +1,43 @@
 import { describe, expect, it } from "vitest";
 
 import { createLogger, LOGGER_REDACT_PATHS } from "./logger.js";
+import { RuntimeSignals } from "./runtime-signals.js";
 
 describe("logger redaction", () => {
+  it("projects flat runtime fields before logging nested provider/private material", () => {
+    const chunks: string[] = [];
+    const log = createLogger({
+      level: "info",
+      pretty: false,
+      destination: {
+        write: (chunk) => {
+          chunks.push(chunk);
+        },
+      },
+    });
+    const sentinel = "sentinel-runtime-provider-private";
+    const metadata = {
+      code: "RECOVERY_UNAVAILABLE",
+      processKind: "SIGNER" as const,
+      nested: [
+        {
+          privateKey: sentinel,
+          error: new Error(sentinel),
+          providerBody: sentinel,
+        },
+      ],
+      signedBytes: Buffer.from(sentinel),
+      providerUrl: sentinel,
+    };
+    const signals = new RuntimeSignals(
+      log,
+      () => new Date("2026-10-07T00:00:00Z"),
+    );
+    signals.observe("RECOVERY_UNAVAILABLE", true, metadata);
+    expect(chunks.join("")).not.toContain(sentinel);
+    expect(chunks.join("")).not.toContain("providerBody");
+    expect(chunks.join("")).toContain('"code":"RECOVERY_UNAVAILABLE"');
+  });
   it("removes credential hashes and provider/signing material in arrays while retaining safe outcome codes", () => {
     const chunks: string[] = [];
     const testLogger = createLogger({

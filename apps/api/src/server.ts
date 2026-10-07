@@ -9,8 +9,12 @@ import { databaseConfig } from "./core/config/database.config.js";
 import { logger } from "./infrastructure/logger/logger.js";
 import { parseProofsEnvironment } from "./core/config/proofs.config.js";
 import { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
+import { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
+import { parseTronPublicEnvironment } from "./core/config/tron.config.js";
+import { assertApiDatabaseAuthority } from "./modules/custody/api-database-authority.js";
 
 const database = createDatabaseClient(databaseConfig.url);
+const financialAdmission = new FinancialRuntimeAdmission(database, "API");
 const proofs = new ProofsRuntime(
   database,
   parseProofsEnvironment(
@@ -22,7 +26,16 @@ const proofs = new ProofsRuntime(
     logger.warn({ code }, "Private image lifecycle failed.");
   },
 );
-const app = createApp({ database, logger, proofs });
+const depositMetadata = process.env["TRON_NETWORK"]?.trim()
+  ? parseTronPublicEnvironment(process.env)
+  : undefined;
+const app = createApp({
+  database,
+  logger,
+  proofs,
+  financialAdmission,
+  ...(depositMetadata === undefined ? {} : { depositMetadata }),
+});
 
 let server: Server | undefined;
 let isShuttingDown = false;
@@ -66,6 +79,8 @@ const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
 const startServer = async (): Promise<void> => {
   try {
     await database.$connect();
+    await assertApiDatabaseAuthority(database);
+    await financialAdmission.register();
     await proofs.start();
 
     server = app.listen(appConfig.port, appConfig.host, (error?: Error) => {

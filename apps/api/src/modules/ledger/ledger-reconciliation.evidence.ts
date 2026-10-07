@@ -5,16 +5,27 @@ import {
 } from "@template/contracts";
 import type { Prisma, FundSource } from "@template/database";
 import { parseUsdtAmount } from "../../core/financial/money.js";
+import { canonicalMovementDigest } from "../../infrastructure/tron/tron-receipt.evidence.js";
 import type { SourceMovement } from "./ledger.effects.js";
 import { acceptedTermsSchema, type AcceptedTerms } from "./ledger.types.js";
 
 const MAX_USDT_UNITS = parseUsdtAmount(MAX_USDT_AMOUNT);
 const WITHDRAWAL_ORDER: FundSource[] = ["NON_REFERRAL", "REFERRAL"];
 export const operationEvidence = {
+  manualCredit: {
+    include: { referenceOperation: { select: { walletId: true } } },
+  },
   postings: true,
   openingAllocation: true,
   releaseAllocation: true,
   audit: { include: { referenceOperation: { select: { walletId: true } } } },
+  depositReceipt: {
+    include: {
+      assignment: {
+        select: { network: true, address: true, walletId: true, state: true },
+      },
+    },
+  },
 } satisfies Prisma.FinancialOperationInclude;
 type OperationEvidence = Prisma.FinancialOperationGetPayload<{
   include: typeof operationEvidence;
@@ -27,7 +38,8 @@ type Category =
   | "POSTING_MISMATCH"
   | "ALLOCATION_MISMATCH"
   | "AUDIT_MISMATCH"
-  | "PROJECTION_MISMATCH";
+  | "PROJECTION_MISMATCH"
+  | "RECEIPT_MISMATCH";
 export type LedgerDiscrepancy = {
   category: Category;
   operationId?: string;
@@ -120,7 +132,10 @@ const expectedMovements = (
           operation.origin === "TASK_REWARD") &&
           terms.source === "NON_REFERRAL") ||
         (operation.origin === "REFERRAL_COMMISSION" &&
-          terms.source === "REFERRAL")
+          terms.source === "REFERRAL") ||
+        (operation.origin === "ADMIN_ADJUSTMENT" &&
+          terms.source === "NON_REFERRAL" &&
+          terms.grant !== undefined)
       )
         return [movement(terms.source, magnitude)];
       return null;
@@ -228,7 +243,15 @@ const checkAudit = (
         audit.reason !== correction.reason ||
         audit.referenceOperationId !== correction.referenceOperationId ||
         audit.referenceOperation?.walletId !== operation.walletId
-      : audit.reason !== null || audit.referenceOperationId !== null)
+      : operation.origin === "ADMIN_ADJUSTMENT" &&
+          terms?.kind === "CREDIT" &&
+          terms.grant !== undefined
+        ? audit.reason !== terms.grant.reason ||
+          audit.referenceOperationId !==
+            (terms.grant.reference.kind === "LEDGER_OPERATION"
+              ? terms.grant.reference.operationId
+              : null)
+        : audit.reason !== null || audit.referenceOperationId !== null)
   )
     report({ category: "AUDIT_MISMATCH", operationId: operation.id });
 };
@@ -372,4 +395,100 @@ export const checkOperation = (
   checkOutcome(operation, terms, report);
   checkAudit(operation, terms, report);
   checkAllocation(operation, terms, expected, report);
+  checkDepositReceipt(operation, report);
+  checkManualCredit(operation, terms, report);
 };
+
+function checkManualCredit(
+  operation: OperationEvidence,
+  terms: AcceptedTerms | null,
+  report: ReportFault,
+) {
+  const credit = operation.manualCredit;
+  if (operation.origin !== "ADMIN_ADJUSTMENT" || operation.kind !== "CREDIT") {
+    if (
+      credit !== null ||
+      (terms?.kind === "CREDIT" && terms.grant !== undefined)
+    )
+      report({ category: "INVALID_TERMS", operationId: operation.id });
+    return;
+  }
+  const grant = terms?.kind === "CREDIT" ? terms.grant : undefined;
+  if (
+    credit === null ||
+    grant === undefined ||
+    operation.businessNamespace !== "p06.manual-credit" ||
+    operation.businessKey !== credit.id ||
+    operation.actorType !== "USER" ||
+    operation.actorUserId !== credit.actorUserId ||
+    operation.walletId !== credit.walletId ||
+    operation.magnitudeUnits !== credit.amountUnits ||
+    operation.intentHash !== credit.payloadHash ||
+    operation.createdAt.getTime() !== credit.recordedAt.getTime() ||
+    grant.actionId !== credit.id ||
+    !credit.confirmed ||
+    grant.reason !== credit.reason ||
+    credit.referenceKind !== grant.reference.kind ||
+    (grant.reference.kind === "EXTERNAL"
+      ? credit.externalReference !== grant.reference.value ||
+        credit.referenceOperationId !== null
+      : credit.referenceOperationId !== grant.reference.operationId ||
+        credit.referenceOperation?.walletId !== operation.walletId ||
+        credit.externalReference !== null)
+  )
+    report({ category: "INVALID_TERMS", operationId: operation.id });
+}
+
+function checkDepositReceipt(
+  operation: OperationEvidence,
+  report: ReportFault,
+) {
+  const receipt = operation.depositReceipt;
+  if (operation.businessNamespace !== "p06.deposit") {
+    if (receipt !== null)
+      report({ category: "RECEIPT_MISMATCH", operationId: operation.id });
+    return;
+  }
+  if (
+    receipt === null ||
+    !receiptMatchesOperation(receipt, operation) ||
+    !receiptMatchesAssignment(receipt) ||
+    !receiptHasCanonicalEvidence(receipt)
+  )
+    report({ category: "RECEIPT_MISMATCH", operationId: operation.id });
+}
+
+type ReceiptEvidence = NonNullable<OperationEvidence["depositReceipt"]>;
+function receiptMatchesOperation(
+  receipt: ReceiptEvidence,
+  operation: OperationEvidence,
+) {
+  return (
+    operation.kind === "CREDIT" &&
+    operation.origin === "DEPOSIT" &&
+    operation.actorType === "PROCESS" &&
+    operation.actorProcessId === "deposit-indexer" &&
+    receipt.financialOperationId === operation.id &&
+    receipt.walletId === operation.walletId &&
+    receipt.amountUnits === operation.magnitudeUnits &&
+    receipt.recordedAt.getTime() === operation.createdAt.getTime() &&
+    operation.businessKey ===
+      `${receipt.network}:${receipt.transactionId}:${receipt.logIndex.toString()}`
+  );
+}
+function receiptMatchesAssignment(receipt: ReceiptEvidence) {
+  return (
+    receipt.assignment.network === receipt.network &&
+    receipt.assignment.address === receipt.recipient &&
+    receipt.assignment.walletId === receipt.walletId &&
+    receipt.assignment.state === "READY"
+  );
+}
+function receiptHasCanonicalEvidence(receipt: ReceiptEvidence) {
+  return (
+    receipt.verifiedAt <= receipt.recordedAt &&
+    receipt.executionResult === "SUCCESS" &&
+    receipt.finalityPolicy === "SOLIDIFIED_CANONICAL_SUCCESS" &&
+    receipt.evidenceDigest === canonicalMovementDigest(receipt)
+  );
+}

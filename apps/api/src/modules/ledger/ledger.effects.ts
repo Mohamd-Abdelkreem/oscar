@@ -183,6 +183,23 @@ export const planNewEffect = async (
   if (intent.kind === "RELEASE") return planRelease(intent, context, scope);
   const magnitudeUnits = parseUsdtAmount(intent.amount);
   if (intent.kind === "CREDIT") {
+    if (intent.origin === "ADMIN_ADJUSTMENT") {
+      if (
+        scope.actorAccount?.role !== UserRole.ADMIN ||
+        scope.actorAccount.id !== intent.grant?.actorUserId
+      )
+        throw new LedgerError("LEDGER_FORBIDDEN");
+      if (intent.grant.reference.kind === "LEDGER_OPERATION") {
+        const reference = await scope.transaction.financialOperation.findFirst({
+          where: {
+            id: intent.grant.reference.operationId,
+            walletId: intent.walletId,
+          },
+          select: { id: true },
+        });
+        if (reference === null) throw new LedgerError("LEDGER_FORBIDDEN");
+      }
+    }
     const postings = [
       {
         source: intent.source,
@@ -193,7 +210,21 @@ export const planNewEffect = async (
     return {
       magnitudeUnits,
       origin: intent.origin,
-      terms: { kind: intent.kind, walletBefore, source: intent.source },
+      terms: {
+        kind: intent.kind,
+        walletBefore,
+        source: intent.source,
+        ...(intent.grant === undefined
+          ? {}
+          : {
+              grant: {
+                actionId: intent.grant.actionId,
+                confirmed: intent.grant.confirmed,
+                reason: intent.grant.reason,
+                reference: intent.grant.reference,
+              },
+            }),
+      },
       postings,
       after: walletAfter(scope.wallet, postings),
     };

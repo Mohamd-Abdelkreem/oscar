@@ -385,3 +385,35 @@ export {
   commandCancellationOutcomeSchema,
 } from "./tasks/task-command.schema.ts";
 export type { CommandObservation } from "./tasks/task-command.schema.ts";
+export {
+  tronNetworkSchema,
+  tronPublicAddressSchema,
+  depositProvisionRequestSchema,
+  depositDetectionSchema,
+  depositAddressDataSchema,
+  depositTransactionIdSchema,
+  manualCreditReferenceSchema,
+  manualCreditReasonSchema,
+  manualCreditGrantSchema,
+  manualCreditBodySchema,
+  manualCreditParamsSchema,
+  depositHistoryQuerySchema,
+  adminDepositHistoryQuerySchema,
+  depositHistoryRowSchema,
+  adminDepositHistoryRowSchema,
+  depositHistoryDataSchema,
+  adminDepositHistoryDataSchema,
+  manualCreditOutcomeSchema,
+  depositAddressEnvelopeSchema,
+  depositHistoryEnvelopeSchema,
+  adminDepositHistoryEnvelopeSchema,
+  manualCreditEnvelopeSchema,
+} from "./deposits/deposit.schema.ts";
+export type {
+  DepositAddressData,
+  DepositHistoryQuery,
+  AdminDepositHistoryQuery,
+  ManualCreditBody,
+  ManualCreditOutcome,
+  ManualCreditGrant,
+} from "./deposits/deposit.schema.ts";
