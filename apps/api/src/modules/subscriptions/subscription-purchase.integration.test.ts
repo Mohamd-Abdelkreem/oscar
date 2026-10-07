@@ -1,3 +1,12 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
+import {
+  bindDepositAssignment,
+  depositRecipient,
+  rawDeposit,
+  withDepositProvider,
+} from "../deposits/testing/deposit-fixtures.js";
+import { DepositVerifier } from "../deposits/deposit-verifier.js";
+import { DepositCreditService } from "../deposits/deposit-credit.service.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import { Prisma, type DatabaseClient } from "@template/database";
@@ -6,6 +15,14 @@ import { PackageConfigurationService } from "../packages/package-configuration.s
 import { EmployeeRestrictionsService } from "../users/employee-restrictions.service.js";
 import * as referralCommissions from "../referrals/referral-commissions.js";
 import { LedgerService } from "../ledger/ledger.service.js";
+import { TaskReviewService } from "../task-submissions/task-review.service.js";
+import { TaskSubmissionsService } from "../task-submissions/task-submissions.service.js";
+import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
+import {
+  withTaskDatabase,
+  withTaskFileFixture,
+  taskIdentity,
+} from "../tasks/testing/task-fixtures.js";
 import { createIdentityFixture } from "../auth/testing/identity-fixtures.js";
 import { PurchaseQuoteService } from "./purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "./subscription-purchase.service.js";
@@ -51,6 +68,225 @@ async function purchaseState(database: DatabaseClient) {
 }
 
 describe("atomic full-price purchases", () => {
+  it("conserves referral-first purchase funds during a verified deposit on an independent connection", async () => {
+    await withSubscriptionDatabase(async (database, url) => {
+      const buyer = await createIdentityFixture(database, {
+        now: P04_FIXTURE_NOW,
+      });
+      if (buyer.wallet === null) throw new Error("Missing wallet");
+      const walletId = buyer.wallet.id;
+      await fundSubscriptionFixture(database, buyer, {
+        referral: "20",
+        nonReferral: "40",
+      });
+      const identity = { userId: buyer.user.id, sessionId: buyer.session.id };
+      const quote = await new PurchaseQuoteService(
+        database,
+        () => P04_FIXTURE_NOW,
+      ).create(identity, { packageCode: "S1" });
+      await withIndependentSubscriptionClients(
+        url,
+        async (depositor, purchaser) => {
+          await bindDepositAssignment(
+            database,
+            {
+              ownerUserId: buyer.user.id,
+              wallet: { id: walletId },
+            },
+            depositRecipient,
+            P04_FIXTURE_NOW,
+          );
+          const raw = rawDeposit();
+          raw.block.block_header.raw_data.timestamp =
+            P04_FIXTURE_NOW.getTime() - 1000;
+          raw.info.blockTimeStamp = raw.block.block_header.raw_data.timestamp;
+          raw.solidified.block_header.raw_data.timestamp =
+            raw.info.blockTimeStamp;
+          await withDepositProvider(raw, async (provider, config) => {
+            const start = subscriptionRaceBarrier(2);
+            const credit = async () => {
+              await start();
+              return new DepositCreditService(
+                depositor,
+                new DepositVerifier(
+                  depositor,
+                  provider,
+                  config,
+                  () => P04_FIXTURE_NOW,
+                ),
+                financialFixtureAdmission(depositor),
+                () => P04_FIXTURE_NOW,
+              ).process(raw.transactionId);
+            };
+            const purchase = async () => {
+              await start();
+              return new SubscriptionPurchaseService(
+                purchaser,
+                () => P04_FIXTURE_NOW,
+                financialFixtureAdmission(purchaser),
+              ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
+            };
+            const [deposit, bought] = await Promise.allSettled([
+              credit(),
+              purchase(),
+            ]);
+            expect(deposit).toMatchObject({
+              status: "fulfilled",
+              value: { state: "ACCOUNTED" },
+            });
+            if (bought.status === "fulfilled")
+              expect(bought.value.purchase.fullDebit).toBe("60");
+            else {
+              expect(bought.reason).toMatchObject({
+                code: "PURCHASE_QUOTE_STALE",
+              });
+              expect(await database.purchase.count()).toBe(0);
+              expect(
+                await database.wallet.findUniqueOrThrow({
+                  where: { id: walletId },
+                }),
+              ).toMatchObject({
+                availableReferralUnits: 20000000n,
+                availableNonReferralUnits: 41000001n,
+                reservedReferralUnits: 0n,
+                reservedNonReferralUnits: 0n,
+              });
+              // A deposit changes the accepted wallet snapshot; only a new explicit quote may purchase.
+              const refreshed = await new PurchaseQuoteService(
+                database,
+                () => P04_FIXTURE_NOW,
+              ).create(identity, { packageCode: "S1" });
+              const accepted = await new SubscriptionPurchaseService(
+                purchaser,
+                () => P04_FIXTURE_NOW,
+                financialFixtureAdmission(purchaser),
+              ).purchase(identity, {
+                quoteId: refreshed.quoteId,
+                confirmed: true,
+              });
+              expect(accepted.purchase.fullDebit).toBe("60");
+            }
+          });
+        },
+      );
+      expect(
+        await database.wallet.findUniqueOrThrow({ where: { id: walletId } }),
+      ).toMatchObject({
+        availableReferralUnits: 0n,
+        availableNonReferralUnits: 1000001n,
+        reservedReferralUnits: 0n,
+        reservedNonReferralUnits: 0n,
+      });
+      expect(await database.depositReceipt.count()).toBe(1);
+      const debit = await database.financialOperation.findFirstOrThrow({
+        where: { kind: "PURCHASE_DEBIT", walletId },
+        include: { postings: true },
+      });
+      expect(debit.postings).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            source: "REFERRAL",
+            availableDeltaUnits: -20000000n,
+          }),
+          expect.objectContaining({
+            source: "NON_REFERRAL",
+            availableDeltaUnits: -40000000n,
+          }),
+        ]),
+      );
+    });
+  });
+  it("keeps an S1 daily claim and rewards two USDT after full-price O1 upgrade and future catalog edits", async () => {
+    await withTaskDatabase(async (database) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(database, root);
+        await fundSubscriptionFixture(database, fixture.employee, {
+          referral: "10",
+          nonReferral: "600",
+        });
+        const identity = taskIdentity(fixture.employee);
+        const quote = await new PurchaseQuoteService(
+          database,
+          fixture.clock,
+        ).create(identity, { packageCode: "O1" });
+        const upgrade = await new SubscriptionPurchaseService(
+          database,
+          fixture.clock,
+          financialFixtureAdmission(database),
+        ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
+        expect(upgrade.purchase).toMatchObject({
+          fullDebit: "600",
+          commissionBase: "540",
+          subscriptionAtPurchase: { terms: { dailyReward: "16" } },
+        });
+        const before = await database.wallet.findUniqueOrThrow({
+          where: { ownerUserId: identity.userId },
+        });
+        expect(before).toMatchObject({
+          availableReferralUnits: 0n,
+          availableNonReferralUnits: 10_000_000n,
+        });
+        await expect(
+          new TaskSubmissionsService(
+            database,
+            fixture.clock,
+            fixture.reads,
+          ).create(identity, {
+            commandId: randomUUID(),
+            taskId: fixture.task.id,
+            expectedTaskRevision: 1,
+            proofAssetId: fixture.replacement.id,
+            declaredExecuted: true,
+          }),
+        ).rejects.toMatchObject({ code: "DAILY_CLAIM_EXISTS" });
+        const configured = await database.package.findUniqueOrThrow({
+          where: { code: "S1" },
+        });
+        const editAt = new Date(configured.updatedAt.getTime() + 1000);
+        await database.authSession.update({
+          where: { id: fixture.admin.session.id },
+          data: { expiresAt: new Date(editAt.getTime() + 86_400_000) },
+        });
+        await new PackageConfigurationService(
+          database,
+          () => editAt,
+        ).editPackage(taskIdentity(fixture.admin), "S1", {
+          commandId: randomUUID(),
+          expectedVersion: configured.version,
+          confirmed: true,
+          reason: "Future terms only",
+          dailyReward: "3",
+        });
+        await new TaskReviewService(
+          database,
+          () => editAt,
+          undefined,
+          financialFixtureAdmission(database),
+        ).review(
+          taskIdentity(fixture.admin),
+          fixture.submission.id,
+          fixture.intent,
+        );
+        expect(
+          await database.taskSubmission.findUniqueOrThrow({
+            where: { id: fixture.submission.id },
+          }),
+        ).toMatchObject({
+          subscriptionId: fixture.subscription.id,
+          rewardUnits: 2_000_000n,
+          capturedSubscriptionTerms: { dailyReward: "2" },
+        });
+        expect(
+          await database.wallet.findUniqueOrThrow({ where: { id: before.id } }),
+        ).toMatchObject({
+          availableNonReferralUnits: 12_000_000n,
+          availableReferralUnits: 0n,
+          reservedReferralUnits: before.reservedReferralUnits,
+          reservedNonReferralUnits: before.reservedNonReferralUnits,
+        });
+      }),
+    );
+  });
   it.each([
     [
       "weekday cutoff",
@@ -90,7 +326,11 @@ describe("atomic full-price purchases", () => {
         );
         const identity = { userId: buyer.user.id, sessionId: buyer.session.id };
         const quotes = new PurchaseQuoteService(database, () => now);
-        const purchases = new SubscriptionPurchaseService(database, () => now);
+        const purchases = new SubscriptionPurchaseService(
+          database,
+          () => now,
+          financialFixtureAdmission(database),
+        );
         const original = await quotes.create(identity, { packageCode: "S1" });
         now = new Date(committedAt);
         let quote = original;
@@ -152,7 +392,11 @@ describe("atomic full-price purchases", () => {
       );
       const identity = { userId: buyer.user.id, sessionId: buyer.session.id };
       const quotes = new PurchaseQuoteService(database, () => now);
-      const purchases = new SubscriptionPurchaseService(database, () => now);
+      const purchases = new SubscriptionPurchaseService(
+        database,
+        () => now,
+        financialFixtureAdmission(database),
+      );
       const memberships = new SubscriptionsService(database, () => now);
       const firstQuote = await quotes.create(identity, { packageCode: "S1" });
       const first = await purchases.purchase(identity, {
@@ -162,7 +406,20 @@ describe("atomic full-price purchases", () => {
       const savedFirst = await database.subscription.findUniqueOrThrow({
         where: { id: first.purchase.subscriptionAtPurchase.id },
       });
-      await new PackageConfigurationService(database, () => now).editPackage(
+      const seededPackage = await database.package.findUniqueOrThrow({
+        where: { code: "S1" },
+      });
+      const configurationAt = new Date(
+        Math.max(now.getTime(), seededPackage.updatedAt.getTime()) + 1,
+      );
+      await database.authSession.update({
+        where: { id: admin.session.id },
+        data: { expiresAt: new Date(configurationAt.getTime() + 86_400_000) },
+      });
+      await new PackageConfigurationService(
+        database,
+        () => configurationAt,
+      ).editPackage(
         { userId: admin.user.id, sessionId: admin.session.id },
         "S1",
         {
@@ -283,7 +540,11 @@ describe("atomic full-price purchases", () => {
       );
       const identity = { userId: buyer.user.id, sessionId: buyer.session.id };
       const quotes = new PurchaseQuoteService(database, () => now);
-      const purchases = new SubscriptionPurchaseService(database, () => now);
+      const purchases = new SubscriptionPurchaseService(
+        database,
+        () => now,
+        financialFixtureAdmission(database),
+      );
       const firstQuote = await quotes.create(identity, { packageCode: "S1" });
       const first = await purchases.purchase(identity, {
         quoteId: firstQuote.quoteId,
@@ -339,6 +600,7 @@ describe("atomic full-price purchases", () => {
         const purchasing = new SubscriptionPurchaseService(
           database,
           () => P04_FIXTURE_NOW,
+          financialFixtureAdmission(database),
         ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
         if (amount === "59.999999") {
           expect(quote.requiredTopUp).toBe("0.000001");
@@ -388,8 +650,27 @@ describe("atomic full-price purchases", () => {
         ).create(identity, { packageCode: "S1" });
         const configuration = new PackageConfigurationService(
           database,
-          () => now,
+          // The fresh migration's seed timestamp is independent of the quote's fixed business clock.
+          () => configurationAt,
         );
+        const seededPackage = await database.package.findUniqueOrThrow({
+          where: { code: "S1" },
+        });
+        const seededSettings =
+          await database.referralSettings.findUniqueOrThrow({
+            where: { id: 1 },
+          });
+        const configurationAt = new Date(
+          Math.max(
+            now.getTime(),
+            seededPackage.updatedAt.getTime(),
+            seededSettings.updatedAt.getTime(),
+          ) + 1,
+        );
+        await database.authSession.update({
+          where: { id: admin.session.id },
+          data: { expiresAt: new Date(configurationAt.getTime() + 86_400_000) },
+        });
         const adminIdentity = {
           userId: admin.user.id,
           sessionId: admin.session.id,
@@ -438,10 +719,11 @@ describe("atomic full-price purchases", () => {
           audit: await database.auditRecord.count(),
         };
         await expect(
-          new SubscriptionPurchaseService(database, () => now).purchase(
-            identity,
-            { quoteId: quote.quoteId, confirmed: true },
-          ),
+          new SubscriptionPurchaseService(
+            database,
+            () => now,
+            financialFixtureAdmission(database),
+          ).purchase(identity, { quoteId: quote.quoteId, confirmed: true }),
         ).rejects.toMatchObject({ code: "PURCHASE_QUOTE_STALE" });
         expect(await database.purchase.count()).toBe(0);
         expect(await database.subscription.count()).toBe(0);
@@ -498,6 +780,7 @@ describe("atomic full-price purchases", () => {
         new SubscriptionPurchaseService(
           database,
           () => P04_FIXTURE_NOW,
+          financialFixtureAdmission(database),
         ).purchase(
           identity,
           { quoteId: quote.quoteId, confirmed: true },
@@ -528,7 +811,11 @@ describe("atomic full-price purchases", () => {
       const identity = { userId: buyer.user.id, sessionId: buyer.session.id };
       const clock = () => P04_FIXTURE_NOW;
       const quotes = new PurchaseQuoteService(database, clock);
-      const purchases = new SubscriptionPurchaseService(database, clock);
+      const purchases = new SubscriptionPurchaseService(
+        database,
+        clock,
+        financialFixtureAdmission(database),
+      );
       const before = await database.financialOperation.count();
       const quote = await quotes.create(identity, { packageCode: "S1" });
       expect(await database.financialOperation.count()).toBe(before);
@@ -583,6 +870,7 @@ describe("atomic full-price purchases", () => {
       const purchaseService = new SubscriptionPurchaseService(
         database,
         () => P04_FIXTURE_NOW,
+        financialFixtureAdmission(database),
       );
       const quote = await quotes.create(identity, { packageCode: "O1" });
       const command = { quoteId: quote.quoteId, confirmed: true as const };
@@ -647,6 +935,7 @@ describe("atomic full-price purchases", () => {
               return new SubscriptionPurchaseService(
                 connection,
                 () => P04_FIXTURE_NOW,
+                financialFixtureAdmission(connection),
               ).purchase(
                 identity,
                 { quoteId: quote.quoteId, confirmed: true },
@@ -701,6 +990,7 @@ describe("atomic full-price purchases", () => {
       const purchases = new SubscriptionPurchaseService(
         database,
         () => P04_FIXTURE_NOW,
+        financialFixtureAdmission(database),
       );
       const first = await quotes.create(identity, { packageCode: "S1" });
       await purchases.purchase(
@@ -768,10 +1058,14 @@ describe("atomic full-price purchases", () => {
       const wallet = buyer.wallet;
       if (wallet === null) throw new Error("Missing wallet.");
       const reservationId = randomUUID();
-      await new LedgerService(database, {
-        businessNamespaces: ["p04.fixture.reserve"],
-        processIds: ["fixture"],
-      }).execute(
+      await new LedgerService(
+        database,
+        {
+          businessNamespaces: ["p04.fixture.reserve"],
+          processIds: ["fixture"],
+        },
+        financialFixtureAdmission(database),
+      ).execute(
         {
           kind: "RESERVE",
           walletId: wallet.id,
@@ -805,6 +1099,7 @@ describe("atomic full-price purchases", () => {
       const command = await new SubscriptionPurchaseService(
         database,
         () => expiredAt,
+        financialFixtureAdmission(database),
       ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
       expect(command.purchase).toMatchObject({
         commissionBase: "60",
@@ -864,15 +1159,17 @@ describe("atomic full-price purchases", () => {
         },
       );
       await expect(
-        new SubscriptionPurchaseService(database, () => now).purchase(
-          identity,
-          { quoteId: quote.quoteId, confirmed: true },
-        ),
+        new SubscriptionPurchaseService(
+          database,
+          () => now,
+          financialFixtureAdmission(database),
+        ).purchase(identity, { quoteId: quote.quoteId, confirmed: true }),
       ).rejects.toMatchObject({ code: "PURCHASE_QUOTE_STALE" });
       const fresh = await quotes.create(identity, { packageCode: "S1" });
       const accepted = await new SubscriptionPurchaseService(
         database,
         () => now,
+        financialFixtureAdmission(database),
       ).purchase(identity, { quoteId: fresh.quoteId, confirmed: true });
       now = new Date(now.getTime() + 600001);
       const restarted = new PurchaseQuoteService(database, () => now);
@@ -881,10 +1178,11 @@ describe("atomic full-price purchases", () => {
         purchase: accepted.purchase,
       });
       expect(
-        await new SubscriptionPurchaseService(database, () => now).purchase(
-          identity,
-          { quoteId: fresh.quoteId, confirmed: true },
-        ),
+        await new SubscriptionPurchaseService(
+          database,
+          () => now,
+          financialFixtureAdmission(database),
+        ).purchase(identity, { quoteId: fresh.quoteId, confirmed: true }),
       ).toEqual({ purchase: accepted.purchase, replayed: true });
     });
   });
@@ -935,6 +1233,7 @@ describe("atomic full-price purchases", () => {
           const purchasing = new SubscriptionPurchaseService(
             purchaser,
             () => P04_FIXTURE_NOW,
+            financialFixtureAdmission(purchaser),
           ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
           let observed: ReturnType<PurchaseQuoteService["outcome"]> | undefined;
           try {
@@ -1039,6 +1338,7 @@ describe("atomic full-price purchases", () => {
               return new SubscriptionPurchaseService(
                 connection,
                 () => P04_FIXTURE_NOW,
+                financialFixtureAdmission(connection),
               ).purchase(
                 { userId: account.user.id, sessionId: account.session.id },
                 { quoteId: quote.quoteId, confirmed: true },
@@ -1148,10 +1448,14 @@ describe("atomic full-price purchases", () => {
               release = resolve;
             });
             const businessKey = randomUUID();
-            const winning = new LedgerService(winner, {
-              businessNamespaces: ["p04.race"],
-              processIds: ["fixture"],
-            }).execute(
+            const winning = new LedgerService(
+              winner,
+              {
+                businessNamespaces: ["p04.race"],
+                processIds: ["fixture"],
+              },
+              financialFixtureAdmission(winner),
+            ).execute(
               effect === "reserve"
                 ? {
                     kind: "RESERVE",
@@ -1192,6 +1496,7 @@ describe("atomic full-price purchases", () => {
             const purchasing = new SubscriptionPurchaseService(
               purchaser,
               () => P04_FIXTURE_NOW,
+              financialFixtureAdmission(purchaser),
             ).purchase(
               identity,
               { quoteId: quote.quoteId, confirmed: true },
@@ -1286,6 +1591,7 @@ describe("atomic full-price purchases", () => {
                 const purchasing = new SubscriptionPurchaseService(
                   purchaser,
                   () => now,
+                  financialFixtureAdmission(purchaser),
                 ).purchase(
                   identity,
                   { quoteId: quote.quoteId, confirmed: true },
@@ -1427,6 +1733,7 @@ describe("atomic full-price purchases", () => {
             new SubscriptionPurchaseService(
               database,
               () => P04_FIXTURE_NOW,
+              financialFixtureAdmission(database),
             ).purchase(
               identity,
               { quoteId: quote.quoteId, confirmed: true },
@@ -1497,6 +1804,7 @@ describe("atomic full-price purchases", () => {
                   return new SubscriptionPurchaseService(
                     purchaser,
                     () => now,
+                    financialFixtureAdmission(purchaser),
                   ).purchase(
                     identity,
                     { quoteId: quote.quoteId, confirmed: true },
@@ -1598,6 +1906,7 @@ describe("atomic full-price purchases", () => {
       const purchases = new SubscriptionPurchaseService(
         database,
         () => P04_FIXTURE_NOW,
+        financialFixtureAdmission(database),
       );
       const unfunded = await quotes.create(identity, { packageCode: "O1" });
       expect(unfunded).toMatchObject({

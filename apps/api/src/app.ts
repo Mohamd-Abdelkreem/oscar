@@ -24,12 +24,18 @@ import {
   requestId,
 } from "./middlewares/index.js";
 import { createApiRouter } from "./router.js";
+import type { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
+import type { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
+import type { CustodyMetadata } from "./modules/custody/custody.service.js";
 
 type AppDependencies = Readonly<{
   database: DatabaseClient;
   logger: Logger;
   emailDelivery?: EmailDelivery;
   financialClock?: () => Date;
+  proofs?: ProofsRuntime;
+  financialAdmission?: FinancialRuntimeAdmission;
+  depositMetadata?: CustodyMetadata;
 }>;
 
 const buildCorsOriginValidator = (): CorsOptions["origin"] => {
@@ -50,6 +56,9 @@ export const createApp = ({
   logger,
   emailDelivery = createEmailDelivery(),
   financialClock = () => new Date(),
+  proofs,
+  financialAdmission,
+  depositMetadata,
 }: AppDependencies): Application => {
   const app = express();
 
@@ -60,6 +69,7 @@ export const createApp = ({
   const corsOptions: CorsOptions = {
     origin: buildCorsOriginValidator(),
     credentials: corsConfig.credentials,
+    exposedHeaders: ["Content-Disposition", "X-Content-Type-Options"],
   };
 
   // Global middleware
@@ -76,7 +86,11 @@ export const createApp = ({
   app.use(
     appConfig.apiPrefix,
     apiRateLimitMiddleware,
-    createApiRouter(database, new EmailService(emailDelivery), financialClock),
+    createApiRouter(database, new EmailService(emailDelivery), financialClock, {
+      ...(proofs === undefined ? {} : { proofs }),
+      ...(financialAdmission === undefined ? {} : { financialAdmission }),
+      ...(depositMetadata === undefined ? {} : { depositMetadata }),
+    }),
   );
 
   // Final middleware

@@ -3,7 +3,6 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -34,7 +33,6 @@ import type {
   WithdrawalRequest,
 } from "../types/employee.types";
 
-import { useEmployeeTaskActions } from "./actions/use-employee-task-actions";
 import { useEmployeeWalletActions } from "./actions/use-employee-wallet-actions";
 import type { EmployeeContextValue } from "./employee-state.types";
 
@@ -49,7 +47,7 @@ export function EmployeeStateProvider({
   const [currentPackageId] = useState<PackageId>("S1");
   const [packageExpiryDays] = useState(22);
   const [balance, setBalance] = useState<FinancialBalance>(INITIAL_BALANCE);
-  const [task, setTask] = useState<DailyTask>(INITIAL_TASK);
+  const [task] = useState<DailyTask>(INITIAL_TASK);
   const [taskHistory] =
     useState<readonly TaskHistoryItem[]>(INITIAL_TASK_HISTORY);
   const [withdrawals, setWithdrawals] =
@@ -63,15 +61,6 @@ export function EmployeeStateProvider({
     INITIAL_TEAM_COMMISSIONS,
   );
 
-  useEffect(() => {
-    const committedScreenshot = task.submittedScreenshot;
-    return () => {
-      if (committedScreenshot?.startsWith("blob:")) {
-        URL.revokeObjectURL(committedScreenshot);
-      }
-    };
-  }, [task.submittedScreenshot]);
-
   const currentPackage =
     PACKAGES.find((pkg) => pkg.id === currentPackageId) ?? PACKAGES[1];
   const pendingWithdrawal = withdrawals.find(
@@ -79,8 +68,6 @@ export function EmployeeStateProvider({
   );
 
   const hasPendingWithdrawal = pendingWithdrawal !== undefined;
-  const { submitTask, replaceTaskScreenshot, setTaskScenario } =
-    useEmployeeTaskActions({ task, setBalance, setTask, setTransactions });
   const {
     setupWithdrawalAddress,
     requestWithdrawal,
@@ -112,9 +99,6 @@ export function EmployeeStateProvider({
       transactions,
       teamMembers,
       teamCommissions,
-      submitTask,
-      replaceTaskScreenshot,
-      setTaskScenario,
       setupWithdrawalAddress,
       requestWithdrawal,
       checkDepositStatus,
@@ -135,9 +119,6 @@ export function EmployeeStateProvider({
       transactions,
       teamMembers,
       teamCommissions,
-      submitTask,
-      replaceTaskScreenshot,
-      setTaskScenario,
       setupWithdrawalAddress,
       requestWithdrawal,
       checkDepositStatus,

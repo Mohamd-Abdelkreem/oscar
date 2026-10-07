@@ -10,6 +10,7 @@ import {
 import { z } from "zod";
 
 import { AppError } from "../../core/errors/app.error.js";
+import type { FinancialRuntimeAdmission } from "../custody/runtime-control.js";
 import { LedgerError } from "./ledger.errors.js";
 import type { LedgerContext, LedgerPolicy } from "./ledger.types.js";
 
@@ -146,10 +147,11 @@ export type LockedLedgerTransaction = {
   assertActive: () => void;
 };
 
-export const runLedgerTransaction = async <T>(
+const runLockedLedgerTransaction = async <T>(
   database: DatabaseClient,
   context: LedgerContext,
   work: (scope: LockedLedgerTransaction) => Promise<T>,
+  admission?: FinancialRuntimeAdmission,
 ): Promise<T> => {
   if (activeFinancialTransaction.getStore() === true)
     throw new LedgerError("LEDGER_INVALID_TRANSACTION");
@@ -157,6 +159,7 @@ export const runLedgerTransaction = async <T>(
     try {
       return await database.$transaction(
         async (transaction) => {
+          await admission?.assertMutationAdmission(transaction);
           const accounts = await lockParticipants(transaction, context);
           checkActorAccount(context, accounts);
           let active = true;
@@ -211,6 +214,27 @@ export const runLedgerTransaction = async <T>(
   }
   throw new LedgerError("LEDGER_UNRESOLVED");
 };
+
+export const runLedgerTransaction = async <T>(
+  database: DatabaseClient,
+  context: LedgerContext,
+  work: (scope: LockedLedgerTransaction) => Promise<T>,
+  admission?: FinancialRuntimeAdmission,
+): Promise<T> => {
+  if (admission === undefined)
+    throw new AppError(
+      "Financial recovery admission is closed.",
+      409,
+      "FINANCIAL_WRITES_FENCED",
+    );
+  return runLockedLedgerTransaction(database, context, work, admission);
+};
+
+export const runLedgerObservation = async <T>(
+  database: DatabaseClient,
+  context: LedgerContext,
+  observation: (scope: LockedLedgerTransaction) => Promise<T>,
+): Promise<T> => runLockedLedgerTransaction(database, context, observation);
 
 const BUSINESS_IDENTITY_CONSTRAINT = "financial_operations_business_key";
 const REQUEST_IDENTITY_CONSTRAINT = "financial_request_identities_scope_key";

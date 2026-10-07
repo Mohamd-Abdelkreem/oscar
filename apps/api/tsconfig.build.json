@@ -16,7 +16,13 @@
     "src/modules/ledger/testing/**",
     "src/modules/auth/testing/**",
     "src/modules/subscriptions/testing/**",
+    "src/modules/tasks/testing/**",
+    "src/modules/task-submissions/testing/**",
+    "src/modules/proofs/testing/**",
+    "src/modules/custody/testing/**",
+    "src/modules/deposits/testing/**",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/modules/treasury/testing/**"
   ]
 }

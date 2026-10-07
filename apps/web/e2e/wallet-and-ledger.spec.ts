@@ -153,10 +153,17 @@ test("P04 paid activation unlocks only available referral funds and release pres
   await expect(
     page.getByText("المتاح غير الإحالي", { exact: true }).locator(".."),
   ).toContainText("1,000.00");
-  await page
+  const releaseEntry = page
     .getByRole("button", { name: /فك حجز الرصيد/u })
-    .first()
-    .click();
+    .first();
+  const nextHistoryPage = page.getByRole("button", {
+    name: "التالي",
+    exact: true,
+  });
+  await expect(nextHistoryPage).toBeEnabled();
+  // Fixed fixture timestamps let the UUID tie-break place release on either page.
+  if ((await releaseEntry.count()) === 0) await nextHistoryPage.click();
+  await releaseEntry.click();
   await expect(page.getByRole("dialog")).toContainText("0.00");
   await page.keyboard.press("Escape");
   if (paid.expiresAt === null) throw new Error("P04_MISSING_EXPIRY");

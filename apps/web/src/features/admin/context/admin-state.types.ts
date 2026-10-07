@@ -13,7 +13,6 @@ import type {
   AdminWithdrawal,
   CodeUsageRecord,
   TaskUnlockCode,
-  UnlockCodeResult,
 } from "../types/admin.types";
 import type { Dispatch, SetStateAction } from "react";
 import type { CURRENT_ADMIN } from "../constants/admin.constants";
@@ -37,46 +36,6 @@ export interface AdminStateContextValue {
   readonly settings: AdminSystemSettings;
   readonly admins: readonly AdminAccount[];
   readonly currentAdmin: typeof CURRENT_ADMIN;
-
-  // Code domain actions
-  readonly createCode: (data: {
-    code: string;
-    taskId: string;
-    status: "active" | "paused";
-    description?: string | undefined;
-  }) => {
-    success: boolean;
-    message: string;
-    code?: TaskUnlockCode | undefined;
-  };
-  readonly toggleCodeStatus: (codeId: string) => void;
-  readonly unlockTaskWithCode: (
-    taskId: string,
-    employeeId: string,
-    inputCode: string,
-  ) => UnlockCodeResult;
-  readonly isTaskUnlockedForEmployee: (
-    taskId: string,
-    employeeId: string,
-  ) => boolean;
-  readonly getDistinctCodeUsersCount: (codeId: string) => number;
-  readonly getDistinctTaskUnlocksCount: (taskId: string) => number;
-
-  // Task actions
-  readonly createTask: (taskData: Omit<AdminTask, "id" | "createdAt">) => {
-    success: boolean;
-    message: string;
-    task?: AdminTask;
-  };
-  readonly updateTask: (taskId: string, updates: Partial<AdminTask>) => void;
-  readonly toggleTaskStatus: (taskId: string) => void;
-
-  // Submission actions
-  readonly approveSubmission: (submissionId: string) => void;
-  readonly rejectSubmission: (
-    submissionId: string,
-    rejectionReason: string,
-  ) => { success: boolean; message: string };
 
   // Employee actions
   readonly toggleEmployeeAccountStatus: (employeeId: string) => void;

@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import pino from "pino";
@@ -24,10 +25,193 @@ import {
   P04_FIXTURE_NOW,
 } from "../subscriptions/testing/subscription-fixtures.js";
 import { WalletsService } from "./wallets.service.js";
+import { TaskReviewService } from "../task-submissions/task-review.service.js";
+import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
+import {
+  withTaskDatabase,
+  withTaskFileFixture,
+  taskIdentity,
+} from "../tasks/testing/task-fixtures.js";
 import { PurchaseQuoteService } from "../subscriptions/purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "../subscriptions/subscription-purchase.service.js";
+import { ManualCreditService } from "../deposits/manual-credit.service.js";
+import {
+  depositIdentity,
+  manualGrant,
+} from "../deposits/testing/deposit-http-fixtures.js";
 
 describe("source-aware wallet projections", () => {
+  it("projects administrative grants as CREDIT with correction null and retains referral/reserved provenance", async () =>
+    withSubscriptionDatabase(async (database) => {
+      const employee = await createIdentityFixture(database);
+      const admin = await createIdentityFixture(database, { role: "ADMIN" });
+      if (employee.wallet === null) throw new Error("Employee wallet required");
+      await fundSubscriptionFixture(database, employee, {
+        referral: "20",
+        nonReferral: "40",
+      });
+      const ledger = new LedgerService(
+        database,
+        {
+          businessNamespaces: ["p06.manual-credit", "p06.wallet-fixture"],
+          processIds: [],
+        },
+        financialFixtureAdmission(database),
+      );
+      const context: LedgerContext = {
+        actor: { type: "USER", userId: admin.user.id },
+        walletIds: [employee.wallet.id],
+        clock: () => new Date(),
+        observe: async () => {},
+        mutate: async () => {},
+        eligibleSources: () => Promise.resolve(["NON_REFERRAL", "REFERRAL"]),
+      };
+      await ledger.execute(
+        {
+          kind: "RESERVE",
+          walletId: employee.wallet.id,
+          businessNamespace: "p06.wallet-fixture",
+          businessKey: randomUUID(),
+          reservationId: randomUUID(),
+          amount: "50",
+        },
+        context,
+      );
+      const before = await database.wallet.findUniqueOrThrow({
+        where: { id: employee.wallet.id },
+      });
+      const grant = await new ManualCreditService(
+        database,
+        () => new Date(),
+        financialFixtureAdmission(database),
+      ).create(
+        depositIdentity(admin),
+        manualGrant(employee.user.id),
+        randomUUID(),
+      );
+      const wallets = new WalletsService(database);
+      const detail = await wallets.detail(
+        depositIdentity(admin),
+        grant.operationId,
+        true,
+      );
+      expect(adminLedgerDetailSchema.parse(detail)).toMatchObject({
+        kind: "CREDIT",
+        origin: "ADMIN_ADJUSTMENT",
+        correction: null,
+        magnitude: "1.000001",
+      });
+      const after = await database.wallet.findUniqueOrThrow({
+        where: { id: employee.wallet.id },
+      });
+      expect(after).toMatchObject({
+        availableNonReferralUnits: before.availableNonReferralUnits + 1000001n,
+        availableReferralUnits: before.availableReferralUnits,
+        reservedNonReferralUnits: before.reservedNonReferralUnits,
+        reservedReferralUnits: before.reservedReferralUnits,
+      });
+      expect(
+        (
+          await ledger.reconcileWallet(employee.wallet.id, {
+            actor: context.actor,
+            observe: async () => {},
+          })
+        ).consistent,
+      ).toBe(true);
+      const corrected = await ledger.execute(
+        {
+          kind: "CORRECTION",
+          walletId: employee.wallet.id,
+          businessNamespace: "p06.wallet-fixture",
+          businessKey: randomUUID(),
+          amount: "1",
+          source: "REFERRAL",
+          direction: "CREDIT",
+          reason: "Prior source correction",
+          referenceOperationId: grant.operationId,
+        },
+        context,
+      );
+      expect(
+        await wallets.detail(
+          depositIdentity(admin),
+          corrected.result.operationId,
+          true,
+        ),
+      ).toMatchObject({
+        kind: "CORRECTION",
+        correction: {
+          reason: "Prior source correction",
+          referenceOperationId: grant.operationId,
+        },
+      });
+      expect(await database.depositReceipt.count()).toBe(0);
+    }));
+  it("shows only approved captured rewards as non-referral funds after expiry and retains ban restrictions", async () => {
+    await withTaskDatabase(async (database) =>
+      withTaskFileFixture(async (root) => {
+        const fixture = await acceptedReviewFixture(database, root);
+        await fundSubscriptionFixture(database, fixture.employee, {
+          referral: "10",
+          nonReferral: "0",
+        });
+        const expiry = fixture.subscription.expiresAt;
+        await database.authSession.updateMany({
+          data: { expiresAt: new Date(expiry.getTime() + 86_400_000) },
+        });
+        const clock = () => expiry;
+        const wallets = new WalletsService(database, clock);
+        expect(
+          await wallets.wallet(taskIdentity(fixture.employee)),
+        ).toMatchObject({
+          withdrawalFunds: {
+            eligibleReferral: "0",
+            lockedReferral: "10",
+            total: "0",
+          },
+        });
+        await new TaskReviewService(
+          database,
+          clock,
+          undefined,
+          financialFixtureAdmission(database),
+        ).review(
+          taskIdentity(fixture.admin),
+          fixture.submission.id,
+          fixture.intent,
+        );
+        expect(
+          await wallets.wallet(taskIdentity(fixture.employee)),
+        ).toMatchObject({
+          withdrawalFunds: {
+            eligibleReferral: "0",
+            lockedReferral: "10",
+            total: "2",
+          },
+        });
+        const history = await wallets.history(taskIdentity(fixture.employee), {
+          origin: "TASK_REWARD",
+        });
+        expect(history.items).toHaveLength(1);
+        await database.user.update({
+          where: { id: fixture.employee.user.id },
+          data: { status: "BANNED" },
+        });
+        await expect(
+          wallets.wallet(taskIdentity(fixture.employee)),
+        ).rejects.toMatchObject({ statusCode: 401 });
+        expect(
+          await wallets.employeeWallet(
+            taskIdentity(fixture.admin),
+            fixture.employee.user.id,
+          ),
+        ).toMatchObject({
+          restrictions: { accountUnavailable: true },
+          withdrawalFunds: { lockedReferral: "10" },
+        });
+      }),
+    );
+  });
   it("retains four components at expiry, separates restrictions and restores referral eligibility on paid reactivation", async () => {
     await withSubscriptionDatabase(async (database) => {
       const owner = await createIdentityFixture(database, {
@@ -84,10 +268,11 @@ describe("source-aware wallet projections", () => {
         database,
         () => now,
       ).create(identity, { packageCode: "S1" });
-      await new SubscriptionPurchaseService(database, () => now).purchase(
-        identity,
-        { quoteId: renewal.quoteId, confirmed: true },
-      );
+      await new SubscriptionPurchaseService(
+        database,
+        () => now,
+        financialFixtureAdmission(database),
+      ).purchase(identity, { quoteId: renewal.quoteId, confirmed: true });
       expect(await service.wallet(identity)).toMatchObject({
         membership: { effective: "PAID" },
         withdrawalFunds: { eligibleReferral: "30", lockedReferral: "0" },
@@ -118,10 +303,14 @@ describe("source-aware wallet projections", () => {
       });
       if (owner.wallet === null) throw new Error("Missing fixture wallet");
       const walletId = owner.wallet.id;
-      const ledger = new LedgerService(database, {
-        businessNamespaces: ["p04.views"],
-        processIds: [],
-      });
+      const ledger = new LedgerService(
+        database,
+        {
+          businessNamespaces: ["p04.views"],
+          processIds: [],
+        },
+        financialFixtureAdmission(database),
+      );
       const context: LedgerContext = {
         actor: { type: "USER", userId: admin.user.id },
         walletIds: [walletId],
@@ -307,6 +496,7 @@ describe("source-aware wallet projections", () => {
           where: { wallet: { ownerUserId: other.user.id } },
         });
         const app = createApp({
+          financialAdmission: financialFixtureAdmission(database),
           database,
           logger: pino({ level: "silent" }),
           emailDelivery: {

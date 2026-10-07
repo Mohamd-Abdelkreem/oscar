@@ -22,7 +22,62 @@ export const p04StateSchema = z
   })
   .strict();
 
+export const p05StateSchema = z.strictObject({
+  employeeId: z.uuid(),
+  submissions: z.number().int().nonnegative(),
+  evidence: z.number().int().nonnegative(),
+  rewardPostings: z.number().int().nonnegative(),
+  available: usdtAmountSchema,
+  assets: z
+    .array(
+      z.strictObject({
+        id: z.uuid(),
+        uploadedAt: financialInstantSchema,
+        state: z.enum(["READY", "DELETING", "DELETED"]),
+      }),
+    )
+    .max(100),
+});
+export const p05DecoderStateSchema = z.strictObject({
+  held: z.boolean(),
+  closedSignal: z.enum(["SIGKILL", "OTHER"]).nullable(),
+});
+export const p05FixturesSchema = z.strictObject({
+  employeeId: z.uuid(),
+  otherId: z.uuid(),
+  publicationDate: z.iso.date(),
+});
 export const controlRequestSchema = z.discriminatedUnion("command", [
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-fixtures"),
+    futureWorkDate: z.literal(true).optional(),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-fund-upgrade"),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-state"),
+    email: z.email(),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-scan"),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-pages"),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-hold-decoder"),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p05-decoder-state"),
+  }),
   z
     .object({
       id: z.number().int().min(1),
@@ -133,7 +188,20 @@ export const controlReplySchema = z
     status: z.enum(["ready", "ok", "failed", "stopped"]),
     data: z.union([
       z.null(),
+      z.strictObject({
+        nativeFailure: z.enum([
+          "DATABASE",
+          "MIGRATION",
+          "SNAPSHOT",
+          "LINUX_LAUNCH",
+          "DEPENDENCIES",
+          "API_BOOT",
+        ]),
+      }),
       p04StateSchema,
+      p05StateSchema,
+      p05DecoderStateSchema,
+      p05FixturesSchema,
       z
         .object({ buyerId: z.uuid(), rootId: z.uuid(), otherId: z.uuid() })
         .strict(),

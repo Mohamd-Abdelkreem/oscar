@@ -6,7 +6,8 @@ import { useEffect, useRef, useState } from "react";
 interface AdminImageUploadProps {
   readonly initialImageUrl?: string | undefined;
   readonly label?: string | undefined;
-  readonly onImageSelected: (fileUrl: string) => void;
+  readonly onImageSelected: (file: File | null) => void;
+  readonly disabled?: boolean;
   readonly aspectHint?: string | undefined;
 }
 
@@ -14,26 +15,31 @@ export function AdminImageUpload({
   initialImageUrl,
   label = "صورة المعاينة",
   onImageSelected,
-  aspectHint = "PNG أو JPG أو SVG بحد أقصى 5 ميجابايت",
+  disabled = false,
+  aspectHint = "PNG أو JPG أو WebP بحد أقصى 5 ميجابايت",
 }: AdminImageUploadProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(
-    initialImageUrl,
-  );
+  const [selectedPreview, setPreviewUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const previewUrl = selectedPreview ?? initialImageUrl;
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const objectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!selectedFile) return;
+    const url = URL.createObjectURL(selectedFile);
+    let current = true;
+    queueMicrotask(() => {
+      if (current) setPreviewUrl(url);
+    });
     return () => {
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-      }
+      current = false;
+      URL.revokeObjectURL(url);
     };
-  }, []);
+  }, [selectedFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || disabled) return;
 
     // Validate size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
@@ -42,34 +48,24 @@ export function AdminImageUpload({
     }
 
     // Validate format
-    if (
-      !["image/jpeg", "image/png", "image/webp", "image/svg+xml"].includes(
-        file.type,
-      )
-    ) {
-      setErrorMessage("نوع الملف غير مدعوم. يرجى اختيار ملف PNG أو JPG أو SVG.");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setErrorMessage(
+        "نوع الملف غير مدعوم. يرجى اختيار ملف PNG أو JPG أو WebP.",
+      );
       return;
     }
 
     setErrorMessage(null);
 
-    // Clean up previous blob
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-    }
-
-    const newBlobUrl = URL.createObjectURL(file);
-    objectUrlRef.current = newBlobUrl;
-    setPreviewUrl(newBlobUrl);
-    onImageSelected(newBlobUrl);
+    setSelectedFile(file);
+    onImageSelected(file);
   };
 
   const handleRemove = () => {
-    if (objectUrlRef.current) {
-      URL.revokeObjectURL(objectUrlRef.current);
-      objectUrlRef.current = null;
-    }
-    setPreviewUrl(undefined);
+    if (disabled) return;
+    setSelectedFile(null);
+    setPreviewUrl("");
+    onImageSelected(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -97,7 +93,9 @@ export function AdminImageUpload({
             <div className="flex items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (!disabled) fileInputRef.current?.click();
+                }}
                 className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-bold text-slate-700 hover:bg-slate-50"
               >
                 <Upload size={13} aria-hidden="true" />
@@ -105,6 +103,7 @@ export function AdminImageUpload({
               </button>
               <button
                 type="button"
+                disabled={disabled}
                 onClick={handleRemove}
                 className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
                 title="إزالة الصورة"
@@ -117,7 +116,9 @@ export function AdminImageUpload({
         </div>
       ) : (
         <div
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => {
+            if (!disabled) fileInputRef.current?.click();
+          }}
           className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50/50 p-6 text-center transition-colors hover:border-emerald-600 hover:bg-slate-50"
         >
           <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500">
@@ -133,8 +134,9 @@ export function AdminImageUpload({
       <input
         type="file"
         ref={fileInputRef}
+        disabled={disabled}
         onChange={handleFileChange}
-        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        accept="image/png,image/jpeg,image/webp"
         className="hidden"
       />
 

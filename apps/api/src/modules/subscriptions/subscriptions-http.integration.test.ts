@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import pino from "pino";
@@ -63,6 +64,7 @@ describe("actual subscription HTTP authority", () => {
         const purchases = new SubscriptionPurchaseService(
           database,
           () => new Date(),
+          financialFixtureAdmission(database),
         );
         const firstQuote = await quotes.create(identity, { packageCode: "S1" });
         const first = await purchases.purchase(identity, {
@@ -70,6 +72,7 @@ describe("actual subscription HTTP authority", () => {
           confirmed: true,
         });
         const app = createApp({
+          financialAdmission: financialFixtureAdmission(database),
           database,
           logger: pino({ level: "silent" }),
           emailDelivery: {
@@ -238,6 +241,7 @@ describe("actual subscription HTTP authority", () => {
             new Date(),
           );
           const app = createApp({
+            financialAdmission: financialFixtureAdmission(database),
             database,
             logger: pino({ level: "silent" }),
             emailDelivery: {
@@ -315,6 +319,7 @@ describe("actual subscription HTTP authority", () => {
         new Date(),
       );
       const app = createApp({
+        financialAdmission: financialFixtureAdmission(database),
         database,
         logger: pino({ level: "silent" }),
         emailDelivery: {
@@ -474,6 +479,7 @@ describe("actual subscription HTTP authority", () => {
         new Date(),
       );
       const app = createApp({
+        financialAdmission: financialFixtureAdmission(database),
         database,
         logger: pino({ level: "silent" }),
         emailDelivery: {
@@ -584,6 +590,7 @@ describe("actual subscription HTTP authority", () => {
           new Date(),
         );
         const app = createApp({
+          financialAdmission: financialFixtureAdmission(database),
           database,
           logger: pino({ level: "silent" }),
           emailDelivery: {
@@ -638,6 +645,7 @@ describe("actual subscription HTTP authority", () => {
         new Date(),
       );
       const app = createApp({
+        financialAdmission: financialFixtureAdmission(database),
         database,
         logger: pino({ level: "silent" }),
         emailDelivery: {

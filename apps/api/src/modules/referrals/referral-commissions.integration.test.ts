@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { describe, expect, it } from "vitest";
 import { randomUUID } from "node:crypto";
 import type { DatabaseClient } from "@template/database";
@@ -45,10 +46,11 @@ async function buy(
     identity,
     { packageCode },
   );
-  return new SubscriptionPurchaseService(database, () => now).purchase(
-    identity,
-    { quoteId: quote.quoteId, confirmed: true },
-  );
+  return new SubscriptionPurchaseService(
+    database,
+    () => now,
+    financialFixtureAdmission(database),
+  ).purchase(identity, { quoteId: quote.quoteId, confirmed: true });
 }
 
 async function savedDecisions(database: DatabaseClient, purchaseId: string) {
@@ -142,6 +144,7 @@ describe("fixed-level event-time commissions", () => {
           await new SubscriptionPurchaseService(
             database,
             () => P04_FIXTURE_NOW,
+            financialFixtureAdmission(database),
           ).purchase(identity, command, key),
         ).toEqual({ purchase: accepted.purchase, replayed: true });
       }
@@ -239,6 +242,7 @@ describe("fixed-level event-time commissions", () => {
           await new SubscriptionPurchaseService(
             database,
             () => old.expiresAt,
+            financialFixtureAdmission(database),
           ).purchase(
             { userId: buyer.user.id, sessionId: buyer.session.id },
             { quoteId: accepted.purchase.quoteId, confirmed: true },
@@ -322,6 +326,7 @@ describe("fixed-level event-time commissions", () => {
         await new SubscriptionPurchaseService(
           database,
           () => P04_FIXTURE_NOW,
+          financialFixtureAdmission(database),
         ).purchase(
           { userId: buyer.user.id, sessionId: buyer.session.id },
           { quoteId: accepted.purchase.quoteId, confirmed: true },
@@ -441,7 +446,7 @@ describe("fixed-level event-time commissions", () => {
         });
         const configuration = new PackageConfigurationService(
           database,
-          () => P04_FIXTURE_NOW,
+          () => new Date(Math.max(P04_FIXTURE_NOW.getTime(), Date.now())),
         );
         const adminIdentity = {
           userId: admin.user.id,
@@ -622,7 +627,7 @@ describe("fixed-level event-time commissions", () => {
       });
       await new PackageConfigurationService(
         database,
-        () => P04_FIXTURE_NOW,
+        () => new Date(Math.max(P04_FIXTURE_NOW.getTime(), Date.now())),
       ).editReferrals(
         { userId: editor.user.id, sessionId: editor.session.id },
         {

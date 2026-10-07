@@ -7,7 +7,6 @@ import type {
   PackageId,
   PackageTier,
   TaskHistoryItem,
-  TaskStatus,
   TeamCommissionRecord,
   TeamMember,
   WithdrawalRequest,
@@ -28,15 +27,6 @@ export interface EmployeeContextValue {
   readonly transactions: readonly LedgerTransaction[];
   readonly teamMembers: readonly TeamMember[];
   readonly teamCommissions: readonly TeamCommissionRecord[];
-  readonly submitTask: (screenshotUrl: string) => {
-    success: boolean;
-    message: string;
-  };
-  readonly replaceTaskScreenshot: (screenshotUrl: string) => {
-    success: boolean;
-    message: string;
-  };
-  readonly setTaskScenario: (scenario: TaskStatus) => void;
   readonly setupWithdrawalAddress: (address: string) => {
     success: boolean;
     message: string;

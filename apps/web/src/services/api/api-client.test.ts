@@ -113,6 +113,58 @@ afterEach(() => {
 });
 
 describe("transport boundary", () => {
+  it.each([
+    "/tasks/today",
+    "/proofs/id/content",
+    "/task-illustrations/id",
+    "/admin/task-submissions/id",
+    "/admin/task-codes",
+  ])(
+    "leaves private denial revalidation to the read owner for %s",
+    async (url) => {
+      const runtime = getSessionRuntime();
+      runtime.admitIdentity(runtime.scope(), { id: account.id, role: "USER" });
+      const scope = runtime.scope();
+      let requests = 0;
+      apiClient.defaults.adapter = (config) => {
+        requests++;
+        throw denied(config, 403);
+      };
+      await expect(apiClient.get(url)).rejects.toMatchObject({
+        category: "denied",
+        statusCode: 403,
+      });
+      expect(runtime.scope()).toEqual(scope);
+      expect(requests).toBe(1);
+    },
+  );
+  it("retains only validated P05 conflict codes without private diagnostics", () => {
+    const config = {
+      url: "/task-submissions",
+      method: "post",
+      headers: new AxiosHeaders(),
+    };
+    const error = new AxiosError("PRIVATE", "ERR_BAD_REQUEST", config);
+    error.response = reply(
+      config,
+      {
+        success: false,
+        statusCode: 409,
+        code: "DAILY_CLAIM_EXISTS",
+        message: "PRIVATE",
+        requestId: "id",
+        timestamp: "2026-10-01T00:00:00.000Z",
+        path: "/api/v1/task-submissions",
+      },
+      409,
+    );
+    const projection = getApiError(error);
+    expect(projection).toMatchObject({
+      code: "DAILY_CLAIM_EXISTS",
+      statusCode: 409,
+    });
+    expect(JSON.stringify(projection)).not.toContain("PRIVATE");
+  });
   it("rejects a different refresh identity before admitting its bearer token", async () => {
     const runtime = getSessionRuntime();
     runtime.admitIdentity(runtime.scope(), { id: account.id, role: "USER" });

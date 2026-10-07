@@ -7,6 +7,104 @@ import {
   UserStatus,
   UserRole,
 } from "@template/database";
+import { withIdentityDatabase } from "../../auth/testing/identity-fixtures.js";
+import {
+  acknowledgeFinancialBoot,
+  FinancialRuntimeAdmission,
+} from "../../custody/runtime-control.js";
+
+const fixtureAdmissions = new WeakMap<
+  DatabaseClient,
+  FinancialRuntimeAdmission
+>();
+const approvedFixtures = new WeakSet<FinancialRuntimeAdmission>();
+
+export function financialFixtureAdmission(
+  database: DatabaseClient,
+): FinancialRuntimeAdmission {
+  let admission = fixtureAdmissions.get(database);
+  if (admission === undefined) {
+    admission = new FinancialRuntimeAdmission(database, "API");
+    fixtureAdmissions.set(database, admission);
+  }
+  return admission;
+}
+
+export async function admitCleanDisposableFinancialBoot(
+  database: DatabaseClient,
+): Promise<FinancialRuntimeAdmission> {
+  const admission = financialFixtureAdmission(database);
+  if (approvedFixtures.has(admission)) return admission;
+  const baseUrl = process.env["DATABASE_URL"];
+  if (
+    baseUrl === undefined ||
+    new URL(baseUrl).pathname !== "/template_api_integration"
+  ) {
+    throw new Error(
+      "Financial fixture admission requires the disposable API Testcontainers runtime.",
+    );
+  }
+  const rows = await database.$queryRaw<
+    { name: string }[]
+  >`SELECT current_database() AS name`;
+  if (
+    !rows.some(
+      ({ name }) =>
+        name === "template_api_integration" ||
+        /^p02_identity_[0-9a-f]{32}$/u.test(name),
+    )
+  ) {
+    throw new Error(
+      "Financial fixture admission refuses non-disposable databases.",
+    );
+  }
+  if (
+    (await database.depositAddressAssignment.count()) !== 0 ||
+    (await database.transferAttempt.count()) !== 0
+  ) {
+    throw new Error(
+      "Fixture admission cannot bypass custody/attempt recovery.",
+    );
+  }
+  await admission.register();
+  const reference = `clean-disposable:${admission.bootId}`;
+  const cutoff = new Date();
+  await acknowledgeFinancialBoot(database, {
+    bootId: admission.bootId,
+    operatorIdentity: "disposable-test-recovery",
+    reason: "Explicit known-clean disposable fixture admission",
+    evidence: {
+      financialHistoryReference: reference,
+      assignmentInventoryReference: reference,
+      attemptInventoryReference: reference,
+      reconciliationReference: reference,
+      reconciliationCutoff: cutoff,
+      financialHistoryRecoveredThrough: cutoff,
+    },
+  });
+  approvedFixtures.add(admission);
+  return admission;
+}
+
+export function withAdmittedFinancialDatabase<T>(
+  work: (database: DatabaseClient, databaseUrl: string) => Promise<T>,
+): Promise<T> {
+  return withIdentityDatabase(async (database, databaseUrl) => {
+    await admitCleanDisposableFinancialBoot(database);
+    return work(database, databaseUrl);
+  });
+}
+
+export function withAdmittedIndependentFinancialClients<T>(
+  databaseUrl: string,
+  work: (first: DatabaseClient, second: DatabaseClient) => Promise<T>,
+): Promise<T> {
+  return withIndependentFinancialClients(databaseUrl, async (first, second) => {
+    await admitCleanDisposableFinancialBoot(first);
+    await admitCleanDisposableFinancialBoot(second);
+    return work(first, second);
+  });
+}
 
 export const fixedFinancialClock = (instant: Date): (() => Date) => {
   const milliseconds = instant.getTime();

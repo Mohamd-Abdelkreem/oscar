@@ -11,24 +11,39 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { parseUsdtAmount } from "../../core/financial/money.js";
 import { LedgerService } from "./ledger.service.js";
+import { fenceFinancialRuntime } from "../custody/runtime-control.js";
 import { LedgerError } from "./ledger.errors.js";
 import type {
   LedgerContext,
   LedgerObservationContext,
 } from "./ledger.types.js";
+import { ManualCreditService } from "../deposits/manual-credit.service.js";
+import { createIdentityFixture } from "../auth/testing/identity-fixtures.js";
+import {
+  depositIdentity,
+  manualGrant,
+} from "../deposits/testing/deposit-http-fixtures.js";
 import {
   createFinancialAccount,
   financialIdentity,
   fixedFinancialClock,
+  financialFixtureAdmission,
+  admitCleanDisposableFinancialBoot,
+  withAdmittedFinancialDatabase,
 } from "./testing/financial-fixtures.js";
 
 const url = process.env["DATABASE_URL"];
 if (url === undefined) throw new Error("Isolated PostgreSQL is required.");
 const database = createDatabaseClient(url);
-const service = new LedgerService(database, {
-  businessNamespaces: ["financial-test"],
-  processIds: ["fixture"],
-});
+await admitCleanDisposableFinancialBoot(database);
+const service = new LedgerService(
+  database,
+  {
+    businessNamespaces: ["financial-test"],
+    processIds: ["fixture"],
+  },
+  financialFixtureAdmission(database),
+);
 const instant = "2026-10-02T09:00:00.000Z";
 const zero = {
   availableNonReferral: "0",
@@ -171,6 +186,113 @@ afterAll(async () => {
 });
 
 describe("scoped read-only ledger reconciliation", () => {
+  it("reconciles grant evidence and reports altered grant metadata without repair", async () =>
+    withAdmittedFinancialDatabase(async (isolated) => {
+      const employee = await createIdentityFixture(isolated);
+      const admin = await createIdentityFixture(isolated, { role: "ADMIN" });
+      if (employee.wallet === null) throw new Error("Employee wallet required");
+      const grant = await new ManualCreditService(
+        isolated,
+        () => new Date(),
+        financialFixtureAdmission(isolated),
+      ).create(
+        depositIdentity(admin),
+        manualGrant(employee.user.id),
+        randomUUID(),
+      );
+      const ledger = new LedgerService(
+        isolated,
+        { businessNamespaces: ["p06.manual-credit"], processIds: [] },
+        financialFixtureAdmission(isolated),
+      );
+      const observation: LedgerObservationContext = {
+        actor: { type: "USER", userId: admin.user.id },
+        observe: async () => {},
+      };
+      expect(
+        (await ledger.reconcileWallet(employee.wallet.id, observation))
+          .consistent,
+      ).toBe(true);
+      await isolated.$transaction(async (transaction) => {
+        // Simulates a damaged restored domain record; ordinary immutable guards are retained.
+        await transaction.$executeRaw`SET LOCAL session_replication_role = replica`;
+        await transaction.manualCredit.update({
+          where: { id: grant.actionId },
+          data: { reason: "Corrupt restored reason" },
+        });
+      });
+      const before = await isolated.manualCredit.findUniqueOrThrow({
+        where: { id: grant.actionId },
+      });
+      const report = await ledger.reconcileWallet(
+        employee.wallet.id,
+        observation,
+      );
+      expect(report.consistent).toBe(false);
+      expect(report.discrepancies).toContainEqual(
+        expect.objectContaining({
+          category: "INVALID_TERMS",
+          operationId: grant.operationId,
+        }),
+      );
+      expect(
+        await isolated.manualCredit.findUniqueOrThrow({
+          where: { id: grant.actionId },
+        }),
+      ).toEqual(before);
+    }));
+  it("keeps authorized reconciliation available with no boot binding and after fencing", async () => {
+    await withAdmittedFinancialDatabase(async (isolated) => {
+      const account = await createFinancialAccount(isolated);
+      const context: LedgerContext = {
+        actor: { type: "USER", userId: account.ownerUserId },
+        walletIds: [account.wallet.id],
+        clock: fixedFinancialClock(new Date(instant)),
+        observe: async () => {},
+        mutate: async () => {},
+      };
+      const policy = { businessNamespaces: ["financial-test"], processIds: [] };
+      await new LedgerService(
+        isolated,
+        policy,
+        financialFixtureAdmission(isolated),
+      ).execute(credit(account.wallet.id, "1.000001"), context);
+      const observer = new LedgerService(isolated, policy);
+      const before = {
+        wallet: await isolated.wallet.findUniqueOrThrow({
+          where: { id: account.wallet.id },
+        }),
+        aliases: await isolated.requestIdentity.findMany(),
+        operations: await isolated.financialOperation.findMany(),
+        postings: await isolated.ledgerPosting.findMany(),
+        audits: await isolated.auditRecord.findMany(),
+      };
+      const report = await observer.reconcileWallet(account.wallet.id, {
+        actor: context.actor,
+        observe: async () => {},
+      });
+      expect(report).toMatchObject({ consistent: true, discrepancies: [] });
+      await fenceFinancialRuntime(isolated, {
+        operatorIdentity: "fixture-observer",
+        reason: "restore observations",
+      });
+      expect(
+        await observer.reconcileWallet(account.wallet.id, {
+          actor: context.actor,
+          observe: async () => {},
+        }),
+      ).toEqual(report);
+      expect({
+        wallet: await isolated.wallet.findUniqueOrThrow({
+          where: { id: account.wallet.id },
+        }),
+        aliases: await isolated.requestIdentity.findMany(),
+        operations: await isolated.financialOperation.findMany(),
+        postings: await isolated.ledgerPosting.findMany(),
+        audits: await isolated.auditRecord.findMany(),
+      }).toEqual(before);
+    });
+  });
   it("retains unexpected observation faults without disclosing a report or changing history", async () => {
     const f = await fixture();
     await service.execute(credit(f.wallet.id, "10"), f.context);

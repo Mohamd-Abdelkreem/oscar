@@ -2,56 +2,63 @@
 
 import { AlertCircle, CheckCircle2, KeyRound } from "lucide-react";
 import { useState } from "react";
-import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
-import { useAdminState } from "@/features/admin/context/admin-state.context";
-import { useEmployeeState } from "@/features/employee/context/employee-state.context";
+import type { EmployeeTaskDay } from "@template/contracts";
+import { useEmployeeTaskCommand } from "../../hooks/tasks.hooks";
+import { employeeTasksApi } from "../../api/tasks.api";
+import { getApiError, safeApiError } from "@/services/api/safe-error";
 
 interface TaskCodeGateProps {
-  readonly taskId: string;
-  readonly onUnlocked: () => void;
-  readonly unlockFn?: (code: string) => { success: boolean; message: string };
+  readonly day: EmployeeTaskDay;
 }
-
-export function TaskCodeGate({
-  taskId,
-  onUnlocked,
-  unlockFn,
-}: TaskCodeGateProps) {
-  const scheduleTimeout = useManagedTimeout();
-  const { user } = useEmployeeState();
-  const adminState = useAdminState();
+export function TaskCodeGate({ day }: TaskCodeGateProps) {
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-
-    setIsSubmitting(true);
-    setFeedback(null);
-
-    // Call unlock function
-    const result = unlockFn
-      ? unlockFn(code)
-      : adminState.unlockTaskWithCode(taskId, user.id, code);
-
-    setIsSubmitting(false);
-    setFeedback({
-      success: result.success,
-      message: result.message,
-    });
-
-    if (result.success) {
-      scheduleTimeout(() => {
-        onUnlocked();
-      }, 700);
+  const command = useEmployeeTaskCommand({
+    kind: "TASK_UNLOCK",
+    targetId: day.task?.id ?? null,
+  });
+  const isSubmitting = command.isPending;
+  const handleSubmit = async (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    if (
+      !day.canUnlock ||
+      !day.task ||
+      !code.trim() ||
+      !command.allowed ||
+      command.retained ||
+      command.isPending
+    )
+      return;
+    try {
+      const outcome = await command.execute((commandId) =>
+        employeeTasksApi.unlock(day.task?.id ?? "", {
+          commandId,
+          expectedTaskRevision: day.task?.revision,
+          code,
+        }),
+      );
+      if (outcome?.state !== "OBSERVED")
+        throw safeApiError("uncertain", "COMMAND_UNRESOLVED");
+      setCode("");
+      setFeedback({ success: true, message: "تم فتح المهمة." });
+    } catch (failure: unknown) {
+      setFeedback({ success: false, message: getApiError(failure).message });
     }
   };
-
+  const resolve = async (action: "observe" | "cancel") => {
+    try {
+      await command[action]();
+      setFeedback({
+        success: false,
+        message: "راجع حالة الطلب المحفوظة قبل المحاولة مجدداً.",
+      });
+    } catch (failure: unknown) {
+      setFeedback({ success: false, message: getApiError(failure).message });
+    }
+  };
   return (
     <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
       <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
@@ -69,7 +76,12 @@ export function TaskCodeGate({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+      <form
+        onSubmit={(event) => {
+          void handleSubmit(event);
+        }}
+        className="mt-5 space-y-4"
+      >
         <div>
           <label
             htmlFor="task-unlock-code"
@@ -117,20 +129,42 @@ export function TaskCodeGate({
 
         <button
           type="submit"
-          disabled={!code.trim() || isSubmitting}
+          disabled={
+            !code.trim() ||
+            isSubmitting ||
+            !day.canUnlock ||
+            !command.allowed ||
+            command.retained !== null
+          }
           className="emp-btn emp-btn--primary emp-btn--full min-h-[48px] text-sm font-bold sm:text-base"
         >
           {isSubmitting ? "جارٍ التحقق..." : "فتح المهمة"}
         </button>
 
-        <div className="rounded-md border border-slate-100 bg-slate-50 p-2.5 text-center text-xs text-slate-500">
-          <span className="font-semibold text-slate-600">
-            رمز المعاينة التجريبي اليوم:{" "}
-          </span>
-          <bdi className="font-mono font-bold text-emerald-700">
-            OSCAR-TASK-2026
-          </bdi>
-        </div>
+        {command.retained && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => {
+                void resolve("observe");
+              }}
+              className="emp-btn emp-btn--outline"
+            >
+              التحقق من الطلب
+            </button>
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={() => {
+                void resolve("cancel");
+              }}
+              className="emp-btn emp-btn--outline"
+            >
+              إلغاء الطلب غير المؤكد
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );

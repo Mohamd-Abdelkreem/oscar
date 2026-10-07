@@ -47,25 +47,40 @@ model User {
 
   refreshTokens           RefreshToken[]
   wallet                  Wallet?
-  financialOperations     FinancialOperation[]  @relation("FinancialActor")
-  financialAudits         AuditRecord[]         @relation("AuditActor")
-  sponsor                 User?                 @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sponsoredUsers          User[]                @relation("Sponsor")
+  financialOperations     FinancialOperation[]       @relation("FinancialActor")
+  financialAudits         AuditRecord[]              @relation("AuditActor")
+  sponsor                 User?                      @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sponsoredUsers          User[]                     @relation("Sponsor")
   authSessions            AuthSession[]
   adminSetupState         AdminSetupState?
-  issuedInvitations       AdminInvitation[]     @relation("InvitationIssuer")
-  acceptedInvitations     AdminInvitation[]     @relation("InvitationAcceptedUser")
-  revokedInvitations      AdminInvitation[]     @relation("InvitationRevokedBy")
-  identityActorAudits     IdentityAuditRecord[] @relation("IdentityActor")
-  identityTargetAudits    IdentityAuditRecord[] @relation("IdentityTarget")
-  identityIssuerAudits    IdentityAuditRecord[] @relation("IdentityIssuer")
-  updatedPackages         Package[]             @relation("PackageEditor")
+  issuedInvitations       AdminInvitation[]          @relation("InvitationIssuer")
+  acceptedInvitations     AdminInvitation[]          @relation("InvitationAcceptedUser")
+  revokedInvitations      AdminInvitation[]          @relation("InvitationRevokedBy")
+  identityActorAudits     IdentityAuditRecord[]      @relation("IdentityActor")
+  identityTargetAudits    IdentityAuditRecord[]      @relation("IdentityTarget")
+  identityIssuerAudits    IdentityAuditRecord[]      @relation("IdentityIssuer")
+  updatedPackages         Package[]                  @relation("PackageEditor")
   updatedReferralSettings ReferralSettings[]
   configurationChanges    ConfigurationChange[]
   purchaseQuotes          PurchaseQuote[]
   purchases               Purchase[]
   subscriptions           Subscription[]
   referralDecisions       ReferralDecision[]
+  createdTasks            Task[]                     @relation("TaskCreator")
+  updatedTasks            Task[]                     @relation("TaskEditor")
+  createdTaskCodes        TaskCode[]                 @relation("TaskCodeCreator")
+  updatedTaskCodes        TaskCode[]                 @relation("TaskCodeEditor")
+  taskUnlocks             TaskUnlock[]
+  imageAssets             ImageAsset[]
+  taskSubmissions         TaskSubmission[]
+  submissionEvidence      SubmissionEvidence[]       @relation("EvidenceOwner")
+  acceptedEvidence        SubmissionEvidence[]       @relation("EvidenceAcceptor")
+  reviewedSubmissions     FinalReview[]              @relation("ReviewActor")
+  finalReviews            FinalReview[]              @relation("ReviewEmployee")
+  taskCommands            TaskCommandRecord[]
+  depositAssignments      DepositAddressAssignment[]
+  manualCredits           ManualCredit[]             @relation("ManualCreditEmployee")
+  issuedManualCredits     ManualCredit[]             @relation("ManualCreditActor")
 
   @@index([status, role], map: "users_status_role_idx")
   @@index([sponsorUserId], map: "users_sponsor_idx")
@@ -98,6 +113,7 @@ model AuthSession {
   revokedAt     DateTime?      @map("revoked_at") @db.Timestamptz(6)
   user          User           @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   refreshTokens RefreshToken[]
+  imageAssets   ImageAsset[]
 
   @@unique([id, userId], map: "auth_sessions_id_user_key")
   @@index([userId, revokedAt], map: "auth_sessions_user_revoked_idx")
@@ -224,10 +240,15 @@ model Wallet {
   createdAt                 DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt                 DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  owner       User                    @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  operations  FinancialOperation[]
-  allocations ReservationAllocation[]
+  owner              User                       @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  operations         FinancialOperation[]
+  allocations        ReservationAllocation[]
+  finalReviews       FinalReview[]
+  depositAssignments DepositAddressAssignment[]
+  depositReceipts    DepositReceipt[]
+  manualCredits      ManualCredit[]
 
+  @@unique([id, ownerUserId], map: "wallets_id_owner_key")
   @@map("wallets")
 }
 
@@ -247,16 +268,20 @@ model FinancialOperation {
   outcome           Json
   createdAt         DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  wallet             Wallet                 @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  actor              User?                  @relation("FinancialActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  requestIdentities  RequestIdentity[]
-  postings           LedgerPosting[]
-  openingAllocation  ReservationAllocation? @relation("ReservationOpening")
-  releaseAllocation  ReservationAllocation? @relation("ReservationRelease")
-  audit              AuditRecord?           @relation("OperationAudit")
-  referencedByAudits AuditRecord[]          @relation("CorrectionReference")
-  packagePurchase    Purchase?
-  referralDecision   ReferralDecision?
+  wallet                  Wallet                 @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor                   User?                  @relation("FinancialActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  requestIdentities       RequestIdentity[]
+  postings                LedgerPosting[]
+  openingAllocation       ReservationAllocation? @relation("ReservationOpening")
+  releaseAllocation       ReservationAllocation? @relation("ReservationRelease")
+  audit                   AuditRecord?           @relation("OperationAudit")
+  referencedByAudits      AuditRecord[]          @relation("CorrectionReference")
+  packagePurchase         Purchase?
+  referralDecision        ReferralDecision?
+  finalReview             FinalReview?
+  depositReceipt          DepositReceipt?
+  manualCredit            ManualCredit?          @relation("ManualCreditOperation")
+  referencedManualCredits ManualCredit[]         @relation("ManualCreditReference")
 
   @@unique([id, walletId])
   @@unique([kind, businessNamespace, businessKey], map: "financial_operations_business_key")
@@ -496,6 +521,7 @@ model Subscription {
   observedByQuotes      PurchaseQuote[]    @relation("QuoteObservedSubscription")
   previousForPurchases  Purchase[]         @relation("PurchasePreviousSubscription")
   referralDecisions     ReferralDecision[]
+  taskSubmissions       TaskSubmission[]
 
   @@unique([id, ownerUserId], map: "subscriptions_id_owner_key")
   @@unique([purchaseId, ownerUserId], map: "subscriptions_purchase_owner_key")
@@ -528,4 +554,598 @@ model ReferralDecision {
   @@unique([purchaseId, level], map: "referral_decisions_purchase_level_key")
   @@index([recipientUserId, occurredAt, id], map: "referral_decisions_recipient_time_idx")
   @@map("referral_decisions")
+}
+
+enum TaskPublicationState {
+  PUBLISHED
+  PAUSED
+  CLOSED
+
+  @@map("task_publication_state")
+}
+
+enum TaskCodeState {
+  ENABLED
+  PAUSED
+
+  @@map("task_code_state")
+}
+
+enum ImageAssetPurpose {
+  PROOF
+  TASK_ILLUSTRATION
+
+  @@map("image_asset_purpose")
+}
+
+enum ImageAssetState {
+  STAGING
+  READY
+  FAILED
+  DELETING
+  DELETED
+
+  @@map("image_asset_state")
+}
+
+enum TaskSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@map("task_submission_status")
+}
+
+enum TaskCommandKind {
+  TASK_CREATE
+  TASK_EDIT
+  TASK_STATUS
+  CODE_CREATE
+  CODE_STATUS
+  TASK_UNLOCK
+  SUBMISSION_CREATE
+  EVIDENCE_REPLACE
+  FINAL_REVIEW
+
+  @@map("task_command_kind")
+}
+
+enum TaskCommandTerminalState {
+  COMMITTED
+  CANCELLED
+
+  @@map("task_command_terminal_state")
+}
+
+model Task {
+  id                   String               @id @default(uuid()) @db.Uuid
+  publicationDate      DateTime             @unique(map: "tasks_publication_date_key") @map("publication_date") @db.Date
+  publicationState     TaskPublicationState @map("publication_state")
+  revision             Int                  @default(1)
+  firstParticipationAt DateTime?            @map("first_participation_at") @db.Timestamptz(6)
+  title                String               @db.VarChar(150)
+  description          String               @db.VarChar(10000)
+  targetUrl            String               @map("target_url") @db.VarChar(2000)
+  platform             String               @db.VarChar(80)
+  illustrationAssetId  String?              @map("illustration_asset_id") @db.Uuid
+  illustrationPurpose  ImageAssetPurpose?   @map("illustration_purpose")
+  isCodeRequired       Boolean              @map("is_code_required")
+  createdAt            DateTime             @map("created_at") @db.Timestamptz(6)
+  createdByUserId      String               @map("created_by_user_id") @db.Uuid
+  updatedAt            DateTime             @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId      String               @map("updated_by_user_id") @db.Uuid
+  creator              User                 @relation("TaskCreator", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  editor               User                 @relation("TaskEditor", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  illustration         ImageAsset?          @relation(fields: [illustrationAssetId, illustrationPurpose], references: [id, purpose], onDelete: Restrict, onUpdate: Restrict)
+  codes                TaskCode[]
+  unlocks              TaskUnlock[]
+  submissions          TaskSubmission[]
+  commands             TaskCommandRecord[]
+
+  @@unique([id, publicationDate], map: "tasks_id_date_key")
+  @@index([publicationDate, id], map: "tasks_date_id_idx")
+  @@map("tasks")
+}
+
+model TaskCode {
+  id              String              @id @default(uuid()) @db.Uuid
+  taskId          String              @map("task_id") @db.Uuid
+  normalizedText  String              @unique(map: "task_codes_normalized_text_key") @map("normalized_text") @db.VarChar(64)
+  state           TaskCodeState
+  version         Int                 @default(1)
+  description     String?             @db.VarChar(500)
+  createdAt       DateTime            @map("created_at") @db.Timestamptz(6)
+  createdByUserId String              @map("created_by_user_id") @db.Uuid
+  updatedAt       DateTime            @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId String              @map("updated_by_user_id") @db.Uuid
+  task            Task                @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  creator         User                @relation("TaskCodeCreator", fields: [createdByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  editor          User                @relation("TaskCodeEditor", fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  unlocks         TaskUnlock[]
+  commands        TaskCommandRecord[]
+
+  @@unique([id, taskId], map: "task_codes_id_task_key")
+  @@index([taskId, state, id], map: "task_codes_task_state_id_idx")
+  @@map("task_codes")
+}
+
+model TaskUnlock {
+  id           String   @id @default(uuid()) @db.Uuid
+  employeeId   String   @map("employee_id") @db.Uuid
+  taskId       String   @map("task_id") @db.Uuid
+  codeId       String   @map("code_id") @db.Uuid
+  businessDate DateTime @map("business_date") @db.Date
+  unlockedAt   DateTime @map("unlocked_at") @db.Timestamptz(6)
+  employee     User     @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task         Task     @relation(fields: [taskId, businessDate], references: [id, publicationDate], onDelete: Restrict, onUpdate: Restrict)
+  code         TaskCode @relation(fields: [codeId, taskId], references: [id, taskId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([employeeId, taskId, businessDate], map: "task_unlocks_employee_task_date_key")
+  @@index([codeId, unlockedAt, id], map: "task_unlocks_code_time_idx")
+  @@index([employeeId, businessDate, id], map: "task_unlocks_employee_date_idx")
+  @@map("task_unlocks")
+}
+
+model ImageAsset {
+  id                       String               @id @default(uuid()) @db.Uuid
+  ownerUserId              String               @map("owner_user_id") @db.Uuid
+  purpose                  ImageAssetPurpose
+  uploadCommandId          String               @map("upload_command_id") @db.Uuid
+  uploadIntentHash         String?              @map("upload_intent_hash") @db.Char(64)
+  state                    ImageAssetState
+  receivedAt               DateTime?            @map("received_at") @db.Timestamptz(6)
+  uploadedBySessionId      String?              @map("uploaded_by_session_id") @db.Uuid
+  processingLeaseId        String?              @map("processing_lease_id") @db.Uuid
+  processingLeaseExpiresAt DateTime?            @map("processing_lease_expires_at") @db.Timestamptz(6)
+  uploadedAt               DateTime?            @map("uploaded_at") @db.Timestamptz(6)
+  readyAt                  DateTime?            @map("ready_at") @db.Timestamptz(6)
+  storageKey               String?              @unique(map: "image_assets_storage_key_key") @map("storage_key") @db.VarChar(128)
+  inputByteCount           Int?                 @map("input_byte_count")
+  storedByteCount          Int?                 @map("stored_byte_count")
+  format                   String?              @db.VarChar(8)
+  width                    Int?
+  height                   Int?
+  contentHash              String?              @map("content_hash") @db.Char(64)
+  failureCode              String?              @map("failure_code") @db.VarChar(40)
+  failedAt                 DateTime?            @map("failed_at") @db.Timestamptz(6)
+  deletionLeaseId          String?              @map("deletion_lease_id") @db.Uuid
+  deletionLeaseExpiresAt   DateTime?            @map("deletion_lease_expires_at") @db.Timestamptz(6)
+  deletedAt                DateTime?            @map("deleted_at") @db.Timestamptz(6)
+  owner                    User                 @relation(fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  uploadSession            AuthSession?         @relation(fields: [uploadedBySessionId, ownerUserId], references: [id, userId], onDelete: Restrict, onUpdate: Restrict)
+  illustratedTasks         Task[]
+  evidence                 SubmissionEvidence[]
+
+  @@unique([ownerUserId, purpose, uploadCommandId], map: "image_assets_owner_purpose_upload_key")
+  @@unique([id, ownerUserId, purpose], map: "image_assets_id_owner_purpose_key")
+  @@unique([id, purpose], map: "image_assets_id_purpose_key")
+  @@index([purpose, state, uploadedAt, id], map: "image_assets_retention_idx")
+  @@index([state, deletionLeaseExpiresAt, id], map: "image_assets_deletion_lease_idx")
+  @@map("image_assets")
+}
+
+model TaskSubmission {
+  id                        String               @id @default(uuid()) @db.Uuid
+  employeeId                String               @map("employee_id") @db.Uuid
+  taskId                    String               @map("task_id") @db.Uuid
+  businessDate              DateTime             @map("business_date") @db.Date
+  capturedTaskRevision      Int                  @map("captured_task_revision")
+  capturedTaskContent       Json                 @map("captured_task_content")
+  subscriptionId            String               @map("subscription_id") @db.Uuid
+  capturedSubscriptionTerms Json                 @map("captured_subscription_terms")
+  rewardUnits               BigInt               @map("reward_units")
+  executionDeclared         Boolean              @map("execution_declared")
+  submittedAt               DateTime             @map("submitted_at") @db.Timestamptz(6)
+  deadlineAt                DateTime             @map("deadline_at") @db.Timestamptz(6)
+  status                    TaskSubmissionStatus @default(PENDING)
+  version                   Int                  @default(1)
+  currentEvidenceVersion    Int                  @map("current_evidence_version")
+  employee                  User                 @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task                      Task                 @relation(fields: [taskId, businessDate], references: [id, publicationDate], onDelete: Restrict, onUpdate: Restrict)
+  subscription              Subscription         @relation(fields: [subscriptionId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  evidence                  SubmissionEvidence[]
+  finalReview               FinalReview?
+  commands                  TaskCommandRecord[]
+
+  // SQL owns the deferred (id, current_evidence_version) evidence reference.
+  @@unique([employeeId, businessDate], map: "task_submissions_employee_date_key")
+  @@unique([id, employeeId], map: "task_submissions_id_employee_key")
+  @@unique([id, taskId, businessDate], map: "task_submissions_id_task_date_key")
+  @@index([status, submittedAt, id], map: "task_submissions_status_time_idx")
+  @@index([taskId, status, submittedAt, id], map: "task_submissions_task_status_time_idx")
+  @@index([employeeId, submittedAt, id], map: "task_submissions_employee_time_idx")
+  @@map("task_submissions")
+}
+
+model SubmissionEvidence {
+  id               String            @id @default(uuid()) @db.Uuid
+  submissionId     String            @map("submission_id") @db.Uuid
+  employeeId       String            @map("employee_id") @db.Uuid
+  version          Int
+  assetId          String            @map("asset_id") @db.Uuid
+  assetPurpose     ImageAssetPurpose @map("asset_purpose")
+  acceptedAt       DateTime          @map("accepted_at") @db.Timestamptz(6)
+  acceptedByUserId String            @map("accepted_by_user_id") @db.Uuid
+  submission       TaskSubmission    @relation(fields: [submissionId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  employee         User              @relation("EvidenceOwner", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  acceptedBy       User              @relation("EvidenceAcceptor", fields: [acceptedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asset            ImageAsset        @relation(fields: [assetId, employeeId, assetPurpose], references: [id, ownerUserId, purpose], onDelete: Restrict, onUpdate: Restrict)
+  finalReviews     FinalReview[]
+
+  @@unique([submissionId, version], map: "submission_evidence_submission_version_key")
+  @@index([assetId, submissionId], map: "submission_evidence_asset_submission_idx")
+  @@map("submission_evidence")
+}
+
+model FinalReview {
+  id                  String               @id @default(uuid()) @db.Uuid
+  submissionId        String               @unique(map: "final_reviews_submission_key") @map("submission_id") @db.Uuid
+  employeeId          String               @map("employee_id") @db.Uuid
+  decision            TaskSubmissionStatus
+  submissionVersion   Int                  @map("submission_version")
+  evidenceVersion     Int                  @map("evidence_version")
+  actorUserId         String               @map("actor_user_id") @db.Uuid
+  decidedAt           DateTime             @map("decided_at") @db.Timestamptz(6)
+  reason              String               @db.VarChar(500)
+  walletId            String?              @map("wallet_id") @db.Uuid
+  approvalOperationId String?              @unique(map: "final_reviews_approval_operation_key") @map("approval_operation_id") @db.Uuid
+  submission          TaskSubmission       @relation(fields: [submissionId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  employee            User                 @relation("ReviewEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor               User                 @relation("ReviewActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evidence            SubmissionEvidence   @relation(fields: [submissionId, evidenceVersion], references: [submissionId, version], onDelete: Restrict, onUpdate: Restrict)
+  wallet              Wallet?              @relation(fields: [walletId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  operation           FinancialOperation?  @relation(fields: [approvalOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([submissionId, employeeId], map: "final_reviews_submission_employee_key")
+  @@unique([approvalOperationId, walletId], map: "final_reviews_operation_wallet_key")
+  @@map("final_reviews")
+}
+
+model TaskCommandRecord {
+  id             String                   @id @default(uuid()) @db.Uuid
+  actorUserId    String                   @map("actor_user_id") @db.Uuid
+  kind           TaskCommandKind
+  commandId      String                   @map("command_id") @db.Uuid
+  terminalState  TaskCommandTerminalState @map("terminal_state")
+  intentHash     String?                  @map("intent_hash") @db.Char(64)
+  taskId         String?                  @map("task_id") @db.Uuid
+  codeId         String?                  @map("code_id") @db.Uuid
+  submissionId   String?                  @map("submission_id") @db.Uuid
+  occurredAt     DateTime                 @map("occurred_at") @db.Timestamptz(6)
+  reason         String?                  @db.VarChar(500)
+  beforeSnapshot Json?                    @map("before_snapshot")
+  afterSnapshot  Json?                    @map("after_snapshot")
+  safeOutcome    Json?                    @map("safe_outcome")
+  actor          User                     @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  task           Task?                    @relation(fields: [taskId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  code           TaskCode?                @relation(fields: [codeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  submission     TaskSubmission?          @relation(fields: [submissionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([actorUserId, kind, commandId], map: "task_commands_actor_kind_command_key")
+  @@index([actorUserId, occurredAt, id], map: "task_commands_actor_time_idx")
+  @@index([codeId, occurredAt, id], map: "task_commands_code_time_idx")
+  @@map("task_command_records")
+}
+
+enum TronNetwork {
+  TRON_MAINNET
+  TRON_SHASTA
+  TRON_NILE
+
+  @@map("tron_network")
+}
+
+enum DepositAssignmentState {
+  REQUESTED
+  KEY_STORED
+  RECOVERY_ACKED
+  READY
+
+  @@map("deposit_assignment_state")
+}
+
+enum TronActivationState {
+  UNKNOWN
+  INACTIVE
+  ACTIVE
+
+  @@map("tron_activation_state")
+}
+
+enum DepositCandidateState {
+  PENDING
+  VERIFYING
+  UNRESOLVED
+  ACCOUNTED
+  INELIGIBLE
+  CONFLICT
+
+  @@map("deposit_candidate_state")
+}
+
+enum DepositScanMode {
+  HOT
+  HISTORICAL
+
+  @@map("deposit_scan_mode")
+}
+
+enum ManualCreditReferenceKind {
+  EXTERNAL
+  LEDGER_OPERATION
+
+  @@map("manual_credit_reference_kind")
+}
+
+enum TreasurySweepState {
+  REQUESTED
+  WAITING_RESOURCES
+  SIGNING
+  SIGNED
+  SUBMITTED
+  UNKNOWN
+  CONFIRMED
+  CHAIN_FAILED
+  SAFE_FAILED
+  EXPIRED_PROVEN_UNSENT
+
+  @@map("treasury_sweep_state")
+}
+
+enum FinancialProcessKind {
+  API
+  DEPOSIT_WORKER
+  SIGNER
+
+  @@map("financial_process_kind")
+}
+
+model DepositAddressAssignment {
+  id                      String                      @id @default(uuid()) @db.Uuid
+  employeeId              String                      @map("employee_id") @db.Uuid
+  walletId                String                      @map("wallet_id") @db.Uuid
+  network                 TronNetwork
+  state                   DepositAssignmentState      @default(REQUESTED)
+  version                 Int                         @default(1)
+  createdAt               DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  readyAt                 DateTime?                   @map("ready_at") @db.Timestamptz(6)
+  address                 String?                     @db.VarChar(34)
+  keyRecordId             String                      @unique @map("key_record_id") @db.Uuid
+  keyEnvelopeDigest       String?                     @map("key_envelope_digest") @db.Char(64)
+  keyVersion              Int?                        @map("key_version")
+  recoveryAckId           String?                     @map("recovery_ack_id") @db.Uuid
+  recoveryDigest          String?                     @map("recovery_digest") @db.Char(64)
+  recoveryAcknowledgedAt  DateTime?                   @map("recovery_acknowledged_at") @db.Timestamptz(6)
+  leaseOwner              String?                     @map("lease_owner") @db.Uuid
+  leaseUntil              DateTime?                   @map("lease_until") @db.Timestamptz(6)
+  nextAttemptAt           DateTime                    @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastErrorCode           String?                     @map("last_error_code") @db.VarChar(64)
+  activationState         TronActivationState         @default(UNKNOWN) @map("activation_state")
+  resourceCheckedAt       DateTime?                   @map("resource_checked_at") @db.Timestamptz(6)
+  scanBoundaryBlockNumber BigInt?                     @map("scan_boundary_block_number")
+  scanBoundaryBlockId     String?                     @map("scan_boundary_block_id") @db.Char(64)
+  scanBoundaryTimestamp   BigInt?                     @map("scan_boundary_timestamp")
+  employee                User                        @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  wallet                  Wallet                      @relation(fields: [walletId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  receipts                DepositReceipt[]
+  scans                   DepositScanProgress[]
+  sweeps                  TreasurySweep[]
+  candidateDiscoveries    DepositCandidateDiscovery[]
+
+  @@unique([employeeId, network], map: "deposit_assignments_employee_network_key")
+  @@unique([network, address], map: "deposit_assignments_network_address_key")
+  @@index([state, nextAttemptAt, leaseUntil, id], map: "deposit_assignments_due_idx")
+  @@map("deposit_address_assignments")
+}
+
+model DepositCandidate {
+  id                      String                      @id @default(uuid()) @db.Uuid
+  network                 TronNetwork
+  transactionId           String                      @map("transaction_id") @db.Char(64)
+  firstObservedAt         DateTime                    @default(now()) @map("first_observed_at") @db.Timestamptz(6)
+  lastObservedAt          DateTime                    @map("last_observed_at") @db.Timestamptz(6)
+  observedBlockTime       BigInt?                     @map("observed_block_time")
+  state                   DepositCandidateState       @default(PENDING)
+  version                 Int                         @default(1)
+  leaseOwner              String?                     @map("lease_owner") @db.Uuid
+  leaseUntil              DateTime?                   @map("lease_until") @db.Timestamptz(6)
+  nextAttemptAt           DateTime                    @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  attemptCount            Int                         @default(0) @map("attempt_count")
+  lastErrorCode           String?                     @map("last_error_code") @db.VarChar(64)
+  canonicalEvidenceDigest String?                     @map("canonical_evidence_digest") @db.Char(64)
+  verifiedAt              DateTime?                   @map("verified_at") @db.Timestamptz(6)
+  accountedAt             DateTime?                   @map("accounted_at") @db.Timestamptz(6)
+  discoveries             DepositCandidateDiscovery[]
+
+  @@unique([network, transactionId], map: "deposit_candidates_event_key")
+  @@index([state, nextAttemptAt, leaseUntil, id], map: "deposit_candidates_due_idx")
+  @@map("deposit_candidates")
+}
+
+model DepositCandidateDiscovery {
+  candidateId  String                   @map("candidate_id") @db.Uuid
+  assignmentId String                   @map("assignment_id") @db.Uuid
+  discoveredAt DateTime                 @default(now()) @map("discovered_at") @db.Timestamptz(6)
+  candidate    DepositCandidate         @relation(fields: [candidateId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  assignment   DepositAddressAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([candidateId, assignmentId])
+  @@index([assignmentId, candidateId], map: "deposit_candidate_discoveries_assignment_idx")
+  @@map("deposit_candidate_discoveries")
+}
+
+model DepositScanProgress {
+  id              String                   @id @default(uuid()) @db.Uuid
+  assignmentId    String                   @map("assignment_id") @db.Uuid
+  mode            DepositScanMode
+  cycle           Int                      @default(0)
+  windowFrom      BigInt                   @map("window_from")
+  windowTo        BigInt                   @map("window_to")
+  historyBoundary BigInt                   @map("history_boundary")
+  nextWindowFrom  BigInt                   @map("next_window_from")
+  fingerprint     String?                  @db.VarChar(2048)
+  queryPolicyHash String                   @map("query_policy_hash") @db.Char(64)
+  version         Int                      @default(1)
+  leaseOwner      String?                  @map("lease_owner") @db.Uuid
+  leaseUntil      DateTime?                @map("lease_until") @db.Timestamptz(6)
+  nextAttemptAt   DateTime                 @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastCompletedAt DateTime?                @map("last_completed_at") @db.Timestamptz(6)
+  lastErrorCode   String?                  @map("last_error_code") @db.VarChar(64)
+  assignment      DepositAddressAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([assignmentId, mode], map: "deposit_scan_assignment_mode_key")
+  @@index([nextAttemptAt, leaseUntil, id], map: "deposit_scan_due_idx")
+  @@map("deposit_scan_progress")
+}
+
+model DepositReceipt {
+  id                   String                   @id @default(uuid()) @db.Uuid
+  network              TronNetwork
+  transactionId        String                   @map("transaction_id") @db.Char(64)
+  logIndex             Int                      @map("log_index")
+  assignmentId         String                   @map("assignment_id") @db.Uuid
+  walletId             String                   @map("wallet_id") @db.Uuid
+  tokenContract        String                   @map("token_contract") @db.VarChar(34)
+  sender               String                   @db.VarChar(34)
+  recipient            String                   @db.VarChar(34)
+  amountUnits          BigInt                   @map("amount_units")
+  blockNumber          BigInt                   @map("block_number")
+  blockId              String                   @map("block_id") @db.Char(64)
+  blockTimestamp       BigInt                   @map("block_timestamp")
+  executionResult      String                   @map("execution_result") @db.VarChar(32)
+  finalityPolicy       String                   @map("finality_policy") @db.VarChar(64)
+  verifiedAt           DateTime                 @map("verified_at") @db.Timestamptz(6)
+  evidenceDigest       String                   @map("evidence_digest") @db.Char(64)
+  financialOperationId String                   @unique @map("financial_operation_id") @db.Uuid
+  recordedAt           DateTime                 @map("recorded_at") @db.Timestamptz(6)
+  assignment           DepositAddressAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  wallet               Wallet                   @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  operation            FinancialOperation       @relation(fields: [financialOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([network, transactionId, logIndex], map: "deposit_receipts_event_key")
+  @@unique([financialOperationId, walletId])
+  @@index([walletId, recordedAt(sort: Desc), id(sort: Desc)], map: "deposit_receipts_wallet_history_idx")
+  @@index([recordedAt(sort: Desc), id(sort: Desc)], map: "deposit_receipts_history_idx")
+  @@map("deposit_receipts")
+}
+
+model ManualCredit {
+  id                   String                    @id @db.Uuid
+  walletId             String                    @map("wallet_id") @db.Uuid
+  employeeId           String                    @map("employee_id") @db.Uuid
+  actorUserId          String                    @map("actor_user_id") @db.Uuid
+  amountUnits          BigInt                    @map("amount_units")
+  source               FundSource                @default(NON_REFERRAL)
+  confirmed            Boolean
+  reason               String                    @db.VarChar(500)
+  referenceKind        ManualCreditReferenceKind @map("reference_kind")
+  externalReference    String?                   @map("external_reference") @db.VarChar(256)
+  referenceOperationId String?                   @map("reference_operation_id") @db.Uuid
+  payloadHash          String                    @map("payload_hash") @db.Char(64)
+  financialOperationId String                    @unique @map("financial_operation_id") @db.Uuid
+  recordedAt           DateTime                  @map("recorded_at") @db.Timestamptz(6)
+  wallet               Wallet                    @relation(fields: [walletId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  employee             User                      @relation("ManualCreditEmployee", fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor                User                      @relation("ManualCreditActor", fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  operation            FinancialOperation        @relation("ManualCreditOperation", fields: [financialOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  referenceOperation   FinancialOperation?       @relation("ManualCreditReference", fields: [referenceOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([financialOperationId, walletId])
+  @@index([walletId, recordedAt(sort: Desc), id(sort: Desc)], map: "manual_credits_wallet_history_idx")
+  @@index([recordedAt(sort: Desc), id(sort: Desc)], map: "manual_credits_history_idx")
+  @@map("manual_credits")
+}
+
+model TreasurySweep {
+  id               String                   @id @db.Uuid
+  assignmentId     String                   @map("assignment_id") @db.Uuid
+  network          TronNetwork
+  tokenContract    String                   @map("token_contract") @db.VarChar(34)
+  source           String                   @db.VarChar(34)
+  treasury         String                   @db.VarChar(34)
+  amountUnits      BigInt                   @map("amount_units")
+  policySnapshot   Json                     @map("policy_snapshot")
+  operatorIdentity String                   @map("operator_identity") @db.VarChar(160)
+  reason           String                   @db.VarChar(500)
+  payloadHash      String                   @map("payload_hash") @db.Char(64)
+  state            TreasurySweepState       @default(REQUESTED)
+  version          Int                      @default(1)
+  createdAt        DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  claimedAt        DateTime?                @map("claimed_at") @db.Timestamptz(6)
+  finalizedAt      DateTime?                @map("finalized_at") @db.Timestamptz(6)
+  currentAttemptId String?                  @unique @map("current_attempt_id") @db.Uuid
+  nextAttemptAt    DateTime                 @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  lastErrorCode    String?                  @map("last_error_code") @db.VarChar(64)
+  assignment       DepositAddressAssignment @relation(fields: [assignmentId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  attempt          TransferAttempt?         @relation("SweepAttempt")
+  currentAttempt   TransferAttempt?         @relation("CurrentSweepAttempt", fields: [currentAttemptId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([state, createdAt, id], map: "treasury_sweeps_reconcile_idx")
+  @@index([state, nextAttemptAt, createdAt, id], map: "treasury_sweeps_due_idx")
+  @@map("treasury_sweeps")
+}
+
+model TransferAttempt {
+  id                     String             @id @db.Uuid
+  sweepId                String             @unique @map("sweep_id") @db.Uuid
+  intentHash             String             @map("intent_hash") @db.Char(64)
+  network                TronNetwork
+  tokenContract          String             @map("token_contract") @db.VarChar(34)
+  source                 String             @db.VarChar(34)
+  treasury               String             @db.VarChar(34)
+  amountUnits            BigInt             @map("amount_units")
+  transactionId          String?            @map("transaction_id") @db.Char(64)
+  expiration             BigInt?
+  signedAt               DateTime?          @map("signed_at") @db.Timestamptz(6)
+  envelopeId             String?            @map("envelope_id") @db.Uuid
+  envelopeDigest         String?            @map("envelope_digest") @db.Char(64)
+  recoveryAckId          String?            @map("recovery_ack_id") @db.Uuid
+  recoveryDigest         String?            @map("recovery_digest") @db.Char(64)
+  recoveryAcknowledgedAt DateTime?          @map("recovery_acknowledged_at") @db.Timestamptz(6)
+  broadcastIntentId      String?            @map("broadcast_intent_id") @db.Uuid
+  observationBlockNumber BigInt?            @map("observation_block_number")
+  observationTimestamp   BigInt?            @map("observation_timestamp")
+  broadcastAdmittedAt    DateTime?          @map("broadcast_admitted_at") @db.Timestamptz(6)
+  state                  TreasurySweepState @default(SIGNING)
+  version                Int                @default(1)
+  nextAttemptAt          DateTime           @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+  attemptCount           Int                @default(0) @map("attempt_count")
+  lastErrorCode          String?            @map("last_error_code") @db.VarChar(64)
+  finalEvidence          Json?              @map("final_evidence")
+  energyUnits            BigInt?            @map("energy_units")
+  bandwidthUnits         BigInt?            @map("bandwidth_units")
+  feeSun                 BigInt?            @map("fee_sun")
+  sweep                  TreasurySweep      @relation("SweepAttempt", fields: [sweepId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  currentForSweep        TreasurySweep?     @relation("CurrentSweepAttempt")
+
+  @@unique([network, transactionId], map: "transfer_attempts_network_transaction_key")
+  @@index([state, nextAttemptAt, id], map: "transfer_attempts_reconcile_idx")
+  @@map("transfer_attempts")
+}
+
+model FinancialRuntimeControl {
+  id                    Int       @id @default(1)
+  generation            BigInt    @default(1)
+  financialWritesFenced Boolean   @default(true) @map("financial_writes_fenced")
+  newDispatchPaused     Boolean   @default(true) @map("new_dispatch_paused")
+  version               Int       @default(1)
+  reason                String    @db.VarChar(500)
+  operatorIdentity      String    @map("operator_identity") @db.VarChar(160)
+  updatedAt             DateTime  @default(now()) @map("updated_at") @db.Timestamptz(6)
+  evidenceReference     String?   @map("evidence_reference") @db.VarChar(256)
+  reconciliationCutoff  DateTime? @map("reconciliation_cutoff") @db.Timestamptz(6)
+
+  @@map("financial_runtime_control")
+}
+
+model FinancialRuntimeAdmission {
+  bootId                 String               @id @map("boot_id") @db.Uuid
+  processKind            FinancialProcessKind @map("process_kind")
+  requestedAt            DateTime             @default(now()) @map("requested_at") @db.Timestamptz(6)
+  acknowledgedGeneration BigInt?              @map("acknowledged_generation")
+  acknowledgedAt         DateTime?            @map("acknowledged_at") @db.Timestamptz(6)
+  operatorIdentity       String?              @map("operator_identity") @db.VarChar(160)
+  evidenceReference      String?              @map("evidence_reference") @db.VarChar(256)
+
+  @@map("financial_runtime_admissions")
 }

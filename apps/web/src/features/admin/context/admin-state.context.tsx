@@ -43,9 +43,6 @@ import type {
   TaskUnlockCode,
 } from "../types/admin.types";
 
-import { useTaskCodeActions } from "./actions/use-task-code-actions";
-import { useTaskActions } from "./actions/use-task-actions";
-import { useSubmissionReviewActions } from "./actions/use-submission-review-actions";
 import { useEmployeeRestrictionActions } from "./actions/use-employee-restriction-actions";
 import { useEmployeeAccountActions } from "./actions/use-employee-account-actions";
 import { useDepositActions } from "./actions/use-deposit-actions";
@@ -66,12 +63,10 @@ export function AdminStateProvider({
   const [employees, setEmployees] =
     useState<readonly AdminEmployee[]>(SEED_EMPLOYEES);
   const [packages] = useState<readonly AdminPackage[]>(SEED_PACKAGES);
-  const [tasks, setTasks] = useState<readonly AdminTask[]>(SEED_TASKS);
-  const [codes, setCodes] = useState<readonly TaskUnlockCode[]>(SEED_CODES);
-  const [codeUsages, setCodeUsages] =
-    useState<readonly CodeUsageRecord[]>(SEED_CODE_USAGES);
-  const [submissions, setSubmissions] =
-    useState<readonly AdminSubmission[]>(SEED_SUBMISSIONS);
+  const [tasks] = useState<readonly AdminTask[]>(SEED_TASKS);
+  const [codes] = useState<readonly TaskUnlockCode[]>(SEED_CODES);
+  const [codeUsages] = useState<readonly CodeUsageRecord[]>(SEED_CODE_USAGES);
+  const [submissions] = useState<readonly AdminSubmission[]>(SEED_SUBMISSIONS);
   const [deposits, setDeposits] =
     useState<readonly AdminDeposit[]>(SEED_DEPOSITS);
   const [withdrawals, setWithdrawals] =
@@ -109,35 +104,6 @@ export function AdminStateProvider({
     },
     [],
   );
-  const {
-    isTaskUnlockedForEmployee,
-    unlockTaskWithCode,
-    createCode,
-    toggleCodeStatus,
-    getDistinctCodeUsersCount,
-    getDistinctTaskUnlocksCount,
-  } = useTaskCodeActions({
-    employees,
-    tasks,
-    codes,
-    codeUsages,
-    setCodes,
-    setCodeUsages,
-    addAuditLog,
-  });
-  const { createTask, updateTask, toggleTaskStatus } = useTaskActions({
-    tasks,
-    setTasks,
-    addAuditLog,
-  });
-  const { approveSubmission, rejectSubmission } = useSubmissionReviewActions({
-    submissions,
-    setEmployees,
-    setCodeUsages,
-    setSubmissions,
-    setFinanceTransactions,
-    addAuditLog,
-  });
   const {
     toggleEmployeeAccountStatus,
     toggleEmployeeTaskRestriction,
@@ -205,20 +171,6 @@ export function AdminStateProvider({
       admins,
       currentAdmin: CURRENT_ADMIN,
 
-      createCode,
-      toggleCodeStatus,
-      unlockTaskWithCode,
-      isTaskUnlockedForEmployee,
-      getDistinctCodeUsersCount,
-      getDistinctTaskUnlocksCount,
-
-      createTask,
-      updateTask,
-      toggleTaskStatus,
-
-      approveSubmission,
-      rejectSubmission,
-
       toggleEmployeeAccountStatus,
       toggleEmployeeTaskRestriction,
       toggleEmployeeWithdrawalRestriction,
@@ -255,17 +207,6 @@ export function AdminStateProvider({
       auditLogs,
       settings,
       admins,
-      createCode,
-      toggleCodeStatus,
-      unlockTaskWithCode,
-      isTaskUnlockedForEmployee,
-      getDistinctCodeUsersCount,
-      getDistinctTaskUnlocksCount,
-      createTask,
-      updateTask,
-      toggleTaskStatus,
-      approveSubmission,
-      rejectSubmission,
       toggleEmployeeAccountStatus,
       toggleEmployeeTaskRestriction,
       toggleEmployeeWithdrawalRestriction,

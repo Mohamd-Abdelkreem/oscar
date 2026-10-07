@@ -113,7 +113,7 @@ describe("financial database guards", () => {
     });
     await expect(
       operation(walletId, "CREDIT", "ADMIN_ADJUSTMENT"),
-    ).rejects.toMatchObject({ constraint: "ck_financial_operations_origin" });
+    ).rejects.toMatchObject({ constraint: "ck_p06_manual_credit_link" });
     const id = await operation(walletId);
     await expect(
       pool.query(

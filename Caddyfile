@@ -3,6 +3,9 @@
 
   @api path /api/*
   handle @api {
+    request_body {
+      max_size 5259264
+    }
     reverse_proxy api:4000
   }
 

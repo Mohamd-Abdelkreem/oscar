@@ -43,3 +43,64 @@ it("replaces image previews, releases replaced URLs, and cleans up the final pre
   unmount();
   expect(revokeObjectURL).toHaveBeenCalledWith("blob:second");
 });
+
+it("rejects SVG and ignores disabled file events without allocating private previews", () => {
+  const createObjectURL = vi.fn();
+  vi.stubGlobal(
+    "URL",
+    Object.assign(class extends URL {}, {
+      createObjectURL,
+      revokeObjectURL: vi.fn(),
+    }),
+  );
+  const selected = vi.fn();
+  const { container, rerender } = render(
+    <ScreenshotUpload onFileSelected={selected} />,
+  );
+  const input = container.querySelector('input[type="file"]');
+  if (!(input instanceof HTMLInputElement))
+    throw new Error("Screenshot input missing");
+  fireEvent.change(input, {
+    target: {
+      files: [new File(["<svg/>"], "proof.svg", { type: "image/svg+xml" })],
+    },
+  });
+  expect(selected).not.toHaveBeenCalled();
+  expect(createObjectURL).not.toHaveBeenCalled();
+  rerender(<ScreenshotUpload onFileSelected={selected} disabled />);
+  fireEvent.change(input, {
+    target: {
+      files: [new File(["image"], "proof.png", { type: "image/png" })],
+    },
+  });
+  expect(selected).not.toHaveBeenCalled();
+  expect(createObjectURL).not.toHaveBeenCalled();
+});
+
+it("follows a retained server preview without taking ownership of its URL", () => {
+  const revokeObjectURL = vi.fn();
+  vi.stubGlobal(
+    "URL",
+    Object.assign(class extends URL {}, {
+      createObjectURL: vi.fn(),
+      revokeObjectURL,
+    }),
+  );
+  const { rerender, unmount } = render(
+    <ScreenshotUpload
+      onFileSelected={vi.fn()}
+      initialPreview="blob:server-first"
+      disabled
+    />,
+  );
+  rerender(
+    <ScreenshotUpload
+      onFileSelected={vi.fn()}
+      initialPreview="blob:server-current"
+      disabled
+    />,
+  );
+  expect(screen.getByRole("img")).toHaveAttribute("src", "blob:server-current");
+  unmount();
+  expect(revokeObjectURL).not.toHaveBeenCalled();
+});

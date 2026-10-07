@@ -1,14 +1,14 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useTaskToday } from "../../hooks/tasks.hooks";
+import { Button } from "../common/button";
 import { useState } from "react";
 import { PageHeader } from "@/features/employee/components/navigation/page-header";
 import { TaskCard } from "@/features/employee/components/tasks/task-card";
 import { TaskHistoryList } from "@/features/employee/components/tasks/task-history-list";
 
 export function EmployeeTasksScreen() {
-  const searchParams = useSearchParams();
-  const scenarioParam = searchParams.get("scenario");
+  const today = useTaskToday();
 
   const [activeTab, setActiveTab] = useState<"today" | "history">("today");
 
@@ -52,7 +52,38 @@ export function EmployeeTasksScreen() {
 
         {/* Tab Content */}
         {activeTab === "today" ? (
-          <TaskCard currentScenario={scenarioParam ?? undefined} />
+          today.isError ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-sm"
+            >
+              {today.error?.message}
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void today.refetch();
+                }}
+              >
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : today.data ? (
+            <TaskCard
+              key={
+                String(today.scope.epoch) +
+                ":" +
+                (today.data.task?.id ?? "today")
+              }
+              day={today.data}
+            />
+          ) : (
+            <div
+              role="status"
+              className="rounded-lg border border-slate-200 bg-white p-4 text-sm"
+            >
+              جارٍ تحميل المهمة...
+            </div>
+          )
         ) : (
           <TaskHistoryList />
         )}

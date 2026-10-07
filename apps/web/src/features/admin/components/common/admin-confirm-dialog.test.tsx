@@ -8,10 +8,6 @@ import {
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 
-import {
-  AdminStateProvider,
-  useAdminState,
-} from "../../context/admin-state.context";
 import { AdminConfirmDialog } from "./admin-confirm-dialog";
 
 afterEach(cleanup);
@@ -64,12 +60,12 @@ it("preserves a reviewed reason on denial and blocks synchronous double confirma
 });
 
 function CodeStatusControl() {
-  const { codes, toggleCodeStatus } = useAdminState();
+  const [status, setStatus] = useState("active");
   const [isOpen, setIsOpen] = useState(false);
-  const code = codes.find((c) => c.id === "cod_2026_01");
+
   return (
     <>
-      <p>Code status: {code?.status}</p>
+      <p>Code status: {status}</p>
       <button
         onClick={() => {
           setIsOpen(true);
@@ -83,7 +79,7 @@ function CodeStatusControl() {
         description="Pause future access"
         requireReason
         onConfirm={() => {
-          toggleCodeStatus("cod_2026_01");
+          setStatus("paused");
         }}
         onClose={() => {
           setIsOpen(false);
@@ -94,11 +90,7 @@ function CodeStatusControl() {
 }
 
 it("cancel preserves the code; confirmation requires a reason and pauses it", async () => {
-  render(
-    <AdminStateProvider>
-      <CodeStatusControl />
-    </AdminStateProvider>,
-  );
+  render(<CodeStatusControl />);
   const trigger = screen.getByRole("button", { name: "Pause code" });
   fireEvent.click(trigger);
   fireEvent.click(screen.getByRole("button", { name: "إلغاء" }));

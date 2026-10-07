@@ -18,6 +18,47 @@ const databaseUrl = (): string => {
 };
 
 describe("fresh authentication and financial migration", () => {
+  it("installs P06 event/source uniqueness and deferred/immutable authority guards", async () => {
+    const pool = new Pool({ connectionString: databaseUrl() });
+    try {
+      const indexes = await pool.query<{ indexname: string; indexdef: string }>(
+        "SELECT indexname,indexdef FROM pg_indexes WHERE schemaname='public' AND indexname IN ('deposit_assignments_employee_network_key','deposit_assignments_network_address_key','deposit_receipts_event_key','transfer_attempts_network_transaction_key','treasury_sweeps_active_source_key') ORDER BY indexname",
+      );
+      expect(indexes.rows.map((index) => index.indexname)).toEqual([
+        "deposit_assignments_employee_network_key",
+        "deposit_assignments_network_address_key",
+        "deposit_receipts_event_key",
+        "transfer_attempts_network_transaction_key",
+        "treasury_sweeps_active_source_key",
+      ]);
+      expect(
+        indexes.rows.find(
+          (index) => index.indexname === "treasury_sweeps_active_source_key",
+        )?.indexdef,
+      ).toContain("UNKNOWN");
+      const guards = await pool.query<{
+        tgname: string;
+        tgdeferrable: boolean;
+        tginitdeferred: boolean;
+      }>(
+        "SELECT tgname,tgdeferrable,tginitdeferred FROM pg_trigger WHERE NOT tgisinternal AND tgname IN ('validate_p06_operation','validate_p06_grant','validate_p06_receipt','validate_p06_audit') ORDER BY tgname",
+      );
+      expect(guards.rows).toEqual(
+        [
+          "validate_p06_audit",
+          "validate_p06_grant",
+          "validate_p06_operation",
+          "validate_p06_receipt",
+        ].map((tgname) => ({
+          tgname,
+          tgdeferrable: true,
+          tginitdeferred: true,
+        })),
+      );
+    } finally {
+      await pool.end();
+    }
+  });
   it("creates exactly the required application tables, columns, and indexes", async () => {
     const pool = new Pool({ connectionString: databaseUrl() });
     try {
@@ -34,11 +75,21 @@ describe("fresh authentication and financial migration", () => {
         "admin_setup_state",
         "auth_sessions",
         "configuration_changes",
+        "deposit_address_assignments",
+        "deposit_candidate_discoveries",
+        "deposit_candidates",
+        "deposit_receipts",
+        "deposit_scan_progress",
+        "final_reviews",
         "financial_audit_records",
         "financial_operations",
         "financial_request_identities",
+        "financial_runtime_admissions",
+        "financial_runtime_control",
         "identity_audit_records",
+        "image_assets",
         "ledger_postings",
+        "manual_credits",
         "packages",
         "purchase_quotes",
         "purchases",
@@ -46,7 +97,15 @@ describe("fresh authentication and financial migration", () => {
         "referral_settings",
         "refresh_tokens",
         "reservation_allocations",
+        "submission_evidence",
         "subscriptions",
+        "task_codes",
+        "task_command_records",
+        "task_submissions",
+        "task_unlocks",
+        "tasks",
+        "transfer_attempts",
+        "treasury_sweeps",
         "users",
         "wallets",
       ]);

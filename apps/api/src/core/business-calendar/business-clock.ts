@@ -85,6 +85,44 @@ export class BusinessClock {
     );
   }
 
+  taskCalendar(instant: unknown) {
+    const local = baghdadInstant(instant);
+    const opens = local.startOf("day").set({ hour: TASK_OPEN_HOUR });
+    const closes = local.startOf("day").set({ hour: TASK_CLOSE_HOUR });
+    const calendarState = !isWorkday(local)
+      ? "HOLIDAY"
+      : local < opens
+        ? "UPCOMING"
+        : local < closes
+          ? "OPEN"
+          : "CLOSED";
+    const next =
+      isWorkday(local) && local < opens
+        ? opens
+        : nextWorkdayStart(local).set({ hour: TASK_OPEN_HOUR });
+    return {
+      businessDate: businessDate(local),
+      calendarState,
+      window: {
+        opensAt: utcInstant(opens),
+        closesAt: utcInstant(closes),
+        nextOpeningAt: utcInstant(next),
+      },
+    };
+  }
+
+  taskWindow(publicationDate: unknown, observedAt: unknown) {
+    const date = businessDateSchema.parse(publicationDate);
+    const local = supportedDateTime(
+      DateTime.fromISO(date, { zone: BUSINESS_ZONE }),
+    );
+    return {
+      opensAt: utcInstant(local.set({ hour: TASK_OPEN_HOUR })),
+      closesAt: utcInstant(local.set({ hour: TASK_CLOSE_HOUR })),
+      nextOpeningAt: this.taskCalendar(observedAt).window.nextOpeningAt,
+    };
+  }
+
   subscriptionTerm(
     activation: unknown,
     countedWorkDates = SUBSCRIPTION_WORK_DATES,

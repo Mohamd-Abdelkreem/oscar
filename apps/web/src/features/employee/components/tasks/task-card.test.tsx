@@ -1,92 +1,94 @@
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
-import { useState } from "react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { AxiosHeaders } from "axios";
 import { afterEach, expect, it, vi } from "vitest";
-
-import { EmployeeStateProvider } from "../../context/employee-state.context";
+import { reply } from "@/test/p04-network";
+import { submission, proof } from "@/test/p05-network";
+import { queryHarness, cleanupQueries } from "@/test/p04-query";
 import { TaskCard } from "./task-card";
 
-function TaskRouteExample() {
-  const [visible, setVisible] = useState(true);
-  return (
-    <>
-      <button
-        onClick={() => {
-          setVisible(!visible);
-        }}
-      >
-        {visible ? "مغادرة المهام" : "عودة للمهام"}
-      </button>
-      {visible ? <TaskCard /> : null}
-    </>
-  );
-}
-
+cleanupQueries();
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  vi.useRealTimers();
 });
-
-it("keeps committed screenshots alive across task-route changes and releases replaced screenshots", () => {
-  vi.useFakeTimers();
-  let urlCount = 0;
-  const revokeObjectURL = vi.fn<(url: string) => void>();
+it("reopens persisted evidence with a fresh owned URL and revokes it on leaving", async () => {
+  let count = 0;
+  const revoke = vi.fn();
   vi.stubGlobal(
     "URL",
     Object.assign(class extends URL {}, {
-      createObjectURL: () => `blob:task-${(++urlCount).toString()}`,
-      revokeObjectURL,
+      createObjectURL: () => "blob:owned-" + String(++count),
+      revokeObjectURL: revoke,
     }),
   );
-  const { container, unmount } = render(
-    <EmployeeStateProvider>
-      <TaskRouteExample />
-    </EmployeeStateProvider>,
+  const h = queryHarness("USER", (config) =>
+    config.url?.endsWith("/content")
+      ? {
+          config,
+          status: 200,
+          statusText: "OK",
+          data: new Blob(["synthetic"], { type: "image/png" }),
+          headers: new AxiosHeaders({
+            "content-type": "image/png",
+            "content-length": "9",
+            "cache-control": "private, no-store",
+            "x-content-type-options": "nosniff",
+            "content-disposition": 'inline; filename="image.png"',
+          }),
+        }
+      : reply(config, proof),
   );
-  const selectFile = (name: string) => {
-    const input = container.querySelector('input[type="file"]');
-    if (!(input instanceof HTMLInputElement))
-      throw new Error("Screenshot input is missing");
-    fireEvent.change(input, {
-      target: { files: [new File([name], name, { type: "image/png" })] },
-    });
-  };
-
-  selectFile("first.png");
-  fireEvent.click(screen.getByRole("checkbox"));
-  fireEvent.click(
-    screen.getByRole("button", { name: "تأكيد وإرسال المهمة للاعتماد" }),
-  );
-  act(() => {
-    vi.advanceTimersByTime(400);
+  const first = render(<TaskCard savedSubmission={submission} />, {
+    wrapper: h.wrapper,
   });
-  const committedSource = screen
-    .getByRole("img", { name: "معاينة لقطة الشاشة المرفوعة" })
-    .getAttribute("src");
-  expect(committedSource).toMatch(/^blob:/);
-  expect(revokeObjectURL).not.toHaveBeenCalledWith(committedSource);
-
-  fireEvent.click(screen.getByRole("button", { name: "مغادرة المهام" }));
-  expect(revokeObjectURL).not.toHaveBeenCalledWith(committedSource);
-  fireEvent.click(screen.getByRole("button", { name: "عودة للمهام" }));
+  await waitFor(() =>
+    expect(screen.getByRole("img")).toHaveAttribute("src", "blob:owned-1"),
+  );
+  expect(screen.getByText(/لا تُضاف إلى/)).toBeInTheDocument();
+  first.unmount();
+  expect(revoke).toHaveBeenCalledWith("blob:owned-1");
+  const second = render(<TaskCard savedSubmission={submission} />, {
+    wrapper: h.wrapper,
+  });
+  await waitFor(() =>
+    expect(screen.getByRole("img")).toHaveAttribute("src", "blob:owned-2"),
+  );
+  second.unmount();
+  expect(revoke).toHaveBeenCalledWith("blob:owned-2");
+});
+it("keeps final rejected facts after retention without resubmission controls", async () => {
+  const removed = { ...proof, availability: "REMOVED" };
+  let binaryReads = 0;
+  const h = queryHarness("USER", (config) => {
+    if (config.url?.endsWith("/content")) binaryReads++;
+    return reply(config, removed);
+  });
+  render(
+    <TaskCard
+      savedSubmission={{
+        ...submission,
+        status: "REJECTED",
+        canReplace: false,
+        evidence: {
+          ...submission.evidence,
+          asset: { ...proof, availability: "REMOVED" },
+        },
+        finalDecision: {
+          decision: "REJECT",
+          reason: "الصورة لا تثبت التنفيذ",
+          decidedAt: submission.submittedAt,
+          reviewedSubmissionVersion: 1,
+          reviewedEvidenceVersion: 1,
+        },
+      }}
+    />,
+    { wrapper: h.wrapper },
+  );
+  await screen.findByText(/حُذفت الصورة/);
+  expect(screen.getByText("الصورة لا تثبت التنفيذ")).toBeInTheDocument();
   expect(
-    screen.getByRole("img", { name: "معاينة لقطة الشاشة المرفوعة" }),
-  ).toHaveAttribute("src", committedSource);
-
-  fireEvent.click(screen.getByRole("button", { name: "إلغاء الصورة" }));
-  selectFile("replacement.png");
-  fireEvent.click(
-    screen.getByRole("button", { name: "تحديث لقطة الشاشة المرفقة" }),
-  );
-  expect(revokeObjectURL).toHaveBeenCalledWith(committedSource);
-  unmount();
-  expect(new Set(revokeObjectURL.mock.calls.map(([url]) => url)).size).toBe(
-    urlCount,
-  );
+    screen.queryByRole("button", { name: /إرسال|تحديث/ }),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+  expect(binaryReads).toBe(0);
 });

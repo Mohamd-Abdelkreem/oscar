@@ -10,6 +10,12 @@ import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 
 import { LedgerService } from "./ledger.service.js";
+import {
+  fenceFinancialRuntime,
+  FinancialRuntimeAdmission,
+  acknowledgeFinancialBoot,
+  changeDispatchPause,
+} from "../custody/runtime-control.js";
 import { LedgerError } from "./ledger.errors.js";
 import { isIdentityUniqueConflict } from "./ledger.transaction.js";
 import { acceptedTermsSchema } from "./ledger.types.js";
@@ -24,17 +30,22 @@ import {
   financialIdentity,
   financialRaceBarrier,
   fixedFinancialClock,
-  withIndependentFinancialClients,
+  withAdmittedFinancialDatabase,
+  withIndependentFinancialClients as rawIndependentClients,
+  withAdmittedIndependentFinancialClients as withIndependentFinancialClients,
+  financialFixtureAdmission,
+  admitCleanDisposableFinancialBoot,
 } from "./testing/financial-fixtures.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined)
   throw new Error("Missing isolated PostgreSQL URL.");
 const database = createDatabaseClient(databaseUrl);
+await admitCleanDisposableFinancialBoot(database);
 const POLICY = { businessNamespaces: ["financial-test"], processIds: [] };
 const CLOCK = fixedFinancialClock(new Date("2026-10-02T09:00:00.000Z"));
 const serviceFor = (client: DatabaseClient) =>
-  new LedgerService(client, POLICY);
+  new LedgerService(client, POLICY, financialFixtureAdmission(client));
 const contextFor = (walletId: string, ownerUserId: string): LedgerContext => ({
   actor: { type: "USER", userId: ownerUserId },
   walletIds: [walletId],
@@ -84,6 +95,213 @@ afterAll(async () => {
   await database.$disconnect();
 });
 describe("ledger competing PostgreSQL connections", () => {
+  it("separates financial admission from signer dispatch pause and rejects incomplete recovery evidence", async () => {
+    await withAdmittedFinancialDatabase(async (isolated) => {
+      const signer = new FinancialRuntimeAdmission(isolated, "SIGNER");
+      await signer.register();
+      expect(signer.bootId).not.toBe(
+        financialFixtureAdmission(isolated).bootId,
+      );
+      await expect(signer.register()).rejects.toThrow("already registered");
+      const cutoff = new Date();
+      const evidence = {
+        financialHistoryReference: "fixture-history",
+        assignmentInventoryReference: "fixture-assignments",
+        attemptInventoryReference: "fixture-attempts",
+        reconciliationReference: "fixture-reconciliation",
+        reconciliationCutoff: cutoff,
+        financialHistoryRecoveredThrough: cutoff,
+      };
+      const approval = {
+        bootId: signer.bootId,
+        operatorIdentity: "disposable-operator",
+        reason: "known disposable history",
+        evidence,
+      };
+      await expect(
+        acknowledgeFinancialBoot(isolated, {
+          ...approval,
+          evidence: {
+            ...evidence,
+            financialHistoryRecoveredThrough: new Date(cutoff.getTime() - 1),
+          },
+        }),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      await expect(
+        acknowledgeFinancialBoot(isolated, {
+          ...approval,
+          evidence: {
+            ...evidence,
+            financialHistoryRecoveredThrough: new Date(
+              cutoff.getTime() + 60000,
+            ),
+          },
+        }),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      await acknowledgeFinancialBoot(isolated, approval);
+      await isolated.$transaction((tx) => signer.assertMutationAdmission(tx));
+      await expect(
+        isolated.$transaction((tx) => signer.assertDispatchAdmission(tx)),
+      ).rejects.toMatchObject({ code: "NEW_DISPATCH_PAUSED" });
+      await changeDispatchPause(isolated, {
+        action: "RESUME",
+        operatorIdentity: "disposable-operator",
+        reason: "dispatch checks",
+      });
+      await isolated.$transaction((tx) => signer.assertDispatchAdmission(tx));
+      await expect(
+        isolated.$transaction((tx) =>
+          financialFixtureAdmission(isolated).assertDispatchAdmission(tx),
+        ),
+      ).rejects.toMatchObject({ code: "NEW_DISPATCH_PAUSED" });
+      await changeDispatchPause(isolated, {
+        action: "PAUSE",
+        operatorIdentity: "disposable-operator",
+        reason: "halt new dispatch",
+      });
+      await isolated.$transaction((tx) => signer.assertMutationAdmission(tx));
+      await fenceFinancialRuntime(isolated, {
+        operatorIdentity: "disposable-operator",
+        reason: "restore",
+      });
+      await expect(
+        changeDispatchPause(isolated, {
+          action: "RESUME",
+          operatorIdentity: "disposable-operator",
+          reason: "refuse bypass",
+        }),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+    });
+  });
+  it("drains an admitted transaction before fencing independent new mutations", async () => {
+    await withAdmittedFinancialDatabase(async (isolated, url) => {
+      const { wallet, ownerUserId } = await createFinancialAccount(isolated);
+      const context = contextFor(wallet.id, ownerUserId);
+      let announce: () => void = () => {};
+      const entered = new Promise<void>((resolve) => {
+        announce = resolve;
+      });
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await rawIndependentClients(url, async (operator, observer) => {
+        const operation = serviceFor(isolated).runInTransaction(
+          context,
+          async (_tx, ledger) => {
+            announce();
+            await gate;
+            return ledger.credit(credit(wallet.id, "1"));
+          },
+        );
+        await entered;
+        let fenced = false;
+        const drain = fenceFinancialRuntime(operator, {
+          operatorIdentity: "drain-test",
+          reason: "restore",
+        }).then(() => {
+          fenced = true;
+        });
+        try {
+          // Observe the actual exclusive advisory waiter, rather than infer ordering from a sleep.
+          for (let attempt = 0; attempt < 100; attempt++) {
+            const waiting = await observer.$queryRaw<
+              { waiting: boolean }[]
+            >`SELECT EXISTS(SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted) AS waiting`;
+            if (waiting[0]?.waiting) break;
+            if (attempt === 99)
+              throw new Error(
+                "Exclusive restore lock never waited for admitted work.",
+              );
+          }
+          expect(fenced).toBe(false);
+        } finally {
+          release();
+        }
+        await operation;
+        await drain;
+        expect(fenced).toBe(true);
+        expect(
+          (
+            await isolated.wallet.findUniqueOrThrow({
+              where: { id: wallet.id },
+            })
+          ).availableNonReferralUnits,
+        ).toBe(1000000n);
+        await expect(
+          serviceFor(isolated).execute(credit(wallet.id, "2"), context),
+        ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+        const committed = await isolated.financialOperation.findFirstOrThrow({
+          where: { walletId: wallet.id },
+        });
+        const original = {
+          ...credit(wallet.id, "1"),
+          businessNamespace: committed.businessNamespace,
+          businessKey: committed.businessKey,
+        };
+        const freshKey = randomUUID();
+        const beforeRecovery = await isolated.requestIdentity.count();
+        const observed = await serviceFor(isolated).recoverOperation(
+          { ...original, requestKey: freshKey },
+          context,
+        );
+        expect(observed?.result.operationId).toBe(committed.id);
+        expect(await isolated.requestIdentity.count()).toBe(beforeRecovery);
+        await expect(
+          serviceFor(isolated).execute(
+            { ...original, requestKey: freshKey },
+            context,
+          ),
+        ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      });
+    });
+  });
+  it("denies a Serializable admission snapshot taken before an independent restore fence", async () => {
+    await withAdmittedFinancialDatabase(async (isolated, url) => {
+      const admission = financialFixtureAdmission(isolated);
+      let announce: () => void = () => {};
+      const snapshot = new Promise<void>((resolve) => {
+        announce = resolve;
+      });
+      let release: () => void = () => {};
+      const barrier = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      await rawIndependentClients(url, async (operator) => {
+        const stale = isolated.$transaction(
+          async (transaction) => {
+            await transaction.financialRuntimeControl.findUniqueOrThrow({
+              where: { id: 1 },
+            });
+            announce();
+            await barrier;
+            await admission.assertMutationAdmission(transaction);
+            throw new Error("Stale snapshot unexpectedly admitted");
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+        );
+        const rejection = expect(stale).rejects.toMatchObject({
+          code: "P2010",
+          meta: { driverAdapterError: { cause: { originalCode: "40001" } } },
+        });
+        try {
+          await snapshot;
+          await fenceFinancialRuntime(operator, {
+            operatorIdentity: "isolated-restore",
+            reason: "Advance after snapshot",
+          });
+        } finally {
+          release();
+        }
+        await rejection;
+        await expect(
+          isolated.$transaction((transaction) =>
+            admission.assertMutationAdmission(transaction),
+          ),
+        ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      });
+    });
+  });
   it.each(["PURCHASE_DEBIT", "RESERVE"] as const)(
     "serializes an 80 debit against a competing 80 %s without overspending 100",
     async (secondKind) => {

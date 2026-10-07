@@ -13,14 +13,23 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
 import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
 import { AdminEmptyState } from "../common/admin-empty-state";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminTableShell } from "../common/admin-table";
-import { useAdminState } from "../../context/admin-state.context";
+import {
+  useAdminTaskCode,
+  useAdminCodeUsage,
+  useAdminCodeAudit,
+} from "../../hooks/task-codes.hooks";
+import { useAdminTaskCommand } from "../../hooks/tasks.hooks";
+import { adminTaskCodesApi } from "../../api/task-codes.api";
+import { TaskCommandFeedback } from "../common/task-command-feedback";
+import { TaskQueryState } from "../common/task-query-state";
+import { AdminPagination } from "../common/admin-pagination";
 
 interface CodeDetailScreenProps {
   readonly codeId: string;
@@ -30,90 +39,75 @@ interface CodeDetailScreenProps {
 // status confirmation. Revisit when either panel needs an independent workflow.
 export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
   const scheduleTimeout = useManagedTimeout();
-  const { codes, tasks, codeUsages, auditLogs, toggleCodeStatus } =
-    useAdminState();
 
   const [searchUsageQuery, setSearchUsageQuery] = useState("");
   const [copied, setCopied] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const code = useMemo(
-    () => codes.find((c) => c.id === codeId),
-    [codes, codeId],
-  );
-
-  const task = useMemo(
-    () => tasks.find((t) => t.id === code?.taskId),
-    [tasks, code?.taskId],
-  );
-
-  const usagesForCode = useMemo(
-    () => codeUsages.filter((u) => u.codeId === codeId),
-    [codeUsages, codeId],
-  );
-
-  const distinctUsersCount = useMemo(() => {
-    return new Set(usagesForCode.map((u) => u.employeeId)).size;
-  }, [usagesForCode]);
-
-  const filteredUsages = useMemo(() => {
-    if (!searchUsageQuery.trim()) return usagesForCode;
-    const q = searchUsageQuery.trim().toLowerCase();
-    return usagesForCode.filter(
-      (u) =>
-        u.employeeName.toLowerCase().includes(q) ||
-        u.employeeEmail.toLowerCase().includes(q) ||
-        u.employeeId.toLowerCase().includes(q),
-    );
-  }, [usagesForCode, searchUsageQuery]);
-
-  const relatedAuditLogs = useMemo(() => {
-    return auditLogs.filter(
-      (a) => a.targetId === codeId || a.targetTitle === code?.code,
-    );
-  }, [auditLogs, codeId, code?.code]);
-
+  const query = useAdminTaskCode(codeId),
+    usageQuery = useAdminCodeUsage(
+      codeId,
+      searchUsageQuery.trim() || undefined,
+    ),
+    auditQuery = useAdminCodeAudit(codeId);
+  const code = query.data,
+    task = code?.task,
+    distinctUsersCount = code?.distinctSuccessfulEmployeeCount ?? 0,
+    filteredUsages = usageQuery.data?.items ?? [],
+    relatedAuditLogs = auditQuery.data?.items ?? [];
+  const command = useAdminTaskCommand({
+    kind: "CODE_STATUS",
+    targetId: codeId,
+  });
+  const [confirmedVersion, setConfirmedVersion] = useState<number | null>(null);
+  const confirm = async () => {
+    if (
+      !code ||
+      code.version !== confirmedVersion ||
+      !command.allowed ||
+      command.retained
+    )
+      return false;
+    try {
+      const result = await command.execute((commandId) =>
+        adminTaskCodesApi.status(code.id, {
+          commandId,
+          confirmed: true,
+          expectedCodeVersion: code.version,
+          state: code.state === "ENABLED" ? "PAUSED" : "ENABLED",
+        }),
+      );
+      if (result?.state !== "OBSERVED") return false;
+      setFeedback("تم حفظ حالة الرمز بنجاح.");
+      setStatusConfirmOpen(false);
+      return true;
+    } catch {
+      return false;
+    }
+  };
   const handleCopy = () => {
     if (!code) return;
-    void navigator.clipboard.writeText(code.code);
+    void navigator.clipboard.writeText(code.normalizedText);
     setCopied(true);
     scheduleTimeout(() => {
       setCopied(false);
     }, 1500);
   };
 
-  if (!code) {
+  if (!code)
     return (
-      <div className="space-y-6">
-        <AdminPageHeader
-          title="رمز المهمة غير موجود"
-          breadcrumbs={[
-            { label: "رموز المهام", href: "/admin/codes" },
-            { label: "غير موجود" },
-          ]}
-        />
-        <AdminEmptyState
-          title="لم يتم العثور على رمز المهمة"
-          description={`المعرف (${codeId}) غير مسجل في جدول الرموز.`}
-          action={
-            <AdminButton href="/admin/codes" variant="primary">
-              العودة لقائمة الرموز
-            </AdminButton>
-          }
-        />
-      </div>
+      <TaskQueryState error={query.error?.message} retry={query.refetch} />
     );
-  }
 
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title={`تفاصيل رمز فتح المهمة: ${code.code}`}
-        description={`تاريخ الإنشاء: ${code.createdAt} — المنشئ: ${code.createdBy}`}
+        title={`تفاصيل رمز فتح المهمة: ${code.normalizedText}`}
+        description={`تاريخ الإنشاء: ${code.createdAt} — المنشئ: ${code.creator.fullName}`}
         breadcrumbs={[
           { label: "رموز المهام", href: "/admin/codes" },
-          { label: code.code },
+          { label: code.normalizedText },
         ]}
         action={
           <div className="flex items-center gap-2">
@@ -126,14 +120,15 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
               {copied ? "تم النسخ" : "نسخ الرمز"}
             </AdminButton>
             <AdminButton
-              variant={code.status === "active" ? "secondary" : "primary"}
+              variant={code.state === "ENABLED" ? "secondary" : "primary"}
               size="sm"
-              icon={code.status === "active" ? Pause : Play}
+              icon={code.state === "ENABLED" ? Pause : Play}
               onClick={() => {
+                setConfirmedVersion(code.version);
                 setStatusConfirmOpen(true);
               }}
             >
-              {code.status === "active" ? "إيقاف الرمز مؤقتاً" : "تفعيل الرمز"}
+              {code.state === "ENABLED" ? "إيقاف الرمز مؤقتاً" : "تفعيل الرمز"}
             </AdminButton>
           </div>
         }
@@ -167,11 +162,11 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
                 حالة الرمز:
               </span>
               <AdminBadge
-                variant={code.status === "active" ? "success" : "neutral"}
+                variant={code.state === "ENABLED" ? "success" : "neutral"}
                 size="sm"
                 dot
               >
-                {code.status === "active"
+                {code.state === "ENABLED"
                   ? "نشط (يقبل الفتح)"
                   : "متوقف (محظور الفتح)"}
               </AdminBadge>
@@ -192,7 +187,7 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
                 className="font-mono text-xl font-black tracking-wider text-emerald-950 sm:text-2xl"
                 dir="ltr"
               >
-                {code.code}
+                {code.normalizedText}
               </span>
             </div>
             <button
@@ -234,9 +229,7 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
                   </Link>
                   <span className="text-xs text-slate-500">
                     المنصة: {task.platform} &bull; النافذة:{" "}
-                    <bdi dir="ltr">
-                      {task.windowStart} - {task.windowEnd}
-                    </bdi>
+                    <bdi dir="ltr">12:00 - 18:00</bdi>
                   </span>
                 </div>
                 <Link
@@ -295,12 +288,15 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
             )}
             <div className="flex items-center justify-between py-2">
               <span className="text-slate-500">تم الإنشاء بواسطة:</span>
-              <span className="font-bold text-slate-800">{code.createdBy}</span>
+              <span className="font-bold text-slate-800">
+                {code.creator.fullName}
+              </span>
             </div>
           </div>
         </div>
       </div>
 
+      <TaskCommandFeedback command={command} />
       {/* Usage Table Section */}
       <div className="space-y-3">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
@@ -308,7 +304,7 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
             <Users size={18} className="text-emerald-700" aria-hidden="true" />
             <h2 className="text-sm font-bold text-slate-900 sm:text-base">
               سجل الموظفين الذين استخدموا هذا الرمز بنجاح (
-              {usagesForCode.length})
+              {code.successfulUsageCount})
             </h2>
           </div>
 
@@ -330,96 +326,120 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
           </div>
         </div>
 
-        <AdminTableShell>
-          {filteredUsages.length === 0 ? (
-            <AdminEmptyState
-              title="لم يتم استخدام هذا الرمز بعد"
-              description="عندما يقوم موظف بإدخال هذا الرمز بنجاح في واجهة المهمة اليومية، سيظهر سجله هنا تلقائياً."
-            />
-          ) : (
-            <table className="w-full text-right text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
-                <tr>
-                  <th className="px-4 py-3">الموظف</th>
-                  <th className="px-4 py-3">البريد الإلكتروني</th>
-                  <th className="px-4 py-3">معرف الموظف</th>
-                  <th className="px-4 py-3">توقيت الفتح الناجح</th>
-                  <th className="px-4 py-3">حالة التسليم اللاحقة</th>
-                  <th className="px-4 py-3 text-center">الملف</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredUsages.map((usage) => (
-                  <tr key={usage.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3 font-bold text-slate-900">
-                      <Link
-                        href={`/admin/employees/${usage.employeeId}`}
-                        className="hover:text-emerald-700 hover:underline"
-                      >
-                        {usage.employeeName}
-                      </Link>
-                    </td>
-
-                    <td
-                      className="px-4 py-3 font-mono text-slate-500"
-                      dir="ltr"
-                    >
-                      {usage.employeeEmail}
-                    </td>
-
-                    <td
-                      className="px-4 py-3 font-mono font-bold text-slate-600"
-                      dir="ltr"
-                    >
-                      {usage.employeeId}
-                    </td>
-
-                    <td
-                      className="px-4 py-3 font-mono text-slate-600"
-                      dir="ltr"
-                    >
-                      {usage.unlockedAt}
-                    </td>
-
-                    <td className="px-4 py-3">
-                      <AdminBadge
-                        variant={
-                          usage.submissionState === "approved"
-                            ? "success"
-                            : usage.submissionState === "submitted"
-                              ? "info"
-                              : usage.submissionState === "rejected"
-                                ? "danger"
-                                : "neutral"
-                        }
-                        size="sm"
-                      >
-                        {usage.submissionState === "approved"
-                          ? "تم الاعتماد"
-                          : usage.submissionState === "submitted"
-                            ? "تم إرسال المهمة"
-                            : usage.submissionState === "rejected"
-                              ? "مرفوضة"
-                              : "لم يتم الإرسال بعد"}
-                      </AdminBadge>
-                    </td>
-
-                    <td className="px-4 py-3 text-center">
-                      <Link
-                        href={`/admin/employees/${usage.employeeId}`}
-                        className="text-xs font-bold text-emerald-700 hover:underline"
-                      >
-                        عرض الحساب &larr;
-                      </Link>
-                    </td>
+        {!usageQuery.data && (
+          <TaskQueryState
+            error={usageQuery.error?.message}
+            retry={usageQuery.refetch}
+          />
+        )}
+        {usageQuery.data && (
+          <AdminTableShell
+            footer={
+              <AdminPagination
+                currentPage={usageQuery.page}
+                totalPages={usageQuery.data.pagination.totalPages}
+                totalItems={usageQuery.data.pagination.total}
+                pageSize={25}
+                onPageChange={usageQuery.setPage}
+              />
+            }
+          >
+            {filteredUsages.length === 0 ? (
+              <AdminEmptyState
+                title="لم يتم استخدام هذا الرمز بعد"
+                description="عندما يقوم موظف بإدخال هذا الرمز بنجاح في واجهة المهمة اليومية، سيظهر سجله هنا تلقائياً."
+              />
+            ) : (
+              <table className="w-full text-right text-xs">
+                <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
+                  <tr>
+                    <th className="px-4 py-3">الموظف</th>
+                    <th className="px-4 py-3">البريد الإلكتروني</th>
+                    <th className="px-4 py-3">معرف الموظف</th>
+                    <th className="px-4 py-3">توقيت الفتح الناجح</th>
+                    <th className="px-4 py-3">حالة التسليم اللاحقة</th>
+                    <th className="px-4 py-3 text-center">الملف</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </AdminTableShell>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredUsages.map((usage) => (
+                    <tr key={usage.id} className="hover:bg-slate-50/70">
+                      <td className="px-4 py-3 font-bold text-slate-900">
+                        <Link
+                          href={`/admin/employees/${usage.employee.id}`}
+                          className="hover:text-emerald-700 hover:underline"
+                        >
+                          {usage.employee.fullName}
+                        </Link>
+                      </td>
+
+                      <td
+                        className="px-4 py-3 font-mono text-slate-500"
+                        dir="ltr"
+                      >
+                        {usage.employee.email}
+                      </td>
+
+                      <td
+                        className="px-4 py-3 font-mono font-bold text-slate-600"
+                        dir="ltr"
+                      >
+                        {usage.employee.id}
+                      </td>
+
+                      <td
+                        className="px-4 py-3 font-mono text-slate-600"
+                        dir="ltr"
+                      >
+                        {usage.unlockedAt}
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <AdminBadge
+                          variant={
+                            usage.submissionStatus === "APPROVED"
+                              ? "success"
+                              : usage.submissionStatus === "PENDING"
+                                ? "info"
+                                : usage.submissionStatus === "REJECTED"
+                                  ? "danger"
+                                  : "neutral"
+                          }
+                          size="sm"
+                        >
+                          {usage.submissionStatus === "APPROVED"
+                            ? "تم الاعتماد"
+                            : usage.submissionStatus === "PENDING"
+                              ? "تم إرسال المهمة"
+                              : usage.submissionStatus === "REJECTED"
+                                ? "مرفوضة"
+                                : "لم يتم الإرسال بعد"}
+                        </AdminBadge>
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        <Link
+                          href={`/admin/employees/${usage.employee.id}`}
+                          className="text-xs font-bold text-emerald-700 hover:underline"
+                        >
+                          عرض الحساب &larr;
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </AdminTableShell>
+        )}
       </div>
 
+      {!auditQuery.data && (
+        <TaskQueryState
+          error={auditQuery.error?.message}
+          retry={auditQuery.refetch}
+        />
+      )}
       {/* Relevant Audit History */}
       {relatedAuditLogs.length > 0 && (
         <div className="space-y-3">
@@ -436,23 +456,33 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-slate-900">{log.action}</span>
                   <bdi dir="ltr" className="text-[11px] text-slate-400">
-                    {log.timestamp}
+                    {log.occurredAt}
                   </bdi>
                 </div>
                 <div className="text-slate-600">
                   <span className="font-semibold text-slate-800">
-                    {log.targetTitle}
+                    {log.after.state}
                   </span>
-                  {log.reason && (
-                    <span className="text-slate-500"> — {log.reason}</span>
-                  )}
+                  <span className="text-slate-500">
+                    {" "}
+                    — الإصدار {log.after.version}
+                  </span>
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  المسؤول: {log.adminName}
+                  المسؤول: {log.actor.fullName}
                 </div>
               </div>
             ))}
           </div>
+          {auditQuery.data && (
+            <AdminPagination
+              currentPage={auditQuery.page}
+              totalPages={auditQuery.data.pagination.totalPages}
+              totalItems={auditQuery.data.pagination.total}
+              pageSize={25}
+              onPageChange={auditQuery.setPage}
+            />
+          )}
         </div>
       )}
 
@@ -460,29 +490,33 @@ export function CodeDetailScreen({ codeId }: CodeDetailScreenProps) {
       <AdminConfirmDialog
         isOpen={statusConfirmOpen}
         title={
-          code.status === "active"
-            ? `إيقاف رمز فتح المهمة: ${code.code}`
-            : `تفعيل رمز فتح المهمة: ${code.code}`
+          code.state === "ENABLED"
+            ? `إيقاف رمز فتح المهمة: ${code.normalizedText}`
+            : `تفعيل رمز فتح المهمة: ${code.normalizedText}`
         }
         description={
-          code.status === "active"
+          code.state === "ENABLED"
             ? "سيؤدي إيقاف الرمز إلى منع الموظفين من استخدامه لفتح المهمة اليومية المرتبطة فوراً."
             : "سيتم تفعيل الرمز والسماح للموظفين باستخدامه للوصول إلى تفاصيل المهمة ورفع الإثبات."
         }
         confirmLabel={
-          code.status === "active" ? "تأكيد إيقاف الرمز" : "تأكيد تفعيل الرمز"
+          code.state === "ENABLED" ? "تأكيد إيقاف الرمز" : "تأكيد تفعيل الرمز"
         }
-        variant={code.status === "active" ? "destructive" : "primary"}
+        variant={code.state === "ENABLED" ? "destructive" : "primary"}
 
-        onConfirm={() => {
-          toggleCodeStatus(code.id);
-          setFeedback(
-            code.status === "active"
-              ? `تم إيقاف الرمز "${code.code}" بنجاح.`
-              : `تم تفعيل الرمز "${code.code}" بنجاح.`,
-          );
-          setStatusConfirmOpen(false);
-        }}
+        isLoading={command.isPending}
+        confirmDisabled={
+          !command.allowed ||
+          !!command.retained ||
+          code.version !== confirmedVersion
+        }
+        error={
+          command.error?.message ??
+          (code.version !== confirmedVersion
+            ? "تغير الرمز؛ أغلق التأكيد وراجع الحالة الحالية."
+            : null)
+        }
+        onConfirm={confirm}
         onClose={() => {
           setStatusConfirmOpen(false);
         }}

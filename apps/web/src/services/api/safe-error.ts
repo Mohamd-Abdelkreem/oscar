@@ -84,6 +84,33 @@ const financialCodes = new Set([
   "LEDGER_AMOUNT_BOUNDS",
   "LEDGER_INTERNAL",
 ]);
+const taskCodes = new Set([
+  "TASK_REVISION_CONFLICT",
+  "TASK_DATE_LOCKED",
+  "TASK_DATE_OCCUPIED",
+  "CODE_ALREADY_EXISTS",
+  "CODE_VERSION_CONFLICT",
+  "CODE_UNAVAILABLE",
+  "TASK_WINDOW_CLOSED",
+  "TASK_UNAVAILABLE",
+  "TASK_ELIGIBILITY_DENIED",
+  "DAILY_CLAIM_EXISTS",
+  "SUBMISSION_VERSION_CONFLICT",
+  "EVIDENCE_VERSION_CONFLICT",
+  "SUBMISSION_FINAL",
+  "EVIDENCE_CONFLICT",
+  "ASSET_NOT_READY",
+  "IDEMPOTENCY_CONFLICT",
+  "COMMAND_CANCELLED",
+  "UPLOAD_CANCELLED",
+  "UPLOAD_TOO_LARGE",
+  "UNSUPPORTED_IMAGE",
+  "INVALID_IMAGE",
+  "STORAGE_UNAVAILABLE",
+  "IMAGE_PROCESSING_UNAVAILABLE",
+  "UPLOAD_INTERRUPTED",
+  "UPLOAD_EXPIRED",
+]);
 
 export const getApiError = (failure: unknown): ApiError => {
   if (failure instanceof ApiFailure) return failure;
@@ -115,7 +142,8 @@ export const getApiError = (failure: unknown): ApiError => {
   const financialCode =
     financialEnvelope.success &&
     financialEnvelope.data.statusCode === status &&
-    financialCodes.has(financialEnvelope.data.code) &&
+    (financialCodes.has(financialEnvelope.data.code) ||
+      taskCodes.has(financialEnvelope.data.code)) &&
     (financialEnvelope.data.code !== "CONFIGURATION_SUPERSEDED" ||
       originalConfigurationPatch)
       ? financialEnvelope.data.code

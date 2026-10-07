@@ -1,3 +1,4 @@
+import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import request from "supertest";
@@ -197,6 +198,7 @@ describe("bounded relative referral projections", () => {
         const purchases = new SubscriptionPurchaseService(
           database,
           () => P04_FIXTURE_NOW,
+          financialFixtureAdmission(database),
         );
         await purchases.purchase(buyerIdentity, {
           quoteId: (await quotes.create(buyerIdentity, { packageCode: "S1" }))
@@ -279,7 +281,9 @@ describe("bounded relative referral projections", () => {
           data: {
             level1Bps: 900,
             version: { increment: 1 },
-            updatedAt: P04_FIXTURE_NOW,
+            updatedAt: new Date(
+              Math.max(P04_FIXTURE_NOW.getTime(), vi.getRealSystemTime()),
+            ),
             updatedByUserId: admin.user.id,
           },
         });

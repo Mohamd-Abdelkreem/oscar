@@ -27,45 +27,6 @@ describe("employee mock state", () => {
     vi.useRealTimers();
   });
 
-  it("credits a submitted task once and replaces its screenshot without another reward", () => {
-    const { result } = renderHook(useEmployeeState, { wrapper });
-    const history = result.current.taskHistory;
-    const ledgerCount = result.current.transactions.length;
-
-    act(() => {
-      expect(result.current.submitTask("blob:first").success).toBe(true);
-    });
-    expect(result.current.task).toMatchObject({
-      status: "submitted",
-      submittedScreenshot: "blob:first",
-      submittedAt: "13:45",
-      rewardAmount: 2,
-    });
-    expect(result.current.balance).toMatchObject({
-      total: 42,
-      available: 42,
-      reserved: 0,
-    });
-    expect(result.current.balance.breakdown.taskRewards).toBe(86);
-    expect(result.current.transactions[0]).toMatchObject({
-      type: "task_reward",
-      amount: 2,
-      status: "pending",
-    });
-    expect(result.current.transactions).toHaveLength(ledgerCount + 1);
-
-    act(() => {
-      expect(
-        result.current.replaceTaskScreenshot("blob:replacement").success,
-      ).toBe(true);
-      expect(result.current.submitTask("blob:duplicate").success).toBe(false);
-    });
-    expect(result.current.task.submittedScreenshot).toBe("blob:replacement");
-    expect(result.current.balance.available).toBe(42);
-    expect(result.current.transactions).toHaveLength(ledgerCount + 1);
-    expect(result.current.taskHistory).toEqual(history);
-  });
-
   it("reserves withdrawal funds and releases them with a reversal when rejected", () => {
     const { result } = renderHook(useEmployeeState, { wrapper });
     act(() => {

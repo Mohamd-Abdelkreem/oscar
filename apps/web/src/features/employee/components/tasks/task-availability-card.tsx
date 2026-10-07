@@ -1,19 +1,43 @@
 import { Clock, Layers, Lock } from "lucide-react";
 import { FINANCIAL_RULES } from "../../constants/branding";
-import type { DailyTask } from "../../types/employee.types";
+import type { EmployeeTaskDay } from "@template/contracts";
 import { ButtonLink } from "../common/button";
 import { MoneyAmount } from "../common/money-amount";
 import { StatusBadge } from "../common/status-badge";
 
 interface TaskAvailabilityCardProps {
-  readonly status: "free" | "before_window" | "closed";
-  readonly task: DailyTask;
+  readonly day: EmployeeTaskDay;
 }
-
-export function TaskAvailabilityCard({
-  status,
-  task,
-}: TaskAvailabilityCardProps) {
+export function TaskAvailabilityCard({ day }: TaskAvailabilityCardProps) {
+  const status =
+    day.workEligibility === "FREE" || day.workEligibility === "EXPIRED"
+      ? "free"
+      : day.unavailableReason === "UPCOMING"
+        ? "before_window"
+        : "closed";
+  const task = day.task;
+  const nextOpening = new Intl.DateTimeFormat("ar-IQ", {
+    timeZone: "Asia/Baghdad",
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(day.window.nextOpeningAt));
+  const unavailableLabels = {
+    HOLIDAY: "اليوم عطلة للمهام",
+    NO_TASK: "لا توجد مهمة منشورة اليوم",
+    PAUSED: "المهمة متوقفة مؤقتاً",
+    TASK_RESTRICTED: "المهام مقيدة لحسابك",
+    CLOSED: "انتهت فترة تنفيذ مهمة اليوم",
+  };
+  const unavailableLabel =
+    day.workEligibility === "TASK_RESTRICTED"
+      ? unavailableLabels.TASK_RESTRICTED
+      : day.calendarState === "HOLIDAY"
+        ? unavailableLabels.HOLIDAY
+        : day.opportunityState === "NO_TASK"
+          ? unavailableLabels.NO_TASK
+          : day.opportunityState === "PAUSED"
+            ? unavailableLabels.PAUSED
+            : unavailableLabels.CLOSED;
   // Free user state
   if (status === "free") {
     return (
@@ -23,11 +47,16 @@ export function TaskAvailabilityCard({
         </div>
         <div>
           <h2 className="text-lg font-bold text-slate-900">
-            لا يوجد منصب نشط للمهام
+            {day.workEligibility === "EXPIRED"
+              ? "انتهت مدة المنصب"
+              : "لا يوجد منصب نشط للمهام"}
           </h2>
           <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-slate-500">
-            حسابك حالياً في الحساب المجاني. المهام اليومية ومكافآتها تتطلب تفعيل
-            أحد مناصب أوسكار المعتمدة (مثل منصب S1 أو O1).
+            {day.workEligibility === "EXPIRED"
+              ? "انتهت مدة منصبك الحالي."
+              : "حسابك حالياً مجاني."}{" "}
+            المهام اليومية ومكافآتها تتطلب تفعيل أحد مناصب أوسكار المعتمدة (مثل
+            منصب S1 أو O1).
           </p>
         </div>
         <div className="flex justify-center pt-2">
@@ -50,7 +79,7 @@ export function TaskAvailabilityCard({
       <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xs sm:p-6">
         <div className="flex items-center justify-between border-b border-slate-200 pb-4">
           <div>
-            <h2 className="text-lg font-bold text-slate-900">{task.title}</h2>
+            <h2 className="text-lg font-bold text-slate-900">{task?.title}</h2>
             <p className="mt-0.5 text-xs text-slate-500">
               نافذة المهمة: {FINANCIAL_RULES.taskTimeWindow.start} -{" "}
               {FINANCIAL_RULES.taskTimeWindow.end} (
@@ -79,7 +108,13 @@ export function TaskAvailabilityCard({
 
         <div className="flex items-center justify-between pt-2 text-sm text-slate-600">
           <span>المكافأة المقررة للمهمة:</span>
-          <MoneyAmount amount={task.rewardAmount} size="md" color="positive" />
+          {day.currentEntitlement.effective && (
+            <MoneyAmount
+              amount={day.currentEntitlement.dailyReward}
+              size="md"
+              color="positive"
+            />
+          )}
         </div>
       </div>
     );
@@ -92,18 +127,15 @@ export function TaskAvailabilityCard({
         <Clock size={24} aria-hidden="true" />
       </div>
       <div>
-        <h2 className="text-lg font-bold text-slate-900">
-          انتهت فترة تنفيذ مهمة اليوم
-        </h2>
+        <h2 className="text-lg font-bold text-slate-900">{unavailableLabel}</h2>
         <p className="mx-auto mt-1 max-w-md text-sm leading-relaxed text-slate-500">
-          نافذة أداء المهمة تنتهي يومياً عند الساعة 18:00 بتوقيت بغداد. عدم
-          إنجاز المهمة اليوم يعني عدم صرف المكافأة الخاصة بها لهذا اليوم، دون
-          المساس برصيدك الحالي.
+          {day.calendarState === "CLOSED" &&
+          day.opportunityState === "PUBLISHED"
+            ? "نافذة أداء المهمة تنتهي يومياً عند الساعة 18:00 بتوقيت بغداد. عدم إنجاز المهمة اليوم يعني عدم صرف المكافأة الخاصة بها لهذا اليوم، دون المساس برصيدك الحالي."
+            : "لا يمكن إرسال مهمة جديدة في الحالة الحالية. لا تُصرف مكافأة دون إنجاز معتمد، ولا يتغير رصيدك الحالي."}
         </p>
       </div>
-      <p className="text-xs text-slate-400">
-        تفتح النافذة القادمة غداً عند الساعة 12:00 ظهراً.
-      </p>
+      <p className="text-xs text-slate-400">النافذة القادمة: {nextOpening}</p>
     </div>
   );
 }

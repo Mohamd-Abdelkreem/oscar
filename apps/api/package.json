@@ -8,6 +8,9 @@
     "clean": "rimraf dist node_modules/.cache/tsconfig.build.tsbuildinfo",
     "build": "pnpm clean && tsc -p tsconfig.build.json",
     "start": "node --enable-source-maps dist/server.js",
+    "start:signer": "node --enable-source-maps dist/signer.js",
+    "start:worker": "node --enable-source-maps dist/worker.js",
+    "custody:recover": "node --enable-source-maps dist/modules/custody/recovery.cli.js",
     "admin:bootstrap": "node --enable-source-maps dist/modules/admins/admin-bootstrap.cli.js",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -15,9 +18,13 @@
     "test": "vitest run --config vitest.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest --config vitest.config.ts",
-    "check-types:e2e": "tsc --noEmit -p tests/e2e/tsconfig.json"
+    "check-types:e2e": "tsc --noEmit -p tests/e2e/tsconfig.json",
+    "treasury:operate": "node --enable-source-maps dist/modules/treasury/treasury.cli.js",
+    "test:testnet": "vitest run --config vitest.testnet.config.ts",
+    "check-types:testnet": "tsc --noEmit -p testnet/tsconfig.json"
   },
   "dependencies": {
+    "@fastify/busboy": "3.2.2",
     "@template/contracts": "workspace:*",
     "@template/database": "workspace:*",
     "argon2": "0.45.1",
@@ -34,6 +41,8 @@
     "pino": "10.3.1",
     "pino-http": "11.0.0",
     "resend": "6.20.0",
+    "sharp": "0.35.5",
+    "tronweb": "6.5.1",
     "zod": "4.4.3",
     "zod-openapi": "6.0.0"
   },

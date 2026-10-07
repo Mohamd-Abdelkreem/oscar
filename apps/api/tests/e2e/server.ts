@@ -1,3 +1,10 @@
+import { createInterface } from "node:readline";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { ProofsRuntime } from "../../src/modules/proofs/proofs.runtime.js";
+import type { P05TaskScenario } from "./p05-tasks.js";
+import type { P05DecoderBarrier } from "./p05-decoder-barrier.js";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
@@ -51,19 +58,30 @@ Object.assign(process.env, {
   AUTH_REFRESH_JWT_SECRET: randomUUID() + randomUUID(),
   AUTH_VERIFICATION_JWT_SECRET: randomUUID() + randomUUID(),
   AUTH_RESET_JWT_SECRET: randomUUID() + randomUUID(),
+  // Nine-route proof/UI acceptance makes many bounded reads from one loopback IP.
+  // Keep the real limiter finite; its production/default and P03 rate tests are unchanged.
+  ...(process.env["P05_E2E_DATABASE_URL"]
+    ? { API_RATE_LIMIT_MAX: "1000" }
+    : {}),
 });
 
 let container: StartedPostgreSqlContainer | undefined;
 let database: DatabaseClient | undefined;
 let server: Server | undefined;
 let financial: P04FinanceScenario | undefined;
+let taskScenario: P05TaskScenario | undefined;
+let proofs: ProofsRuntime | undefined;
+let decoderBarrier: P05DecoderBarrier | undefined;
+let privateRoot: string | undefined;
+const nativeBridge = process.env["P05_E2E_DATABASE_URL"] !== undefined;
 const lifecycle = { stopping: false };
 const stopRequested = () => lifecycle.stopping;
 let cleanupPromise: Promise<void> | undefined;
 const mail = new Map<string, string>();
 let deliveryOutcome: "acknowledged" | "rejected" | "unknown" = "acknowledged";
 const send = (reply: ControlReply) => {
-  if (process.connected) process.send?.(reply);
+  if (nativeBridge) process.stdout.write(JSON.stringify(reply) + "\n");
+  else if (process.connected) process.send?.(reply);
 };
 const cleanup = (): Promise<void> => {
   lifecycle.stopping = true;
@@ -75,7 +93,10 @@ const cleanup = (): Promise<void> => {
           resolveClose();
         });
       });
+    decoderBarrier?.dispose();
+    await proofs?.stop();
     await database?.$disconnect();
+    if (privateRoot) await rm(privateRoot, { recursive: true, force: true });
     await container?.stop();
     mail.clear();
   })();
@@ -98,6 +119,47 @@ const control = async (
   if (database === undefined) throw new Error("HARNESS_NOT_READY");
   const finance = financial;
   if (finance === undefined) throw new Error("HARNESS_NOT_READY");
+  if (request.command === "p05-fixtures") {
+    const instant = request.futureWorkDate
+      ? new Date()
+      : new Date("2026-10-05T09:00:00.000Z");
+    if (request.futureWorkDate) {
+      // Reviewed catalog updates must follow the actual migration seed time.
+      instant.setUTCDate(instant.getUTCDate() + 1);
+      instant.setUTCHours(9, 0, 0, 0);
+      while (instant.getUTCDay() === 0 || instant.getUTCDay() === 6)
+        instant.setUTCDate(instant.getUTCDate() + 1);
+    }
+    finance.setClock(instant.toISOString());
+    return taskScenario?.fixtures() ?? null;
+  }
+  if (request.command === "p05-state")
+    return taskScenario?.state(request.email) ?? null;
+  if (request.command === "p05-fund-upgrade") {
+    if (!taskScenario) throw new Error("P05_FIXTURES_REQUIRED");
+    return taskScenario.fundUpgrade();
+  }
+  if (request.command === "p05-scan") {
+    await proofs?.lifecycle.scan();
+    return null;
+  }
+  if (
+    request.command === "p05-hold-decoder" ||
+    request.command === "p05-decoder-state"
+  ) {
+    if (!decoderBarrier) throw new Error("P05_NATIVE_REQUIRED");
+    if (request.command === "p05-hold-decoder") {
+      decoderBarrier.arm();
+      return null;
+    }
+    return decoderBarrier.state();
+  }
+  if (request.command === "p05-pages") {
+    const admin = await database.user.findUniqueOrThrow({
+      where: { email: "admin@p03.test" },
+    });
+    return taskScenario?.seedPages(admin.id) ?? null;
+  }
   if (request.command === "p04-fixtures")
     return finance.fixtures(request.profile);
   if (request.command === "p04-state") return finance.state(request.email);
@@ -260,41 +322,45 @@ const control = async (
 };
 
 const start = async () => {
-  if (process.send === undefined) throw new Error("PRIVATE_IPC_REQUIRED");
-  const probe = createServer();
-  await new Promise<void>((ready, reject) => {
-    probe.once("error", reject);
-    probe.listen(4103, "127.0.0.1", ready);
-  });
-  await new Promise<void>((closed) =>
-    probe.close(() => {
-      closed();
-    }),
-  );
-  container = await new PostgreSqlContainer("postgres:18.4")
-    .withDatabase("p03_e2e")
-    .withUsername("p03_test")
-    .withPassword("isolated-test-only")
-    .withStartupTimeout(120_000)
-    .start();
-  if (stopRequested()) {
-    await container.stop();
-    throw new Error("HARNESS_STOPPED");
-  }
-  const databaseUrl = container.getConnectionUri();
-  process.env["DATABASE_URL"] = databaseUrl;
-  const pnpmScript = process.env["npm_execpath"];
-  if (pnpmScript === undefined) throw new Error("PNPM_REQUIRED");
-  await promisify(execFile)(
-    process.execPath,
-    [pnpmScript, "exec", "prisma", "migrate", "deploy"],
-    {
-      cwd: resolve(import.meta.dirname, "../../../../packages/database"),
-      env: { ...process.env, DATABASE_URL: databaseUrl },
-      windowsHide: true,
-      timeout: 180_000,
-    },
-  );
+  if (process.send === undefined && !nativeBridge)
+    throw new Error("PRIVATE_IPC_REQUIRED");
+  let databaseUrl = process.env["P05_E2E_DATABASE_URL"] ?? "";
+  if (!nativeBridge) {
+    const probe = createServer();
+    await new Promise<void>((ready, reject) => {
+      probe.once("error", reject);
+      probe.listen(4103, "127.0.0.1", ready);
+    });
+    await new Promise<void>((closed) =>
+      probe.close(() => {
+        closed();
+      }),
+    );
+    container = await new PostgreSqlContainer("postgres:18.4")
+      .withDatabase("p03_e2e")
+      .withUsername("p03_test")
+      .withPassword("isolated-test-only")
+      .withStartupTimeout(120_000)
+      .start();
+    if (stopRequested()) {
+      await container.stop();
+      throw new Error("HARNESS_STOPPED");
+    }
+    databaseUrl = container.getConnectionUri();
+    process.env["DATABASE_URL"] = databaseUrl;
+    const pnpmScript = process.env["npm_execpath"];
+    if (pnpmScript === undefined) throw new Error("PNPM_REQUIRED");
+    await promisify(execFile)(
+      process.execPath,
+      [pnpmScript, "exec", "prisma", "migrate", "deploy"],
+      {
+        cwd: resolve(import.meta.dirname, "../../../../packages/database"),
+        env: { ...process.env, DATABASE_URL: databaseUrl },
+        windowsHide: true,
+        timeout: 180_000,
+      },
+    );
+  } else process.env["DATABASE_URL"] = databaseUrl;
   const [
     { createDatabaseClient },
     { createApp },
@@ -311,6 +377,27 @@ const start = async () => {
   database = createDatabaseClient(databaseUrl);
   const { P04FinanceScenario } = await import("./p04-finance.js");
   financial = new P04FinanceScenario(database);
+  const { P05TaskScenario } = await import("./p05-tasks.js");
+  taskScenario = new P05TaskScenario(database, financial.clock);
+  if (nativeBridge) {
+    const { P05DecoderBarrier } = await import("./p05-decoder-barrier.js");
+    decoderBarrier = new P05DecoderBarrier();
+    privateRoot = await mkdtemp(join(tmpdir(), "oscar-p05-private-"));
+    const { ProofsRuntime } =
+      await import("../../src/modules/proofs/proofs.runtime.js");
+    const { parseProofsEnvironment } =
+      await import("../../src/core/config/proofs.config.js");
+    proofs = new ProofsRuntime(
+      database,
+      parseProofsEnvironment({ PROOF_STORAGE_ROOT: privateRoot }, "/work"),
+      financial.clock,
+      () => {},
+      (observation) => {
+        decoderBarrier?.observe(observation);
+      },
+    );
+    await proofs.start();
+  }
   const passwordHash = await generateHash("P03 test password only!");
   for (const [email, role, status, verified] of [
     ["employee@p03.test", "USER", "ACTIVE", true],
@@ -375,12 +462,17 @@ const start = async () => {
     logger: createLogger({ level: "silent", pretty: false }),
     emailDelivery,
     financialClock: financial.clock,
+    ...(proofs ? { proofs } : {}),
   });
   await new Promise<void>((ready, reject) => {
-    server = app.listen(4103, "127.0.0.1", (error) => {
-      if (error !== undefined) reject(error);
-      else ready();
-    });
+    server = app.listen(
+      4103,
+      nativeBridge ? "0.0.0.0" : "127.0.0.1",
+      (error) => {
+        if (error !== undefined) reject(error);
+        else ready();
+      },
+    );
     server.once("error", reject);
   });
   if (stopRequested()) {
@@ -388,7 +480,7 @@ const start = async () => {
     throw new Error("HARNESS_STOPPED");
   }
   send({ id: 0, status: "ready", data: null });
-  process.on("message", (input: unknown) => {
+  const receive = (input: unknown) => {
     const parsed = controlRequestSchema.safeParse(input);
     if (!parsed.success) {
       send({ id: 0, status: "failed", data: null });
@@ -401,12 +493,28 @@ const start = async () => {
           status: parsed.data.command === "stop" ? "stopped" : "ok",
           data,
         });
-        if (parsed.data.command === "stop") process.disconnect();
+        if (parsed.data.command === "stop") {
+          if (nativeBridge) process.stdin.destroy();
+          else process.disconnect();
+        }
       })
       .catch(() => {
         send({ id: parsed.data.id, status: "failed", data: null });
       });
-  });
+  };
+  if (nativeBridge) {
+    const lines = createInterface({ input: process.stdin });
+    lines.on("line", (line) => {
+      try {
+        receive(JSON.parse(line));
+      } catch {
+        send({ id: 0, status: "failed", data: null });
+      }
+    });
+    lines.on("close", () => {
+      void cleanup().finally(() => process.exit());
+    });
+  } else process.on("message", receive);
 };
 process.once("disconnect", () => {
   void cleanup().finally(() => {
