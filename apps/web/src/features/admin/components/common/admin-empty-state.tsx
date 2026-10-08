@@ -4,7 +4,11 @@ import type { ComponentType, ReactNode } from "react";
 interface AdminEmptyStateProps {
   readonly title: string;
   readonly description?: string;
-  readonly icon?: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
+  readonly icon?: ComponentType<{
+    size?: number;
+    className?: string;
+    "aria-hidden"?: boolean | "true" | "false";
+  }>;
   readonly action?: ReactNode;
 }
 

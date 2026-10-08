@@ -52,18 +52,18 @@ Next.js screens and domain hooks
 
 Existing implementation boundaries to preserve:
 
-| Existing Location | Current Role / Planning Consequence |
-| --- | --- |
-| `apps/api/src/router.ts` | Auth, users, health, and OpenAPI are wired; OSCAR financial/task/TRON routes are not implemented here yet. |
-| `packages/database/prisma/schema.prisma` | Currently contains User and RefreshToken, not the proposed OSCAR domain models. |
-| `packages/contracts/src/` | Existing auth/account/HTTP schemas; add validated domain contracts alongside them. |
-| `apps/web/src/services/api/api-client.ts` | Central transport; do not duplicate token, refresh, or error handling in domain components. |
-| `apps/web/src/features/auth/api/auth.api.ts` and `hooks/auth.hooks.ts` | Existing real authentication adapters/session hooks to reuse. |
-| `apps/web/src/features/users/api/users.api.ts` and `hooks/users.hooks.ts` | Existing account integration patterns. |
-| `apps/web/src/shared/query/query-client.ts` | Existing query policy; preserve bounded read retries and no automatic mutation retries. |
-| `apps/web/src/features/employee/` and `features/admin/` | Approved screens currently backed substantially by fixtures and local state. |
-| `apps/web/src/app/providers.tsx` | Currently mounts admin fixture state globally; remove it after migrating its production consumers. |
-| `packages/database/tests/schema-contract.test.ts` and `tests/integration/migration.integration.test.ts` | Auth-only model/table expectations must be deliberately updated as migrations add OSCAR models. |
+| Existing Location                                                                                       | Current Role / Planning Consequence                                                                        |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `apps/api/src/router.ts`                                                                                | Auth, users, health, and OpenAPI are wired; OSCAR financial/task/TRON routes are not implemented here yet. |
+| `packages/database/prisma/schema.prisma`                                                                | Currently contains User and RefreshToken, not the proposed OSCAR domain models.                            |
+| `packages/contracts/src/`                                                                               | Existing auth/account/HTTP schemas; add validated domain contracts alongside them.                         |
+| `apps/web/src/services/api/api-client.ts`                                                               | Central transport; do not duplicate token, refresh, or error handling in domain components.                |
+| `apps/web/src/features/auth/api/auth.api.ts` and `hooks/auth.hooks.ts`                                  | Existing real authentication adapters/session hooks to reuse.                                              |
+| `apps/web/src/features/users/api/users.api.ts` and `hooks/users.hooks.ts`                               | Existing account integration patterns.                                                                     |
+| `apps/web/src/shared/query/query-client.ts`                                                             | Existing query policy; preserve bounded read retries and no automatic mutation retries.                    |
+| `apps/web/src/features/employee/` and `features/admin/`                                                 | Approved screens currently backed substantially by fixtures and local state.                               |
+| `apps/web/src/app/providers.tsx`                                                                        | Currently mounts admin fixture state globally; remove it after migrating its production consumers.         |
+| `packages/database/tests/schema-contract.test.ts` and `tests/integration/migration.integration.test.ts` | Auth-only model/table expectations must be deliberately updated as migrations add OSCAR models.            |
 
 The auth foundation already includes useful security protections. Extend it instead of replacing it: password hashing, hashed single-use verification/reset/refresh tokens, role/status checks, validation, refresh-cookie controls, CSRF protection for cookie-authenticated flows, and redacted logging. Reverify these protections after changes.
 
@@ -90,12 +90,12 @@ All new model names, test names, worker entrypoints, and API capabilities below 
 ### 3.2 Packages and Subscription Dates
 
 | Package | Purchase Price (USDT) | Reward Per Approved Daily Task (USDT) | Counted Work Dates | Initial Withdrawal Fee | Conditional Gross Total |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| S1 | 60 | 2.00 | 365 | 21% | 730.00 |
-| S2 | 120 | 4.00 | 365 | 21% | 1,460.00 |
-| O1 | 600 | 16.00 | 365 | 21% | 5,840.00 |
-| O2 | 1,200 | 38.00 | 365 | 21% | 13,870.00 |
-| A1 | 2,600 | 67.00 | 365 | 21% | 24,455.00 |
+| ------- | --------------------: | ------------------------------------: | -----------------: | ---------------------: | ----------------------: |
+| S1      |                    60 |                                  2.00 |                365 |                    21% |                  730.00 |
+| S2      |                   120 |                                  4.00 |                365 |                    21% |                1,460.00 |
+| O1      |                   600 |                                 16.00 |                365 |                    21% |                5,840.00 |
+| O2      |                 1,200 |                                 38.00 |                365 |                    21% |               13,870.00 |
+| A1      |                 2,600 |                                 67.00 |                365 |                    21% |               24,455.00 |
 
 These are initial configurable terms, not a guaranteed investment return. The gross total assumes 365 eligible tasks are completed and approved, before package cost and withdrawal fees. It is not income within a 365-calendar-day year.
 
@@ -309,19 +309,19 @@ Recover database commits, private assets where required, custody records, and im
 
 ## 6. Eleven-Phase Map and Legacy Crosswalk
 
-| Current Phase | Original Phase(s) | Scope | Layer / Gate |
-| --- | --- | --- | --- |
-| P01 | P01 | Money, Baghdad calendar, foundation schema, ledger/source/idempotency | Backend foundation; owner-reported complete |
-| P02 | P02 | Identity, role/status enforcement, admin email/password login and account lifecycle | Backend foundation; owner-reported complete |
-| P03 | P03 | Real auth, dedicated admin login, account basics, protected layouts | Frontend after P01-P02; owner-reported complete |
-| P04 | P04 + P05 | Packages, purchases, referrals, wallet/ledger, employee/admin finance views | Entire backend gate, then frontend gate |
-| P05 | P06 + P07 | Private proofs, tasks/codes, final review/reward, employee/admin workflows | Entire backend gate, then frontend gate |
-| P06 | P08 | Protected custody, assigned addresses, deposits, operator treasury tools | Backend; controlled testnet/recovery gate |
-| P07 | P09 | Employee deposit and admin deposit history | Frontend after P06 |
-| P08 | P10 + P11 | Withdrawal reservations/scheduling and automatic signing/payout/recovery | Two ordered backend delivery groups; both gates required |
-| P09 | P12 | Employee/admin withdrawals and initial address flow | Frontend after all of P08 |
-| P10 | P13 + P14 | Cross-domain administration/settings/aggregates and final admin/home/account/policy integrations | Entire backend gate, then frontend gate |
-| P11 | P15 | Integrated verification, Linux/Docker deployment, restore, testnet/UAT, release | Final verification and operations |
+| Current Phase | Original Phase(s) | Scope                                                                                            | Layer / Gate                                             |
+| ------------- | ----------------- | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| P01           | P01               | Money, Baghdad calendar, foundation schema, ledger/source/idempotency                            | Backend foundation; owner-reported complete              |
+| P02           | P02               | Identity, role/status enforcement, admin email/password login and account lifecycle              | Backend foundation; owner-reported complete              |
+| P03           | P03               | Real auth, dedicated admin login, account basics, protected layouts                              | Frontend after P01-P02; owner-reported complete          |
+| P04           | P04 + P05         | Packages, purchases, referrals, wallet/ledger, employee/admin finance views                      | Entire backend gate, then frontend gate                  |
+| P05           | P06 + P07         | Private proofs, tasks/codes, final review/reward, employee/admin workflows                       | Entire backend gate, then frontend gate                  |
+| P06           | P08               | Protected custody, assigned addresses, deposits, operator treasury tools                         | Backend; controlled testnet/recovery gate                |
+| P07           | P09               | Employee deposit and admin deposit history                                                       | Frontend after P06                                       |
+| P08           | P10 + P11         | Withdrawal reservations/scheduling and automatic signing/payout/recovery                         | Two ordered backend delivery groups; both gates required |
+| P09           | P12               | Employee/admin withdrawals and initial address flow                                              | Frontend after all of P08                                |
+| P10           | P13 + P14         | Cross-domain administration/settings/aggregates and final admin/home/account/policy integrations | Entire backend gate, then frontend gate                  |
+| P11           | P15               | Integrated verification, Linux/Docker deployment, restore, testnet/UAT, release                  | Final verification and operations                        |
 
 Continue with P04-P11 in order, preserving the completed P01-P03 and their feature directories, task IDs, and evidence. All phase references below use the current IDs unless explicitly labeled original/legacy. Original P04-P15 references in historical artifacts must be interpreted through this crosswalk, not by matching the same number to the new scope. Do not rewrite completed specifications, the constitution, or `.specify/feature.json` as part of this regrouping.
 
@@ -535,50 +535,50 @@ The original OSCAR scope is 17 employee routes and 19 admin dashboard routes, 36
 
 ### Employee Routes
 
-| Route | Responsibility | Frontend Phase |
-| --- | --- | --- |
-| `/employee` | Personal summary, task/subscription/wallet status | P10 |
-| `/employee/tasks` | Daily availability, code unlock, screenshot/declaration, submission status | P05 |
-| `/employee/packages` | Catalog, quote, purchase/upgrade, subscription terms | P04 |
-| `/employee/team` | Fixed invite identity, relative team levels, commissions | P04 |
-| `/employee/wallet` | Server balances, source restrictions, reservations, history/detail | P04 |
-| `/employee/deposit` | Assigned address/QR/copy and verified history | P07 |
-| `/employee/withdraw` | Eligible funds, fixed destination, quote/request/lifecycle | P09 |
-| `/employee/account` | Profile/password/logout, subscription/wallet links, address | P03; domain sections P04/P09/P10 |
-| `/employee/support` | Company email contact | P10 |
-| `/employee/faq` | Approved current business-rule answers | P10 |
-| `/employee/terms` | Approved current terms | P10 |
-| `/employee/privacy` | Approved retention/privacy policy | P10 |
-| `/employee/auth/login` | Real login and role-aware destination | P03 |
-| `/employee/auth/register` | Email/password, optional sponsor | P03 |
-| `/employee/auth/verify-email` | Single-use verification link result/resend | P03 |
-| `/employee/auth/forgot-password` | Safe reset request | P03 |
-| `/employee/auth/reset-password` | Single-use password reset | P03 |
+| Route                            | Responsibility                                                             | Frontend Phase                   |
+| -------------------------------- | -------------------------------------------------------------------------- | -------------------------------- |
+| `/employee`                      | Personal summary, task/subscription/wallet status                          | P10                              |
+| `/employee/tasks`                | Daily availability, code unlock, screenshot/declaration, submission status | P05                              |
+| `/employee/packages`             | Catalog, quote, purchase/upgrade, subscription terms                       | P04                              |
+| `/employee/team`                 | Fixed invite identity, relative team levels, commissions                   | P04                              |
+| `/employee/wallet`               | Server balances, source restrictions, reservations, history/detail         | P04                              |
+| `/employee/deposit`              | Assigned address/QR/copy and verified history                              | P07                              |
+| `/employee/withdraw`             | Eligible funds, fixed destination, quote/request/lifecycle                 | P09                              |
+| `/employee/account`              | Profile/password/logout, subscription/wallet links, address                | P03; domain sections P04/P09/P10 |
+| `/employee/support`              | Company email contact                                                      | P10                              |
+| `/employee/faq`                  | Approved current business-rule answers                                     | P10                              |
+| `/employee/terms`                | Approved current terms                                                     | P10                              |
+| `/employee/privacy`              | Approved retention/privacy policy                                          | P10                              |
+| `/employee/auth/login`           | Real login and role-aware destination                                      | P03                              |
+| `/employee/auth/register`        | Email/password, optional sponsor                                           | P03                              |
+| `/employee/auth/verify-email`    | Single-use verification link result/resend                                 | P03                              |
+| `/employee/auth/forgot-password` | Safe reset request                                                         | P03                              |
+| `/employee/auth/reset-password`  | Single-use password reset                                                  | P03                              |
 
 ### Admin Routes
 
-| Route | Responsibility | Frontend Phase |
-| --- | --- | --- |
-| `/admin/auth/login` | Dedicated email/password admin sign-in; shared auth; no public admin signup | P03 |
-| `/admin` | Authoritative operational/financial summary | P10 |
-| `/admin/employees` | Indexed search/filter/paginated list | P10 |
-| `/admin/employees/[employeeId]` | Full authorized detail/actions/history | P10 |
-| `/admin/packages` | Package configuration with saved purchase terms | P04 |
-| `/admin/tasks` | Daily task list/publication | P05 |
-| `/admin/tasks/new` | Create task | P05 |
-| `/admin/tasks/[taskId]` | Details, codes, submissions | P05 |
-| `/admin/tasks/[taskId]/edit` | Edit permitted future/current content safely | P05 |
-| `/admin/submissions` | Private evidence review/final decisions | P05 |
-| `/admin/codes` | Codes, states, usage summaries | P05 |
-| `/admin/codes/new` | Create task code | P05 |
-| `/admin/codes/[codeId]` | Successful usages/accounts/times | P05 |
-| `/admin/deposits` | Verified deposit history and separately labeled manual credits | P07 |
-| `/admin/withdrawals` | Scheduled/in-flight history, remaining time, rejection/extension | P09 |
-| `/admin/finance` | Added/deducted/reserved entries and detail | P04 |
-| `/admin/referrals` | Root-relative tree/commission history | P04 |
-| `/admin/audit-log` | Server actor/action/time/reason changes | P10 |
-| `/admin/settings` | Allowed settings with saved operation terms | P10 |
-| `/admin/settings/admins` | ADMIN invitations and lifecycle | P03; final integration P10 |
+| Route                           | Responsibility                                                              | Frontend Phase             |
+| ------------------------------- | --------------------------------------------------------------------------- | -------------------------- |
+| `/admin/auth/login`             | Dedicated email/password admin sign-in; shared auth; no public admin signup | P03                        |
+| `/admin`                        | Authoritative operational/financial summary                                 | P10                        |
+| `/admin/employees`              | Indexed search/filter/paginated list                                        | P10                        |
+| `/admin/employees/[employeeId]` | Full authorized detail/actions/history                                      | P10                        |
+| `/admin/packages`               | Package configuration with saved purchase terms                             | P04                        |
+| `/admin/tasks`                  | Daily task list/publication                                                 | P05                        |
+| `/admin/tasks/new`              | Create task                                                                 | P05                        |
+| `/admin/tasks/[taskId]`         | Details, codes, submissions                                                 | P05                        |
+| `/admin/tasks/[taskId]/edit`    | Edit permitted future/current content safely                                | P05                        |
+| `/admin/submissions`            | Private evidence review/final decisions                                     | P05                        |
+| `/admin/codes`                  | Codes, states, usage summaries                                              | P05                        |
+| `/admin/codes/new`              | Create task code                                                            | P05                        |
+| `/admin/codes/[codeId]`         | Successful usages/accounts/times                                            | P05                        |
+| `/admin/deposits`               | Verified deposit history and separately labeled manual credits              | P07                        |
+| `/admin/withdrawals`            | Scheduled/in-flight history, remaining time, rejection/extension            | P09                        |
+| `/admin/finance`                | Added/deducted/reserved entries and detail                                  | P04                        |
+| `/admin/referrals`              | Root-relative tree/commission history                                       | P04                        |
+| `/admin/audit-log`              | Server actor/action/time/reason changes                                     | P10                        |
+| `/admin/settings`               | Allowed settings with saved operation terms                                 | P10                        |
+| `/admin/settings/admins`        | ADMIN invitations and lifecycle                                             | P03; final integration P10 |
 
 Required popup/dialog coverage includes purchase quote confirmation; password change; initial withdrawal address confirmation; ledger details; withdrawal confirmation; schedule extension; rejection; employee ban/task/withdraw restrictions; admin address change; balance adjustment/manual credit; deletion; code enable/pause; final task review; and admin invitation/deactivation as applicable to existing screens. Reuse existing dialog primitives instead of duplicating modal code.
 
@@ -610,19 +610,19 @@ Do not run every command after every small edit. Full current regression checkpo
 
 P03 owns the web Playwright script/config; reuse its existing implementation and verify the actual manifest command before running it. The intended `test:e2e` maps to the configured runner; a group invocation is `pnpm --filter @template/web test:e2e e2e/<group>.spec.ts`. Add a separately gated API `test:testnet` profile in P06 and verify its actual invocation before documenting success. Testnet configuration remains a future deliverable, not a claim that it exists now. Worker/signer builds and tests use their registered existing-package profiles; do not create another test framework.
 
-| Phase | Primary Proposed Test Ownership | Services / Evidence |
-| --- | --- | --- |
-| P01 | `apps/api/src/core/financial/money.test.ts`; `apps/api/src/modules/ledger/ledger.service.integration.test.ts`; `packages/contracts/src/financial/financial.schema.test.ts` | Real migrated Postgres; money/calendar/source/concurrency outcomes |
-| P02 | `apps/api/src/modules/auth/oscar-auth.integration.test.ts`; `apps/api/src/modules/admins/admin-invites.integration.test.ts` | Test auth/DB; email boundary double; admin password sign-in, role/link/session results |
-| P03 | Employee/admin auth colocated component/adapter tests; `apps/web/e2e/identity-and-admin-access.spec.ts` | Real test web/API/DB; dedicated admin sign-in and responsive authenticated behavior |
-| P04 | `apps/api/src/modules/subscriptions/subscription-purchase.integration.test.ts`; referral/wallet integration tests; employee/admin package/team/wallet/finance tests and E2E suites | Real Postgres backend gate, then real test app; first full regression checkpoint |
-| P05 | Asset/task/code/review integration tests; task/code/review component/adapters; `apps/web/e2e/tasks-codes-and-review.spec.ts` | Real files/Postgres and fixed clock backend gate, then real test app/private fixtures; approval/claim/retention races |
-| P06 | Custody/deposit/treasury integration tests; `apps/api/testnet/*.testnet.test.ts` | Protected test custody/recovery store; opted-in provisioning/deposit/sweep testnet evidence |
-| P07 | Deposit adapters/components; `apps/web/e2e/deposits.spec.ts` | Real test app; credit/address behavior; full regression checkpoint |
-| P08 | `apps/api/src/modules/withdrawals/withdrawal-reservation.integration.test.ts`; scheduler/cancellation tests; signer/payout/recovery tests; opted-in payout testnet suite | Real Postgres/Redis reservation gate, then protected test signer; durable attempts/finality/restore outcomes |
-| P09 | Withdrawal components/adapters; `apps/web/e2e/withdrawals.spec.ts` | Real test app; active state/refund/deadline behavior; full checkpoint |
-| P10 | Employee/admin/settings/audit integration tests; admin/home/policy component tests and E2E suites | Real DB backend gate, then all 37 routes and full current regression; cross-domain authority/action/history results |
-| P11 | Cross-domain/security/deployment/restore tests plus `apps/web/e2e/release-acceptance.spec.ts` | Production-like staging, restored state, testnet/UAT, basic capacity result |
+| Phase | Primary Proposed Test Ownership                                                                                                                                                    | Services / Evidence                                                                                                   |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| P01   | `apps/api/src/core/financial/money.test.ts`; `apps/api/src/modules/ledger/ledger.service.integration.test.ts`; `packages/contracts/src/financial/financial.schema.test.ts`         | Real migrated Postgres; money/calendar/source/concurrency outcomes                                                    |
+| P02   | `apps/api/src/modules/auth/oscar-auth.integration.test.ts`; `apps/api/src/modules/admins/admin-invites.integration.test.ts`                                                        | Test auth/DB; email boundary double; admin password sign-in, role/link/session results                                |
+| P03   | Employee/admin auth colocated component/adapter tests; `apps/web/e2e/identity-and-admin-access.spec.ts`                                                                            | Real test web/API/DB; dedicated admin sign-in and responsive authenticated behavior                                   |
+| P04   | `apps/api/src/modules/subscriptions/subscription-purchase.integration.test.ts`; referral/wallet integration tests; employee/admin package/team/wallet/finance tests and E2E suites | Real Postgres backend gate, then real test app; first full regression checkpoint                                      |
+| P05   | Asset/task/code/review integration tests; task/code/review component/adapters; `apps/web/e2e/tasks-codes-and-review.spec.ts`                                                       | Real files/Postgres and fixed clock backend gate, then real test app/private fixtures; approval/claim/retention races |
+| P06   | Custody/deposit/treasury integration tests; `apps/api/testnet/*.testnet.test.ts`                                                                                                   | Protected test custody/recovery store; opted-in provisioning/deposit/sweep testnet evidence                           |
+| P07   | Deposit adapters/components; `apps/web/e2e/deposits.spec.ts`                                                                                                                       | Real test app; credit/address behavior; full regression checkpoint                                                    |
+| P08   | `apps/api/src/modules/withdrawals/withdrawal-reservation.integration.test.ts`; scheduler/cancellation tests; signer/payout/recovery tests; opted-in payout testnet suite           | Real Postgres/Redis reservation gate, then protected test signer; durable attempts/finality/restore outcomes          |
+| P09   | Withdrawal components/adapters; `apps/web/e2e/withdrawals.spec.ts`                                                                                                                 | Real test app; active state/refund/deadline behavior; full checkpoint                                                 |
+| P10   | Employee/admin/settings/audit integration tests; admin/home/policy component tests and E2E suites                                                                                  | Real DB backend gate, then all 37 routes and full current regression; cross-domain authority/action/history results   |
+| P11   | Cross-domain/security/deployment/restore tests plus `apps/web/e2e/release-acceptance.spec.ts`                                                                                      | Production-like staging, restored state, testnet/UAT, basic capacity result                                           |
 
 Paths above are proposed and repository-relative. Put sibling named tests from each phase beside the actual module/component they test, and identify exact paths in that phase's task list. Extend existing database inventory/auth regression files rather than replacing them. Preserve production incident regressions.
 
@@ -630,28 +630,28 @@ Keep one concise result per phase, with useful failing traces/screenshots under 
 
 ### Financial Failure Cases That Must Remain
 
-| Scenario | Expected Observable Result |
-| --- | --- |
-| Same transfer event scanned 100 times | One receipt and one employee credit |
-| Two valid transfer logs in one transaction | Each distinct eligible log credited once |
-| Fake USDT symbol/wrong contract/network | No wallet credit |
-| Two concurrent package purchases | Only allowed atomic transition; no overspend/duplicate commission |
-| Upgrade after today's submission | No second daily claim/reward |
-| Admin approves twice/concurrently | One reward posting and one final outcome |
-| Approve versus reject race | Exactly one final decision |
-| Two withdrawal requests from different devices | One active request/reservation |
-| Free tries to withdraw retained commissions | Denied; own funds still eligible |
-| Free buys using retained commissions | Referral-first debit and valid activation |
-| Paid subscription expires during reserved withdrawal | Original eligible request continues |
-| Rejection repeated after expiry | Original reservation released once, referral lock preserved |
-| Extension versus stale due job | No early dispatch |
-| Block/address change versus signing | Either safe unsent cancellation or active reconciliation; never sent-and-refunded |
-| Broadcast succeeds but response is lost | Same durable attempt reconciled; no new payout/refund |
-| Redis lost after acceptance | DB reservation survives; scheduler repairs missed wakeup |
-| Restore older DB backup | Recover post-snapshot off-chain commits and reconcile chain activity before dispatch; no lost wallet history or duplicate payment |
-| Role/amount/subscription/deadline forged from browser | Rejected or server-derived; no unauthorized state change |
-| Private proof ID requested by another user | No file/data access |
-| Log/error/browser build inspected | No private keys, seeds, auth secrets, or private signing payloads |
+| Scenario                                              | Expected Observable Result                                                                                                        |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Same transfer event scanned 100 times                 | One receipt and one employee credit                                                                                               |
+| Two valid transfer logs in one transaction            | Each distinct eligible log credited once                                                                                          |
+| Fake USDT symbol/wrong contract/network               | No wallet credit                                                                                                                  |
+| Two concurrent package purchases                      | Only allowed atomic transition; no overspend/duplicate commission                                                                 |
+| Upgrade after today's submission                      | No second daily claim/reward                                                                                                      |
+| Admin approves twice/concurrently                     | One reward posting and one final outcome                                                                                          |
+| Approve versus reject race                            | Exactly one final decision                                                                                                        |
+| Two withdrawal requests from different devices        | One active request/reservation                                                                                                    |
+| Free tries to withdraw retained commissions           | Denied; own funds still eligible                                                                                                  |
+| Free buys using retained commissions                  | Referral-first debit and valid activation                                                                                         |
+| Paid subscription expires during reserved withdrawal  | Original eligible request continues                                                                                               |
+| Rejection repeated after expiry                       | Original reservation released once, referral lock preserved                                                                       |
+| Extension versus stale due job                        | No early dispatch                                                                                                                 |
+| Block/address change versus signing                   | Either safe unsent cancellation or active reconciliation; never sent-and-refunded                                                 |
+| Broadcast succeeds but response is lost               | Same durable attempt reconciled; no new payout/refund                                                                             |
+| Redis lost after acceptance                           | DB reservation survives; scheduler repairs missed wakeup                                                                          |
+| Restore older DB backup                               | Recover post-snapshot off-chain commits and reconcile chain activity before dispatch; no lost wallet history or duplicate payment |
+| Role/amount/subscription/deadline forged from browser | Rejected or server-derived; no unauthorized state change                                                                          |
+| Private proof ID requested by another user            | No file/data access                                                                                                               |
+| Log/error/browser build inspected                     | No private keys, seeds, auth secrets, or private signing payloads                                                                 |
 
 ### Browser and Testnet Gates
 

@@ -18,6 +18,7 @@ import {
 } from "@testcontainers/postgresql";
 import type { DatabaseClient } from "@template/database";
 import type { P04FinanceScenario } from "./p04-finance.js";
+import type { P07DepositScenario } from "./p07-deposits.js";
 
 import {
   controlRequestSchema,
@@ -31,7 +32,8 @@ for (const key of Object.keys(process.env)) {
     key === "DATABASE_URL" ||
     key.startsWith("AUTH_LIMIT_") ||
     key === "API_RATE_LIMIT_MAX" ||
-    key === "API_RATE_LIMIT_WINDOW_MS"
+    key === "API_RATE_LIMIT_WINDOW_MS" ||
+    /^(?:TRON_|CUSTODY_|SIGNER_|TREASURY_|RECOVERY_)/u.test(key)
   )
     Reflect.deleteProperty(process.env, key);
 }
@@ -69,6 +71,7 @@ let container: StartedPostgreSqlContainer | undefined;
 let database: DatabaseClient | undefined;
 let server: Server | undefined;
 let financial: P04FinanceScenario | undefined;
+let deposits: P07DepositScenario | undefined;
 let taskScenario: P05TaskScenario | undefined;
 let proofs: ProofsRuntime | undefined;
 let decoderBarrier: P05DecoderBarrier | undefined;
@@ -119,6 +122,19 @@ const control = async (
   if (database === undefined) throw new Error("HARNESS_NOT_READY");
   const finance = financial;
   if (finance === undefined) throw new Error("HARNESS_NOT_READY");
+  if (
+    request.command === "p07-fixtures" ||
+    request.command === "p07-ready" ||
+    request.command === "p07-state" ||
+    request.command === "p07-credit"
+  ) {
+    if (!deposits) throw new Error("HARNESS_NOT_READY");
+    if (request.command === "p07-fixtures")
+      return deposits.fixtures(request.pagedTargets);
+    if (request.command === "p07-ready") return deposits.ready(request.email);
+    if (request.command === "p07-state") return deposits.state(request.email);
+    return deposits.credit(request.email, request.event, request.day);
+  }
   if (request.command === "p05-fixtures") {
     const instant = request.futureWorkDate
       ? new Date()
@@ -375,10 +391,52 @@ const start = async () => {
     import("../../src/infrastructure/email/email-delivery.js"),
   ]);
   database = createDatabaseClient(databaseUrl);
+  const { FinancialRuntimeAdmission, acknowledgeFinancialBoot } =
+    await import("../../src/modules/custody/runtime-control.js");
+  const location = new URL(databaseUrl);
+  const expectedDatabase = nativeBridge ? "p05_e2e" : "p03_e2e";
+  const expectedOwner = nativeBridge ? "p05_test" : "p03_test";
+  const ownership = await database.$queryRaw<
+    { name: string; owner: string }[]
+  >`SELECT current_database() AS name,current_user AS owner`;
+  if (
+    process.env["NODE_ENV"] !== "test" ||
+    location.pathname !== `/${expectedDatabase}` ||
+    !["localhost", "127.0.0.1", "host.docker.internal"].includes(
+      location.hostname,
+    ) ||
+    ownership[0]?.name !== expectedDatabase ||
+    ownership[0].owner !== expectedOwner ||
+    (await database.user.count()) !== 0 ||
+    (await database.financialOperation.count()) !== 0 ||
+    (await database.depositAddressAssignment.count()) !== 0 ||
+    (await database.transferAttempt.count()) !== 0 ||
+    (await database.financialRuntimeAdmission.count()) !== 0
+  )
+    throw new Error("CLEAN_DISPOSABLE_E2E_REQUIRED");
+  const admission = new FinancialRuntimeAdmission(database, "API");
+  await admission.register();
+  const reference = `clean-e2e:${admission.bootId}`;
+  const cutoff = new Date();
+  await acknowledgeFinancialBoot(database, {
+    bootId: admission.bootId,
+    operatorIdentity: "disposable-e2e-recovery",
+    reason: "Known-clean private disposable E2E boot before fixtures",
+    evidence: {
+      financialHistoryReference: reference,
+      assignmentInventoryReference: reference,
+      attemptInventoryReference: reference,
+      reconciliationReference: reference,
+      reconciliationCutoff: cutoff,
+      financialHistoryRecoveredThrough: cutoff,
+    },
+  });
+  const { P07DepositScenario, p07Metadata } = await import("./p07-deposits.js");
+  deposits = new P07DepositScenario(database, admission);
   const { P04FinanceScenario } = await import("./p04-finance.js");
-  financial = new P04FinanceScenario(database);
+  financial = new P04FinanceScenario(database, admission);
   const { P05TaskScenario } = await import("./p05-tasks.js");
-  taskScenario = new P05TaskScenario(database, financial.clock);
+  taskScenario = new P05TaskScenario(database, financial.clock, admission);
   if (nativeBridge) {
     const { P05DecoderBarrier } = await import("./p05-decoder-barrier.js");
     decoderBarrier = new P05DecoderBarrier();
@@ -462,6 +520,8 @@ const start = async () => {
     logger: createLogger({ level: "silent", pretty: false }),
     emailDelivery,
     financialClock: financial.clock,
+    financialAdmission: admission,
+    depositMetadata: p07Metadata,
     ...(proofs ? { proofs } : {}),
   });
   await new Promise<void>((ready, reject) => {

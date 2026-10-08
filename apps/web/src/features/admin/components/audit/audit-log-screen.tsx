@@ -50,7 +50,10 @@ export function AuditLogScreen() {
 
   const targetTypeBadgeMap: Record<
     string,
-    { label: string; variant: "success" | "warning" | "danger" | "info" | "neutral" }
+    {
+      label: string;
+      variant: "success" | "warning" | "danger" | "info" | "neutral";
+    }
   > = {
     code: { label: "رموز المهام", variant: "success" },
     employee: { label: "حسابات الموظفين", variant: "info" },
@@ -65,7 +68,10 @@ export function AuditLogScreen() {
   };
 
   const targetOptions = [
-    { value: "all", label: `كل الأهداف والعمليات (${String(auditLogs.length)})` },
+    {
+      value: "all",
+      label: `كل الأهداف والعمليات (${String(auditLogs.length)})`,
+    },
     { value: "code", label: "رموز المهام (Task Codes)" },
     { value: "employee", label: "حسابات الموظفين (Employees)" },
     { value: "submission", label: "مراجعة المهام (Submissions)" },
@@ -151,7 +157,7 @@ export function AuditLogScreen() {
 
                 return (
                   <tr key={log.id} className="hover:bg-slate-50/70">
-                    <td className="px-4 py-3 whitespace-nowrap font-bold text-slate-900">
+                    <td className="px-4 py-3 font-bold whitespace-nowrap text-slate-900">
                       {log.action}
                     </td>
 
@@ -161,24 +167,36 @@ export function AuditLogScreen() {
                       </AdminBadge>
                     </td>
 
-                    <td className="px-4 py-3 font-semibold text-slate-800 max-w-xs truncate" title={log.targetTitle}>
+                    <td
+                      className="max-w-xs truncate px-4 py-3 font-semibold text-slate-800"
+                      title={log.targetTitle}
+                    >
                       {log.targetTitle}
                     </td>
 
-                    <td className="px-4 py-3 text-slate-600 max-w-sm" title={log.reason}>
+                    <td
+                      className="max-w-sm px-4 py-3 text-slate-600"
+                      title={log.reason}
+                    >
                       {log.reason ?? "—"}
                     </td>
 
                     <td className="px-4 py-3 whitespace-nowrap text-slate-700">
                       <div className="space-y-0.5">
-                        <span className="font-bold block">{log.adminName}</span>
-                        <bdi dir="ltr" className="text-[10px] text-slate-400 block font-mono">
+                        <span className="block font-bold">{log.adminName}</span>
+                        <bdi
+                          dir="ltr"
+                          className="block font-mono text-[10px] text-slate-400"
+                        >
                           {log.adminEmail}
                         </bdi>
                       </div>
                     </td>
 
-                    <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] text-slate-500" dir="ltr">
+                    <td
+                      className="px-4 py-3 font-mono text-[11px] whitespace-nowrap text-slate-500"
+                      dir="ltr"
+                    >
                       {log.timestamp}
                     </td>
                   </tr>

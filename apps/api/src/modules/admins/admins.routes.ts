@@ -2,6 +2,7 @@ import {
   employeeRestrictionsBodySchema,
   identityUserParamsSchema,
   identityListQuerySchema,
+  manualCreditTargetsQuerySchema,
   adminStatusBodySchema,
   adminInvitationParamsSchema,
   adminInvitationIssueBodySchema,
@@ -128,6 +129,11 @@ export function adminsRoutes(
       body: adminInvitationCommandBodySchema,
     }),
     controller.revokeInvitation,
+  );
+  router.get(
+    "/employees/manual-credit-targets",
+    validationMiddleware({ query: manualCreditTargetsQuerySchema }),
+    controller.listManualCreditTargets,
   );
   router.get(
     "/employees/:userId/restrictions",

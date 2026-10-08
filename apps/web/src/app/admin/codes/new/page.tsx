@@ -3,7 +3,13 @@ import { CodeCreateScreen } from "@/features/admin/components/codes/code-create-
 
 export default function AdminNewCodePage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-sm text-slate-400">جارٍ التحميل...</div>}>
+    <Suspense
+      fallback={
+        <div className="p-8 text-center text-sm text-slate-400">
+          جارٍ التحميل...
+        </div>
+      }
+    >
       <CodeCreateScreen />
     </Suspense>
   );

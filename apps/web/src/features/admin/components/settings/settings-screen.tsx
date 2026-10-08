@@ -28,11 +28,21 @@ export function SettingsScreen() {
   const [windowEnd, setWindowEnd] = useState(settings.taskWindowEnd);
   const [timezone] = useState(settings.timezone);
 
-  const [refL1, setRefL1] = useState(settings.referralPercentages[0].toString());
-  const [refL2, setRefL2] = useState(settings.referralPercentages[1].toString());
-  const [refL3, setRefL3] = useState(settings.referralPercentages[2].toString());
-  const [refL4, setRefL4] = useState(settings.referralPercentages[3].toString());
-  const [refL5, setRefL5] = useState(settings.referralPercentages[4].toString());
+  const [refL1, setRefL1] = useState(
+    settings.referralPercentages[0].toString(),
+  );
+  const [refL2, setRefL2] = useState(
+    settings.referralPercentages[1].toString(),
+  );
+  const [refL3, setRefL3] = useState(
+    settings.referralPercentages[2].toString(),
+  );
+  const [refL4, setRefL4] = useState(
+    settings.referralPercentages[3].toString(),
+  );
+  const [refL5, setRefL5] = useState(
+    settings.referralPercentages[4].toString(),
+  );
 
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -62,7 +72,9 @@ export function SettingsScreen() {
       referralPercentages: [l1, l2, l3, l4, l5],
     });
 
-    setFeedback("تم حفظ وتطبيق إعدادات المنصة بنجاح وتسجيل التغيير في سجل التدقيق.");
+    setFeedback(
+      "تم حفظ وتطبيق إعدادات المنصة بنجاح وتسجيل التغيير في سجل التدقيق.",
+    );
   };
 
   const handleReset = () => {
@@ -100,7 +112,9 @@ export function SettingsScreen() {
           </div>
           <button
             type="button"
-            onClick={() => { setFeedback(null); }}
+            onClick={() => {
+              setFeedback(null);
+            }}
             className="text-xs underline hover:no-underline"
           >
             إغلاق
@@ -108,14 +122,14 @@ export function SettingsScreen() {
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6 max-w-4xl">
+      <form onSubmit={handleSave} className="max-w-4xl space-y-6">
         {/* Group 1: Financial Rules */}
         <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+          <h2 className="border-b border-slate-100 pb-2 text-sm font-bold text-slate-900">
             قواعد ومعايير السحب المالي (USDT)
           </h2>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 text-xs sm:text-sm">
+          <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-2 sm:text-sm lg:grid-cols-3">
             <div>
               <label className="mb-1 block font-bold text-slate-700">
                 الحد الأدنى للسحب (USDT):
@@ -124,7 +138,9 @@ export function SettingsScreen() {
                 type="number"
                 min="1"
                 value={minWithdrawal}
-                onChange={(e) => { setMinWithdrawal(e.target.value); }}
+                onChange={(e) => {
+                  setMinWithdrawal(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -138,7 +154,9 @@ export function SettingsScreen() {
                 type="number"
                 min="10"
                 value={maxWithdrawal}
-                onChange={(e) => { setMaxWithdrawal(e.target.value); }}
+                onChange={(e) => {
+                  setMaxWithdrawal(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -153,7 +171,9 @@ export function SettingsScreen() {
                 min="0"
                 max="100"
                 value={feePercent}
-                onChange={(e) => { setFeePercent(e.target.value); }}
+                onChange={(e) => {
+                  setFeePercent(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -167,11 +187,13 @@ export function SettingsScreen() {
                 type="number"
                 min="1"
                 value={processingHours}
-                onChange={(e) => { setProcessingHours(e.target.value); }}
+                onChange={(e) => {
+                  setProcessingHours(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
-              <span className="text-[11px] text-slate-500 mt-0.5 block">
+              <span className="mt-0.5 block text-[11px] text-slate-500">
                 الافتراضي: 72 ساعة
               </span>
             </div>
@@ -184,11 +206,13 @@ export function SettingsScreen() {
                 type="number"
                 min="1"
                 value={cooldownHours}
-                onChange={(e) => { setCooldownHours(e.target.value); }}
+                onChange={(e) => {
+                  setCooldownHours(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
-              <span className="text-[11px] text-slate-500 mt-0.5 block">
+              <span className="mt-0.5 block text-[11px] text-slate-500">
                 الافتراضي: 24 ساعة
               </span>
             </div>
@@ -197,11 +221,11 @@ export function SettingsScreen() {
 
         {/* Group 2: Daily Task Window */}
         <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+          <h2 className="border-b border-slate-100 pb-2 text-sm font-bold text-slate-900">
             نافذة المهام اليومية والمنطقة الزمنية
           </h2>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 text-xs sm:text-sm">
+          <div className="grid grid-cols-1 gap-4 text-xs sm:grid-cols-3 sm:text-sm">
             <div>
               <label className="mb-1 block font-bold text-slate-700">
                 بداية نافذة المهام:
@@ -209,7 +233,9 @@ export function SettingsScreen() {
               <input
                 type="time"
                 value={windowStart}
-                onChange={(e) => { setWindowStart(e.target.value); }}
+                onChange={(e) => {
+                  setWindowStart(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -222,7 +248,9 @@ export function SettingsScreen() {
               <input
                 type="time"
                 value={windowEnd}
-                onChange={(e) => { setWindowEnd(e.target.value); }}
+                onChange={(e) => {
+                  setWindowEnd(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -236,9 +264,9 @@ export function SettingsScreen() {
                 type="text"
                 value={timezone}
                 disabled
-                className="w-full rounded-md border border-slate-200 bg-slate-100 p-2 font-mono text-slate-500 cursor-not-allowed"
+                className="w-full cursor-not-allowed rounded-md border border-slate-200 bg-slate-100 p-2 font-mono text-slate-500"
               />
-              <span className="text-[11px] text-slate-500 mt-0.5 block">
+              <span className="mt-0.5 block text-[11px] text-slate-500">
                 توقيت بغداد (Asia/Baghdad)
               </span>
             </div>
@@ -247,71 +275,91 @@ export function SettingsScreen() {
 
         {/* Group 3: Referral Percentages */}
         <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">
+          <h2 className="border-b border-slate-100 pb-2 text-sm font-bold text-slate-900">
             نسب عمولات الإحالة للمستويات الخمسة (%)
           </h2>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 text-xs sm:text-sm">
+          <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-5 sm:text-sm">
             <div>
-              <label className="mb-1 block font-bold text-slate-700">L1 (%):</label>
+              <label className="mb-1 block font-bold text-slate-700">
+                L1 (%):
+              </label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={refL1}
-                onChange={(e) => { setRefL1(e.target.value); }}
+                onChange={(e) => {
+                  setRefL1(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block font-bold text-slate-700">L2 (%):</label>
+              <label className="mb-1 block font-bold text-slate-700">
+                L2 (%):
+              </label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={refL2}
-                onChange={(e) => { setRefL2(e.target.value); }}
+                onChange={(e) => {
+                  setRefL2(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block font-bold text-slate-700">L3 (%):</label>
+              <label className="mb-1 block font-bold text-slate-700">
+                L3 (%):
+              </label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={refL3}
-                onChange={(e) => { setRefL3(e.target.value); }}
+                onChange={(e) => {
+                  setRefL3(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block font-bold text-slate-700">L4 (%):</label>
+              <label className="mb-1 block font-bold text-slate-700">
+                L4 (%):
+              </label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={refL4}
-                onChange={(e) => { setRefL4(e.target.value); }}
+                onChange={(e) => {
+                  setRefL4(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
             </div>
 
             <div>
-              <label className="mb-1 block font-bold text-slate-700">L5 (%):</label>
+              <label className="mb-1 block font-bold text-slate-700">
+                L5 (%):
+              </label>
               <input
                 type="number"
                 min="0"
                 max="100"
                 value={refL5}
-                onChange={(e) => { setRefL5(e.target.value); }}
+                onChange={(e) => {
+                  setRefL5(e.target.value);
+                }}
                 className="w-full rounded-md border border-slate-300 p-2 font-mono"
                 required
               />
@@ -320,7 +368,7 @@ export function SettingsScreen() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between border-t border-slate-200 bg-white p-4 rounded-lg">
+        <div className="flex items-center justify-between rounded-lg border-t border-slate-200 bg-white p-4">
           <button
             type="button"
             onClick={handleReset}

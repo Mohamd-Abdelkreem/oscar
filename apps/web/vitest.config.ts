@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     environment: "jsdom",
+    // Bound jsdom contention when Turbo also runs the API/contracts suites.
+    maxWorkers: 2,
     globals: false,
     restoreMocks: true,
     setupFiles: ["./src/test/setup.ts"],

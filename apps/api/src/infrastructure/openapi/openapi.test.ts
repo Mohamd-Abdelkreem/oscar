@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "./openapi.js";
 
 const expectedPaths = [
+  "/admin/employees/manual-credit-targets",
   "/deposits/me/address",
   "/deposits/me/history",
   "/admin/deposits",
@@ -83,6 +84,35 @@ const expectedPaths = [
 ] as const;
 
 describe("OpenAPI document", () => {
+  it("documents the bounded minimal current-admin lookup and database availability error", () => {
+    const lookup =
+      buildOpenApiDocument().paths?.["/admin/employees/manual-credit-targets"]
+        ?.get;
+    expect(lookup?.security).toEqual([{ BearerAuth: [] }]);
+    expect(
+      lookup?.parameters?.map((parameter) =>
+        "name" in parameter ? parameter.name : "ref",
+      ),
+    ).toEqual(["page", "limit", "q"]);
+    const limit = lookup?.parameters?.find(
+      (parameter) => "name" in parameter && parameter.name === "limit",
+    );
+    expect(limit).toHaveProperty(["schema", "maximum"], 100);
+    expect(lookup?.responses?.["200"]).toHaveProperty(
+      ["content", "application/json", "schema", "required"],
+      expect.arrayContaining(["paginationMeta", "data"]),
+    );
+    expect(lookup?.responses?.["503"]).toHaveProperty(
+      "description",
+      expect.stringContaining("SERVICE_UNAVAILABLE"),
+    );
+    expect(lookup?.responses?.["503"]).not.toHaveProperty(
+      "description",
+      expect.stringContaining("DEPOSIT_UNAVAILABLE"),
+    );
+    expect(lookup?.description).toContain("RepeatableRead");
+    expect(lookup?.description).toContain("no-store");
+  });
   it("documents private binary and confirmed version-bound final review without reversal routes", () => {
     const paths = buildOpenApiDocument().paths;
     expect(

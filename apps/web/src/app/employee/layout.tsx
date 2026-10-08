@@ -17,10 +17,12 @@ interface EmployeeLayoutProps {
 
 export default function EmployeeLayout({ children }: EmployeeLayoutProps) {
   return (
-    <div lang="ar" dir="rtl" className="employee-scope min-h-dvh bg-slate-100 text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900">
-      <EmployeeStateProvider>
-        {children}
-      </EmployeeStateProvider>
+    <div
+      lang="ar"
+      dir="rtl"
+      className="employee-scope min-h-dvh bg-slate-100 text-slate-900 antialiased selection:bg-emerald-100 selection:text-emerald-900"
+    >
+      <EmployeeStateProvider>{children}</EmployeeStateProvider>
     </div>
   );
 }

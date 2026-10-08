@@ -71,6 +71,11 @@ const knownFields = new Set([
   "currentPassword",
   "passwordConfirmation",
   "reason",
+  "amount",
+  "employeeId",
+  "reference",
+  "reference.kind",
+  "reference.value",
 ]);
 const financialCodes = new Set([
   "CONFIGURATION_STALE",
@@ -111,6 +116,15 @@ const taskCodes = new Set([
   "UPLOAD_INTERRUPTED",
   "UPLOAD_EXPIRED",
 ]);
+const depositCodes = new Set([
+  "DEPOSIT_NOT_FOUND",
+  "DEPOSIT_UNAVAILABLE",
+  "DEPOSIT_UNRESOLVED",
+  "MANUAL_CREDIT_REFERENCE_INVALID",
+  "MANUAL_CREDIT_CONFLICT",
+  "FINANCIAL_AMOUNT_OVERFLOW",
+  "FINANCIAL_WRITES_FENCED",
+]);
 
 export const getApiError = (failure: unknown): ApiError => {
   if (failure instanceof ApiFailure) return failure;
@@ -143,7 +157,8 @@ export const getApiError = (failure: unknown): ApiError => {
     financialEnvelope.success &&
     financialEnvelope.data.statusCode === status &&
     (financialCodes.has(financialEnvelope.data.code) ||
-      taskCodes.has(financialEnvelope.data.code)) &&
+      taskCodes.has(financialEnvelope.data.code) ||
+      depositCodes.has(financialEnvelope.data.code)) &&
     (financialEnvelope.data.code !== "CONFIGURATION_SUPERSEDED" ||
       originalConfigurationPatch)
       ? financialEnvelope.data.code

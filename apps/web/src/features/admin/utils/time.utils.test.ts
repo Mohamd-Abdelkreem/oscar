@@ -21,7 +21,9 @@ describe("time.utils", () => {
     });
 
     it("handles invalid date strings gracefully without throwing", () => {
-      expect(formatBaghdadDateTime("invalid-date-string")).toBe("invalid-date-string");
+      expect(formatBaghdadDateTime("invalid-date-string")).toBe(
+        "invalid-date-string",
+      );
     });
   });
 
@@ -44,7 +46,10 @@ describe("time.utils", () => {
 
       // Exactly at deadline
       const exactlyDueIso = new Date(currentMs).toISOString();
-      const resExact = calculateRemainingWithdrawalTime(exactlyDueIso, currentMs);
+      const resExact = calculateRemainingWithdrawalTime(
+        exactlyDueIso,
+        currentMs,
+      );
       expect(resExact.isDue).toBe(true);
       expect(resExact.text).toBe("حان موعد المعالجة");
       expect(resExact.remainingHours).toBe(0);
@@ -62,7 +67,10 @@ describe("time.utils", () => {
     });
 
     it("handles invalid timestamps gracefully", () => {
-      const res = calculateRemainingWithdrawalTime("invalid-timestamp", Date.now());
+      const res = calculateRemainingWithdrawalTime(
+        "invalid-timestamp",
+        Date.now(),
+      );
       expect(res.text).toBe("—");
       expect(res.isDue).toBe(false);
       expect(res.remainingHours).toBe(0);

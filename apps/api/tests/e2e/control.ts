@@ -3,7 +3,54 @@ import {
   financialInstantSchema,
   usdtAmountSchema,
   walletComponentsSchema,
+  tronPublicAddressSchema,
+  depositTransactionIdSchema,
 } from "@template/contracts";
+
+export const p07EmailSchema = z.enum([
+  "employee@p03.test",
+  "other@p03.test",
+  "first-credit@p07.test",
+]);
+export const p07FixturesSchema = z.strictObject({
+  employeeId: z.uuid(),
+  otherId: z.uuid(),
+  firstCreditId: z.uuid(),
+});
+export const p07StateSchema = z.strictObject({
+  employeeId: z.uuid(),
+  wallet: walletComponentsSchema,
+  assignment: z
+    .strictObject({
+      id: z.uuid(),
+      state: z.enum(["REQUESTED", "KEY_STORED", "RECOVERY_ACKED", "READY"]),
+      address: tronPublicAddressSchema.nullable(),
+    })
+    .nullable(),
+  receipts: z
+    .array(
+      z.strictObject({
+        transactionId: depositTransactionIdSchema,
+        logIndex: z.number().int().nonnegative(),
+        amount: usdtAmountSchema,
+      }),
+    )
+    .max(100),
+  manualCredits: z.number().int().nonnegative(),
+  operations: z.number().int().nonnegative(),
+  postings: z.number().int().nonnegative(),
+  auditCount: z.number().int().nonnegative(),
+  reservations: z
+    .array(
+      z.strictObject({
+        id: z.uuid(),
+        state: z.enum(["ACTIVE", "RELEASED"]),
+        referral: usdtAmountSchema,
+        nonReferral: usdtAmountSchema,
+      }),
+    )
+    .max(100),
+});
 
 export const p04StateSchema = z
   .object({
@@ -48,6 +95,28 @@ export const p05FixturesSchema = z.strictObject({
   publicationDate: z.iso.date(),
 });
 export const controlRequestSchema = z.discriminatedUnion("command", [
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p07-fixtures"),
+    pagedTargets: z.boolean().optional(),
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p07-ready"),
+    email: p07EmailSchema,
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p07-state"),
+    email: p07EmailSchema,
+  }),
+  z.strictObject({
+    id: z.number().int().min(1),
+    command: z.literal("p07-credit"),
+    email: p07EmailSchema,
+    event: z.enum(["confirmed", "two-logs", "unfinalized", "wrong-token"]),
+    day: z.enum(["SATURDAY", "SUNDAY"]).optional(),
+  }),
   z.strictObject({
     id: z.number().int().min(1),
     command: z.literal("p05-fixtures"),
@@ -202,6 +271,8 @@ export const controlReplySchema = z
       p05StateSchema,
       p05DecoderStateSchema,
       p05FixturesSchema,
+      p07FixturesSchema,
+      p07StateSchema,
       z
         .object({ buyerId: z.uuid(), rootId: z.uuid(), otherId: z.uuid() })
         .strict(),

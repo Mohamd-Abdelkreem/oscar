@@ -52,7 +52,7 @@ const preExecutionAuthPaths = [
   /^\/admin\/(?:admins|invitations)(?:\/[^/]+(?:\/(?:status|reissue|revoke))?)?$/u,
 ];
 const privateReadPath =
-  /^\/(?:packages|subscriptions|wallet|referrals|tasks|task-submissions|task-commands|proofs|task-illustrations|admin\/(?:packages|finance|wallets|referrals|referral-settings|configuration-changes|tasks|task-codes|task-submissions|task-illustrations))(?:\/|$)/u;
+  /^\/(?:packages|subscriptions|wallet|referrals|tasks|task-submissions|task-commands|proofs|task-illustrations|deposits|admin\/(?:packages|finance|wallets|referrals|referral-settings|configuration-changes|tasks|task-codes|task-submissions|task-illustrations|deposits|employees\/manual-credit-targets))(?:\/|$)/u;
 let accessToken: ValueState<string> = { kind: "missing" };
 let refreshPromise: Promise<ApiResponse<IdentityUserData>> | undefined;
 let subscribedRuntime: ReturnType<typeof getSessionRuntime> | undefined;

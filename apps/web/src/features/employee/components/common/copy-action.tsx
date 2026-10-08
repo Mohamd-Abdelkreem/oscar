@@ -3,7 +3,7 @@
 import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 import { Check, Copy } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CopyActionProps {
   readonly value: string;
@@ -11,6 +11,7 @@ interface CopyActionProps {
   readonly copiedLabel?: string | undefined;
   readonly className?: string | undefined;
   readonly variant?: "button" | "icon" | undefined;
+  readonly onCopyError?: (() => void) | undefined;
 }
 
 export function CopyAction({
@@ -19,21 +20,40 @@ export function CopyAction({
   copiedLabel = "تم النسخ بنجاح",
   className = "",
   variant = "button",
+  onCopyError,
 }: CopyActionProps) {
   const scheduleTimeout = useManagedTimeout();
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState({ value, copied: false });
+  if (copyState.value !== value) setCopyState({ value, copied: false });
+  const lifetime = useRef({ value, active: true, attempt: 0 });
+  const copied = copyState.value === value && copyState.copied;
+  useEffect(() => {
+    const current = { value, active: true, attempt: 0 };
+    lifetime.current = current;
+    return () => {
+      current.active = false;
+    };
+  }, [value]);
 
   const handleCopy = useCallback(async () => {
+    const current = lifetime.current;
+    const attempt = ++current.attempt;
+    const isCurrent = () =>
+      current.active && current.value === value && current.attempt === attempt;
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
+      if (!isCurrent()) return;
+      setCopyState({ value, copied: true });
       scheduleTimeout(() => {
-        setCopied(false);
+        if (isCurrent()) setCopyState({ value, copied: false });
       }, 2000);
     } catch {
-      // Ignore clipboard error
+      if (isCurrent()) {
+        setCopyState({ value, copied: false });
+        onCopyError?.();
+      }
     }
-  }, [scheduleTimeout, value]);
+  }, [scheduleTimeout, value, onCopyError]);
 
   if (variant === "icon") {
     return (

@@ -9,3 +9,9 @@ pnpm-lock.yaml
 apps/web/next-env.d.ts
 apps/web/AGENTS.md
 tas3er-pro/
+
+# Installed agent packages, nested worktrees and generated browser evidence.
+.agents/skills/
+.kilo/worktrees/
+.playwright-cli/
+output/playwright/

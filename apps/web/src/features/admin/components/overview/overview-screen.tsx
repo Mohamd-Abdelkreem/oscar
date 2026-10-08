@@ -37,7 +37,9 @@ export function OverviewScreen() {
   const scheduledWithdrawalsCount = withdrawals.filter(
     (w) => w.status === "scheduled" || w.status === "held",
   ).length;
-  const heldWithdrawalsCount = withdrawals.filter((w) => w.status === "held").length;
+  const heldWithdrawalsCount = withdrawals.filter(
+    (w) => w.status === "held",
+  ).length;
   const activeCodesCount = codes.filter((c) => c.status === "active").length;
 
   // Today's distinct unlocks (task tsk_today_1001)
@@ -48,7 +50,9 @@ export function OverviewScreen() {
   ).size;
 
   // Unconfirmed deposits
-  const pendingDepositsCount = deposits.filter((d) => d.status === "verifying").length;
+  const pendingDepositsCount = deposits.filter(
+    (d) => d.status === "verifying",
+  ).length;
 
   const recentTransactions = financeTransactions.slice(0, 5);
   const recentAudit = auditLogs.slice(0, 5);
@@ -61,11 +65,13 @@ export function OverviewScreen() {
       />
 
       {/* Primary KPI Grid (derived from real fixture counts) */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
         {/* Metric 1: Total Employees & Active Subscriptions */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">إجمالي الموظفين</span>
+            <span className="text-xs font-bold text-slate-500">
+              إجمالي الموظفين
+            </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
               <Users size={16} aria-hidden="true" />
             </div>
@@ -79,7 +85,10 @@ export function OverviewScreen() {
             </span>
           </div>
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
-            <Link href="/admin/employees" className="font-bold text-emerald-700 hover:underline">
+            <Link
+              href="/admin/employees"
+              className="font-bold text-emerald-700 hover:underline"
+            >
               استعراض الموظفين &larr;
             </Link>
           </div>
@@ -88,7 +97,9 @@ export function OverviewScreen() {
         {/* Metric 2: Pending Submissions */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">مهام بانتظار التدقيق</span>
+            <span className="text-xs font-bold text-slate-500">
+              مهام بانتظار التدقيق
+            </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-amber-50 text-amber-700">
               <ClipboardCheck size={16} aria-hidden="true" />
             </div>
@@ -104,7 +115,10 @@ export function OverviewScreen() {
             )}
           </div>
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
-            <Link href="/admin/submissions" className="font-bold text-amber-700 hover:underline">
+            <Link
+              href="/admin/submissions"
+              className="font-bold text-amber-700 hover:underline"
+            >
               طابور المراجعة &larr;
             </Link>
           </div>
@@ -113,7 +127,9 @@ export function OverviewScreen() {
         {/* Metric 3: Scheduled / Held Withdrawals */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">سحوبات قيد المعالجة</span>
+            <span className="text-xs font-bold text-slate-500">
+              سحوبات قيد المعالجة
+            </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sky-50 text-sky-700">
               <ArrowUpFromLine size={16} aria-hidden="true" />
             </div>
@@ -129,7 +145,10 @@ export function OverviewScreen() {
             )}
           </div>
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
-            <Link href="/admin/withdrawals" className="font-bold text-sky-700 hover:underline">
+            <Link
+              href="/admin/withdrawals"
+              className="font-bold text-sky-700 hover:underline"
+            >
               إدارة السحوبات &larr;
             </Link>
           </div>
@@ -138,7 +157,9 @@ export function OverviewScreen() {
         {/* Metric 4: Task Codes & Today's Unlocks */}
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500">رموز المهام النشطة</span>
+            <span className="text-xs font-bold text-slate-500">
+              رموز المهام النشطة
+            </span>
             <div className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-50 text-emerald-700">
               <KeyRound size={16} aria-hidden="true" />
             </div>
@@ -152,7 +173,10 @@ export function OverviewScreen() {
             </span>
           </div>
           <div className="mt-2 border-t border-slate-100 pt-2 text-[11px] text-slate-500">
-            <Link href="/admin/codes" className="font-bold text-emerald-700 hover:underline">
+            <Link
+              href="/admin/codes"
+              className="font-bold text-emerald-700 hover:underline"
+            >
               إدارة الرموز &larr;
             </Link>
           </div>
@@ -160,7 +184,7 @@ export function OverviewScreen() {
       </div>
 
       {/* Review Queue Shortcuts Bar */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 sm:p-5 shadow-xs">
+      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs sm:p-5">
         <h2 className="mb-3 text-sm font-bold text-slate-900">
           اختصارات طوابير العمليات المباشرة
         </h2>
@@ -170,15 +194,24 @@ export function OverviewScreen() {
             className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-amber-300 hover:bg-amber-50/50"
           >
             <div className="flex items-center gap-3">
-              <ClipboardCheck size={20} className="text-amber-700" aria-hidden="true" />
+              <ClipboardCheck
+                size={20}
+                className="text-amber-700"
+                aria-hidden="true"
+              />
               <div>
-                <span className="block text-xs font-bold text-slate-900">مراجعة المهام المرسلة</span>
+                <span className="block text-xs font-bold text-slate-900">
+                  مراجعة المهام المرسلة
+                </span>
                 <span className="text-[11px] text-slate-500">
                   {pendingSubmissionsCount} بانتظار اتخاذ القرار
                 </span>
               </div>
             </div>
-            <AdminBadge variant={pendingSubmissionsCount > 0 ? "warning" : "neutral"} size="sm">
+            <AdminBadge
+              variant={pendingSubmissionsCount > 0 ? "warning" : "neutral"}
+              size="sm"
+            >
               {pendingSubmissionsCount}
             </AdminBadge>
           </Link>
@@ -188,15 +221,24 @@ export function OverviewScreen() {
             className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-sky-300 hover:bg-sky-50/50"
           >
             <div className="flex items-center gap-3">
-              <ArrowUpFromLine size={20} className="text-sky-700" aria-hidden="true" />
+              <ArrowUpFromLine
+                size={20}
+                className="text-sky-700"
+                aria-hidden="true"
+              />
               <div>
-                <span className="block text-xs font-bold text-slate-900">طلبات السحب المجدولة</span>
+                <span className="block text-xs font-bold text-slate-900">
+                  طلبات السحب المجدولة
+                </span>
                 <span className="text-[11px] text-slate-500">
                   {scheduledWithdrawalsCount} طلب تحت المعالجة (72 ساعة)
                 </span>
               </div>
             </div>
-            <AdminBadge variant={scheduledWithdrawalsCount > 0 ? "info" : "neutral"} size="sm">
+            <AdminBadge
+              variant={scheduledWithdrawalsCount > 0 ? "info" : "neutral"}
+              size="sm"
+            >
               {scheduledWithdrawalsCount}
             </AdminBadge>
           </Link>
@@ -206,15 +248,24 @@ export function OverviewScreen() {
             className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-3 transition-colors hover:border-emerald-300 hover:bg-emerald-50/50"
           >
             <div className="flex items-center gap-3">
-              <ArrowDownToLine size={20} className="text-emerald-700" aria-hidden="true" />
+              <ArrowDownToLine
+                size={20}
+                className="text-emerald-700"
+                aria-hidden="true"
+              />
               <div>
-                <span className="block text-xs font-bold text-slate-900">إيداعات قيد التحقق</span>
+                <span className="block text-xs font-bold text-slate-900">
+                  إيداعات قيد التحقق
+                </span>
                 <span className="text-[11px] text-slate-500">
                   {pendingDepositsCount} إيداع قيد المراجعة
                 </span>
               </div>
             </div>
-            <AdminBadge variant={pendingDepositsCount > 0 ? "warning" : "neutral"} size="sm">
+            <AdminBadge
+              variant={pendingDepositsCount > 0 ? "warning" : "neutral"}
+              size="sm"
+            >
               {pendingDepositsCount}
             </AdminBadge>
           </Link>
@@ -227,8 +278,14 @@ export function OverviewScreen() {
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 p-4">
             <div className="flex items-center gap-2">
-              <Receipt size={16} className="text-emerald-700" aria-hidden="true" />
-              <h2 className="text-sm font-bold text-slate-900">أحدث العمليات المالية</h2>
+              <Receipt
+                size={16}
+                className="text-emerald-700"
+                aria-hidden="true"
+              />
+              <h2 className="text-sm font-bold text-slate-900">
+                أحدث العمليات المالية
+              </h2>
             </div>
             <Link
               href="/admin/finance"
@@ -240,10 +297,15 @@ export function OverviewScreen() {
 
           <div className="divide-y divide-slate-100">
             {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3.5 text-xs">
+              <div
+                key={tx.id}
+                className="flex items-center justify-between p-3.5 text-xs"
+              >
                 <div className="space-y-0.5">
-                  <span className="font-bold text-slate-900 block">{tx.title}</span>
-                  <div className="flex items-center gap-2 text-slate-500 text-[11px]">
+                  <span className="block font-bold text-slate-900">
+                    {tx.title}
+                  </span>
+                  <div className="flex items-center gap-2 text-[11px] text-slate-500">
                     <span>{tx.employeeName}</span>
                     <span>&bull;</span>
                     <bdi dir="ltr">{tx.date}</bdi>
@@ -260,7 +322,10 @@ export function OverviewScreen() {
                           : "text-slate-500"
                     }
                   >
-                    {tx.amount > 0 ? `+${tx.amount.toFixed(2)}` : tx.amount.toFixed(2)} USDT
+                    {tx.amount > 0
+                      ? `+${tx.amount.toFixed(2)}`
+                      : tx.amount.toFixed(2)}{" "}
+                    USDT
                   </span>
                 </div>
               </div>
@@ -272,8 +337,14 @@ export function OverviewScreen() {
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/70 p-4">
             <div className="flex items-center gap-2">
-              <CheckSquare size={16} className="text-slate-700" aria-hidden="true" />
-              <h2 className="text-sm font-bold text-slate-900">أحدث سجلات التدقيق الإداري</h2>
+              <CheckSquare
+                size={16}
+                className="text-slate-700"
+                aria-hidden="true"
+              />
+              <h2 className="text-sm font-bold text-slate-900">
+                أحدث سجلات التدقيق الإداري
+              </h2>
             </div>
             <Link
               href="/admin/audit-log"
@@ -293,7 +364,9 @@ export function OverviewScreen() {
                   </bdi>
                 </div>
                 <div className="text-slate-600">
-                  <span className="font-semibold text-slate-800">{log.targetTitle}</span>
+                  <span className="font-semibold text-slate-800">
+                    {log.targetTitle}
+                  </span>
                   {log.reason && (
                     <span className="text-slate-500"> — {log.reason}</span>
                   )}

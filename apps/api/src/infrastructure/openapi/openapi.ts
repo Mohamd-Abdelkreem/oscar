@@ -21,6 +21,9 @@ import {
   employeeRestrictionsDataSchema,
   adminDataSchema,
   adminListDataSchema,
+  manualCreditTargetsQuerySchema,
+  manualCreditTargetsDataSchema,
+  manualCreditTargetsEnvelopeSchema,
   adminStatusBodySchema,
   adminInvitationDataSchema,
   adminInvitationListDataSchema,
@@ -367,6 +370,7 @@ export const buildOpenApiDocument = () =>
         IdentitySessionData: identitySessionDataSchema,
         AdminData: adminDataSchema,
         AdminListData: adminListDataSchema,
+        ManualCreditTargetsData: manualCreditTargetsDataSchema,
         InvitationData: adminInvitationDataSchema,
         InvitationListData: adminInvitationListDataSchema,
         EmployeeRestrictionsData: employeeRestrictionsDataSchema,
@@ -1555,6 +1559,31 @@ export const buildOpenApiDocument = () =>
               adminListDataSchema,
             ),
             ...commonErrors,
+          },
+        },
+      },
+      "/admin/employees/manual-credit-targets": {
+        get: {
+          summary: "List minimal manual credit target identities",
+          description: `${adminAuthority} USER accounts with persisted owned wallets, including first-credit accounts and all target statuses. Case-insensitive name/email search; createdAt DESC, id DESC. Rows/count share a RepeatableRead snapshot. Observation remains available under financial fencing; selection never authorizes a grant.`,
+          security: adminReadSecurity,
+          requestParams: { query: manualCreditTargetsQuerySchema },
+          responses: {
+            "200": {
+              description: "Minimal bounded target page",
+              content: {
+                "application/json": {
+                  schema: manualCreditTargetsEnvelopeSchema,
+                },
+              },
+            },
+            ...commonErrors,
+            "409": errorResponse(
+              "CONFLICT: bounded identity transaction retry exhausted",
+            ),
+            "503": errorResponse(
+              "SERVICE_UNAVAILABLE: database connectivity unavailable",
+            ),
           },
         },
       },

@@ -12,12 +12,12 @@ P02 extends identity persistence with AuthSession, AdminSetupState, AdminInvitat
 
 Retain UUID identity, unique normalized email, current bounded name/phone/password-hash fields, verification/reset hash and expiry pairs, role, status and timestamps. Add these canonical fields:
 
-| Field                | Proposed storage and meaning                                                                                                                     |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `referralCode`       | Unique nonnull `char(32)`, lowercase hexadecimal UUID characters; generated independently of fixtures, email or credentials.                     |
-| `sponsorUserId`      | Nullable UUID self-relation; the registration-selected existing USER, or permanently null. Restrictive update/delete FK.                         |
-| `tasksBlocked`       | Nonnull boolean, default false; employee task control independent of status and withdrawal control.                                              |
-| `withdrawalsBlocked` | Nonnull boolean, default false; employee withdrawal control independent of status and task control.                                              |
+| Field                | Proposed storage and meaning                                                                                                                                                           |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `referralCode`       | Unique nonnull `char(32)`, lowercase hexadecimal UUID characters; generated independently of fixtures, email or credentials.                                                           |
+| `sponsorUserId`      | Nullable UUID self-relation; the registration-selected existing USER, or permanently null. Restrictive update/delete FK.                                                               |
+| `tasksBlocked`       | Nonnull boolean, default false; employee task control independent of status and withdrawal control.                                                                                    |
+| `withdrawalsBlocked` | Nonnull boolean, default false; employee withdrawal control independent of status and task control.                                                                                    |
 | `accountVersion`     | Nonnegative integer, default 0; increments once per successful status/restriction transition, including public email activation. Supports stale-command conflicts, not JWT revocation. |
 
 Generate an internal code for every stored User so a database default also supports existing fixtures and administrator creation. Only USER codes are referral targets; safe ADMIN DTOs expose `referralCode: null`. A code is not a secret or an administrator-invitation credential. Registration resolves input `referralCode` into `sponsorUserId`; it never copies a client-supplied sponsor UUID or role.

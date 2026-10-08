@@ -5,7 +5,8 @@
 
 /* Scope employee typography & reset */
 .employee-scope {
-  --font-cairo: "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-cairo:
+    "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--font-cairo) !important;
   letter-spacing: 0 !important;
   color: #0f172a;
@@ -127,7 +128,11 @@
   font-weight: 700;
   text-decoration: none !important;
   border-radius: 0.5rem;
-  transition: background-color 150ms ease, border-color 150ms ease, opacity 150ms ease, transform 100ms ease;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    opacity 150ms ease,
+    transform 100ms ease;
   user-select: none;
   white-space: normal;
   word-break: break-word;
@@ -166,7 +171,8 @@
   color: #ffffff !important;
   border: 1px solid #047857;
 }
-.employee-scope .emp-btn--primary:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope
+  .emp-btn--primary:hover:not(:disabled):not([aria-disabled="true"]),
 .employee-scope a.emp-btn--primary:hover:not([aria-disabled="true"]) {
   background-color: #065f46;
   color: #ffffff !important;
@@ -194,7 +200,8 @@
   color: #0f172a !important;
   border: 1px solid #cbd5e1;
 }
-.employee-scope .emp-btn--outline:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope
+  .emp-btn--outline:hover:not(:disabled):not([aria-disabled="true"]),
 .employee-scope a.emp-btn--outline:hover:not([aria-disabled="true"]) {
   background-color: #f8fafc;
   color: #0f172a !important;
@@ -208,7 +215,8 @@
   color: #334155 !important;
   border: 1px solid transparent;
 }
-.employee-scope .emp-btn--ghost:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope
+  .emp-btn--ghost:hover:not(:disabled):not([aria-disabled="true"]),
 .employee-scope a.emp-btn--ghost:hover:not([aria-disabled="true"]) {
   background-color: #f1f5f9;
   color: #0f172a !important;
@@ -221,7 +229,8 @@
   color: #ffffff !important;
   border: 1px solid #dc2626;
 }
-.employee-scope .emp-btn--destructive:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope
+  .emp-btn--destructive:hover:not(:disabled):not([aria-disabled="true"]),
 .employee-scope a.emp-btn--destructive:hover:not([aria-disabled="true"]) {
   background-color: #b91c1c;
   color: #ffffff !important;
@@ -235,7 +244,8 @@
   color: #064e3b !important;
   border: 1px solid #ffffff;
 }
-.employee-scope .emp-btn--white:hover:not(:disabled):not([aria-disabled="true"]),
+.employee-scope
+  .emp-btn--white:hover:not(:disabled):not([aria-disabled="true"]),
 .employee-scope a.emp-btn--white:hover:not([aria-disabled="true"]) {
   background-color: #ecfdf5;
   color: #022c22 !important;

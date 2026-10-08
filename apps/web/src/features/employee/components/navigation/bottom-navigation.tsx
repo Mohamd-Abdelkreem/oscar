@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  ClipboardCheck,
-  Home,
-  Layers,
-  User,
-  Users,
-} from "lucide-react";
+import { ClipboardCheck, Home, Layers, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -55,10 +49,10 @@ export function BottomNavigation() {
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-slate-200 shadow-sm safe-bottom-area"
+      className="safe-bottom-area fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white shadow-sm"
       aria-label="التنقل الرئيسي للتطبيق"
     >
-      <div className="max-w-xl mx-auto flex items-center justify-around h-16 px-1">
+      <div className="mx-auto flex h-16 max-w-xl items-center justify-around px-1">
         {navItems.map((item) => {
           const Icon = item.icon;
           return (
@@ -66,10 +60,10 @@ export function BottomNavigation() {
               key={item.href}
               href={item.href}
               aria-current={item.isActive ? "page" : undefined}
-              className={`flex flex-col items-center justify-center flex-1 h-full min-h-[48px] py-1 text-xs transition-colors relative focus-visible:outline-2 focus-visible:outline-emerald-600 ${
+              className={`relative flex h-full min-h-[48px] flex-1 flex-col items-center justify-center py-1 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-emerald-600 ${
                 item.isActive
-                  ? "text-emerald-700 font-bold"
-                  : "text-slate-500 hover:text-slate-900 font-medium"
+                  ? "font-bold text-emerald-700"
+                  : "font-medium text-slate-500 hover:text-slate-900"
               }`}
             >
               <div className="relative flex items-center justify-center">
@@ -81,10 +75,10 @@ export function BottomNavigation() {
                   aria-hidden="true"
                 />
                 {item.isActive && (
-                  <span className="absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                  <span className="absolute -bottom-1 h-1.5 w-1.5 rounded-full bg-emerald-600" />
                 )}
               </div>
-              <span className="mt-1 text-[11px] sm:text-xs leading-none">
+              <span className="mt-1 text-[11px] leading-none sm:text-xs">
                 {item.label}
               </span>
             </Link>

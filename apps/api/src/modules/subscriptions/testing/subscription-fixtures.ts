@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 
 import { packageTermsSchema, type PackageCode } from "@template/contracts";
 import type { DatabaseClient } from "@template/database";
+import type { FinancialRuntimeAdmission } from "../../custody/runtime-control.js";
 
 import { BusinessClock } from "../../../core/business-calendar/business-clock.js";
 import {
@@ -17,7 +18,6 @@ import type {
 } from "../../ledger/ledger.types.js";
 import {
   fixedFinancialClock,
-  financialFixtureAdmission,
   admitCleanDisposableFinancialBoot,
 } from "../../ledger/testing/financial-fixtures.js";
 
@@ -32,14 +32,34 @@ export type SubscriptionAccountFixture = Awaited<
 export const P04_FIXTURE_NOW = new Date("2026-10-05T09:00:00.000Z");
 const FIXTURE_FUNDING = "p04.fixture.funding";
 const FIXTURE_PROCESS = "p04-fixture";
-const ledger = (database: DatabaseClient) =>
+type FixtureRuntime =
+  Date | { now?: Date; admission: FinancialRuntimeAdmission };
+async function fixtureRuntime(
+  database: DatabaseClient,
+  runtime: FixtureRuntime,
+) {
+  const admission =
+    runtime instanceof Date
+      ? await admitCleanDisposableFinancialBoot(database)
+      : runtime.admission;
+  const now =
+    runtime instanceof Date ? runtime : (runtime.now ?? P04_FIXTURE_NOW);
+  await database.$transaction((transaction) =>
+    admission.assertMutationAdmission(transaction),
+  );
+  return { now, admission };
+}
+const ledger = (
+  database: DatabaseClient,
+  admission: FinancialRuntimeAdmission,
+) =>
   new LedgerService(
     database,
     {
       businessNamespaces: [FIXTURE_FUNDING, "p04.purchase"],
       processIds: [FIXTURE_PROCESS],
     },
-    financialFixtureAdmission(database),
+    admission,
   );
 
 const fixtureWalletGuard =
@@ -58,9 +78,9 @@ export async function fundSubscriptionFixture(
   database: DatabaseClient,
   account: SubscriptionAccountFixture,
   amounts: { referral: string; nonReferral: string },
-  now = P04_FIXTURE_NOW,
+  runtime: FixtureRuntime = P04_FIXTURE_NOW,
 ) {
-  await admitCleanDisposableFinancialBoot(database);
+  const { now, admission } = await fixtureRuntime(database, runtime);
   if (account.wallet === null)
     throw new Error("Employee wallet fixture is required.");
   const walletId = account.wallet.id;
@@ -76,7 +96,7 @@ export async function fundSubscriptionFixture(
     ["NON_REFERRAL", amounts.nonReferral],
   ] as const) {
     if (parseUsdtAmount(amount) === 0n) continue;
-    await ledger(database).execute(
+    await ledger(database, admission).execute(
       {
         kind: "CREDIT",
         walletId,
@@ -118,9 +138,9 @@ export async function activateSubscriptionFixture(
   database: DatabaseClient,
   account: SubscriptionAccountFixture,
   packageCode: PackageCode = "S1",
-  now = P04_FIXTURE_NOW,
+  runtime: FixtureRuntime = P04_FIXTURE_NOW,
 ) {
-  await admitCleanDisposableFinancialBoot(database);
+  const { now, admission } = await fixtureRuntime(database, runtime);
   if (account.wallet === null)
     throw new Error("Employee wallet fixture is required.");
   const configured = await database.package.findUniqueOrThrow({
@@ -211,7 +231,7 @@ export async function activateSubscriptionFixture(
     observe: fixtureWalletGuard(wallet.id),
     mutate: fixtureWalletGuard(wallet.id),
   };
-  const reply = await ledger(database).execute(
+  const reply = await ledger(database, admission).execute(
     {
       kind: "PURCHASE_DEBIT",
       walletId: wallet.id,

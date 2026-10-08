@@ -67,7 +67,7 @@ export async function runLinuxProofProgram(
     }),
   );
   const bootstrap =
-    'mkdir -p /work/node_modules/@template/contracts /work/node_modules/@template/database /work/api && cp /fixture/package.json /work/package.json && cd /work && npm install --no-audit --no-fund >/dev/null && cp -r /api/. /work/api/ && cp -r /contracts/. /work/node_modules/@template/contracts/ && cp -r /database/. /work/node_modules/@template/database/ && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/contracts/package.json && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/database/package.json && cp /fixture/program.mjs /work/program.mjs && touch /work/pnpm-workspace.yaml && node --expose-gc /work/program.mjs';
+    'mkdir -p /work/node_modules/@template/contracts /work/node_modules/@template/database /work/api && cp /fixture/package.json /work/package.json && cd /work && npm install --prefer-offline --no-audit --no-fund >/dev/null && cp -r /api/. /work/api/ && cp -r /contracts/. /work/node_modules/@template/contracts/ && cp -r /database/. /work/node_modules/@template/database/ && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/contracts/package.json && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/database/package.json && cp /fixture/program.mjs /work/program.mjs && touch /work/pnpm-workspace.yaml && node --expose-gc /work/program.mjs';
   let output = "";
   let diagnostics = "";
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -86,6 +86,9 @@ export async function runLinuxProofProgram(
         `type=bind,source=${join(temporary, "database")},target=/database,readonly`,
         "--mount",
         `type=bind,source=${temporary},target=/fixture,readonly`,
+        // Reuse only public package tarballs; application/DB fixtures remain isolated.
+        "--mount",
+        "type=volume,source=oscar-p05-e2e-npm-cache,target=/root/.npm",
         "--entrypoint",
         "sh",
         "node:24.18.1-bookworm-slim",

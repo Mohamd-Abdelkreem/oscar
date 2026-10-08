@@ -1,6 +1,8 @@
 import {
   identityListQuerySchema,
   type IdentityListQuery,
+  manualCreditTargetsQuerySchema,
+  type ManualCreditTargetsQuery,
 } from "@template/contracts";
 import { Prisma, type DatabaseClient } from "@template/database";
 
@@ -16,6 +18,8 @@ import {
   INVITATION_SELECT,
   mapAdmin,
   mapInvitation,
+  MANUAL_CREDIT_TARGET_SELECT,
+  mapManualCreditTarget,
 } from "./admins.mapper.js";
 import { AuthSessionService } from "../auth/auth-session.service.js";
 
@@ -57,6 +61,39 @@ export class AdminsService {
       const total = await transaction.user.count({ where });
       return {
         items: admins.map(mapAdmin),
+        pagination: buildPaginationMeta({ ...query, total }),
+      };
+    });
+  }
+
+  listManualCreditTargets(
+    actor: AuthenticatedSession,
+    input: ManualCreditTargetsQuery,
+  ) {
+    const query = manualCreditTargetsQuerySchema.parse(input);
+    return this.read(actor, async (transaction) => {
+      const where: Prisma.UserWhereInput = {
+        role: "USER",
+        wallet: { isNot: null },
+        ...(query.q
+          ? {
+              OR: [
+                { fullName: { contains: query.q, mode: "insensitive" } },
+                { email: { contains: query.q, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      };
+      const employees = await transaction.user.findMany({
+        where,
+        select: MANUAL_CREDIT_TARGET_SELECT,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      });
+      const total = await transaction.user.count({ where });
+      return {
+        items: employees.map(mapManualCreditTarget),
         pagination: buildPaginationMeta({ ...query, total }),
       };
     });

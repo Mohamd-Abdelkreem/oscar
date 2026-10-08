@@ -1,4 +1,14 @@
 import { describe, expect, it } from "vitest";
+import {
+  createIdentityFixture,
+  withIdentityDatabase,
+} from "../../auth/testing/identity-fixtures.js";
+import {
+  FinancialRuntimeAdmission,
+  fenceFinancialRuntime,
+} from "../../custody/runtime-control.js";
+import { admitCleanDisposableFinancialBoot } from "../../ledger/testing/financial-fixtures.js";
+import { manualState } from "../../deposits/testing/deposit-http-fixtures.js";
 
 import {
   createSubscriptionScenario,
@@ -11,6 +21,66 @@ import {
 } from "./subscription-fixtures.js";
 
 describe("isolated P04 financial fixtures", () => {
+  it("uses explicit admission for source-aware funding/activation and preserves money/audit when pending or fenced", async () =>
+    withIdentityDatabase(async (database) => {
+      const account = await createIdentityFixture(database);
+      const pending = new FinancialRuntimeAdmission(database, "API");
+      await pending.register();
+      const before = await manualState(database);
+      await expect(
+        fundSubscriptionFixture(
+          database,
+          account,
+          { referral: "10", nonReferral: "70" },
+          { now: P04_FIXTURE_NOW, admission: pending },
+        ),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      await expect(
+        activateSubscriptionFixture(database, account, "S1", {
+          now: P04_FIXTURE_NOW,
+          admission: pending,
+        }),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      expect(await manualState(database)).toEqual(before);
+      const admission = await admitCleanDisposableFinancialBoot(database);
+      const runtime = { now: P04_FIXTURE_NOW, admission };
+      await fundSubscriptionFixture(
+        database,
+        account,
+        { referral: "10", nonReferral: "70" },
+        runtime,
+      );
+      const active = await activateSubscriptionFixture(
+        database,
+        account,
+        "S1",
+        runtime,
+      );
+      expect(active.reply.result.walletAfter).toMatchObject({
+        availableReferral: "0",
+        availableNonReferral: "20",
+        total: "20",
+      });
+      const admitted = await manualState(database);
+      expect(admitted.operations).toHaveLength(3);
+      expect(admitted.audit).toHaveLength(3);
+      await fenceFinancialRuntime(database, {
+        operatorIdentity: "fixture-test",
+        reason: "Test explicit admission recheck",
+      });
+      await expect(
+        fundSubscriptionFixture(
+          database,
+          account,
+          { referral: "1", nonReferral: "1" },
+          runtime,
+        ),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      await expect(
+        activateSubscriptionFixture(database, account, "S1", runtime),
+      ).rejects.toMatchObject({ code: "FINANCIAL_WRITES_FENCED" });
+      expect(await manualState(database)).toEqual(admitted);
+    }));
   it("creates five immutable ancestors/current sessions and funds a saved term through the real ledger", async () => {
     await withSubscriptionDatabase(async (database) => {
       const startedAt = Date.now();
