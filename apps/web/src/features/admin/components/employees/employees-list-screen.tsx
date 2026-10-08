@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  Eye,
-  RotateCcw,
-  Search,
-} from "lucide-react";
+import { Eye, RotateCcw, Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AdminBadge } from "../common/admin-badge";
@@ -59,7 +55,10 @@ export function EmployeesListScreen() {
       }
 
       // Restrictions filter
-      if (restrictionFilter === "tasks_blocked" && !emp.restrictions.tasksBlocked) {
+      if (
+        restrictionFilter === "tasks_blocked" &&
+        !emp.restrictions.tasksBlocked
+      ) {
         return false;
       }
       if (
@@ -144,8 +143,8 @@ export function EmployeesListScreen() {
       />
 
       {/* Filter and Search Bar: Standardized 44px Height Control Grid (Requirement 9) */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs space-y-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 items-center">
+      <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+        <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {/* Search Box */}
           <AdminInput
             type="text"
@@ -194,17 +193,22 @@ export function EmployeesListScreen() {
         </div>
 
         {/* Filters Summary & Reset */}
-        {(searchQuery || statusFilter !== "all" || packageFilter !== "all" || restrictionFilter !== "all") && (
+        {(searchQuery ||
+          statusFilter !== "all" ||
+          packageFilter !== "all" ||
+          restrictionFilter !== "all") && (
           <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-xs text-slate-500">
             <span>
               تم العثور على{" "}
-              <strong className="text-slate-900">{filteredEmployees.length}</strong>{" "}
+              <strong className="text-slate-900">
+                {filteredEmployees.length}
+              </strong>{" "}
               موظف مطابق
             </span>
             <button
               type="button"
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800 cursor-pointer"
+              className="inline-flex cursor-pointer items-center gap-1 font-bold text-emerald-700 hover:text-emerald-800"
             >
               <RotateCcw size={13} aria-hidden="true" />
               <span>إعادة ضبط التصفية</span>
@@ -233,7 +237,7 @@ export function EmployeesListScreen() {
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
+                className="cursor-pointer text-xs font-bold text-emerald-700 hover:underline"
               >
                 إلغاء التصفية واستعراض الكل
               </button>
@@ -274,7 +278,10 @@ export function EmployeesListScreen() {
                           <div className="flex items-center gap-2 text-[11px] text-slate-500">
                             <bdi dir="ltr">{emp.email}</bdi>
                             <span>&bull;</span>
-                            <span className="font-mono text-slate-600 font-semibold" dir="ltr">
+                            <span
+                              className="font-mono font-semibold text-slate-600"
+                              dir="ltr"
+                            >
                               {emp.invitationCode}
                             </span>
                           </div>
@@ -285,12 +292,17 @@ export function EmployeesListScreen() {
                     {/* Package */}
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2 py-0.5 font-bold text-slate-800">
-                        {emp.packageId === "FREE" ? "الحساب المجاني" : `منصب ${emp.packageId}`}
+                        {emp.packageId === "FREE"
+                          ? "الحساب المجاني"
+                          : `منصب ${emp.packageId}`}
                       </span>
                     </td>
 
                     {/* Available Balance */}
-                    <td className="px-4 py-3 whitespace-nowrap font-mono font-bold text-slate-900" dir="ltr">
+                    <td
+                      className="px-4 py-3 font-mono font-bold whitespace-nowrap text-slate-900"
+                      dir="ltr"
+                    >
                       {emp.balance.available.toFixed(2)} USDT
                     </td>
 
@@ -305,20 +317,21 @@ export function EmployeesListScreen() {
                     <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">
                         {emp.restrictions.tasksBlocked && (
-                          <span className="rounded bg-rose-50 border border-rose-200 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
+                          <span className="rounded border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[10px] font-bold text-rose-700">
                             حظر المهام
                           </span>
                         )}
                         {emp.restrictions.withdrawalsBlocked && (
-                          <span className="rounded bg-amber-50 border border-amber-200 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                          <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
                             حظر السحب
                           </span>
                         )}
-                        {!emp.restrictions.tasksBlocked && !emp.restrictions.withdrawalsBlocked && (
-                          <span className="text-[11px] text-slate-400">
-                            لا توجد قيود
-                          </span>
-                        )}
+                        {!emp.restrictions.tasksBlocked &&
+                          !emp.restrictions.withdrawalsBlocked && (
+                            <span className="text-[11px] text-slate-400">
+                              لا توجد قيود
+                            </span>
+                          )}
                       </div>
                     </td>
 

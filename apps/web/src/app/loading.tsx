@@ -7,12 +7,13 @@ export default function Loading() {
       aria-live="polite"
       className="flex min-h-screen w-full flex-col items-center justify-center bg-slate-50 p-4 text-center select-none"
       style={{
-        fontFamily: 'Cairo, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily:
+          'Cairo, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
-      <div className="flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm max-w-sm w-full">
+      <div className="flex w-full max-w-sm flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         {/* Restrained Logo / Brand Glyph */}
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-700 text-white font-bold text-xl shadow-xs">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-700 text-xl font-bold text-white shadow-xs">
           أ
         </div>
 
@@ -26,7 +27,7 @@ export default function Loading() {
 
         {/* Accessible Arabic Loading Message */}
         <div className="space-y-1">
-          <h1 className="text-base font-bold text-slate-900 tracking-normal sm:text-lg">
+          <h1 className="text-base font-bold tracking-normal text-slate-900 sm:text-lg">
             جارٍ تحميل أوسكار...
           </h1>
           <p className="text-xs text-slate-500">

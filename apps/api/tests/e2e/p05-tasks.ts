@@ -1,4 +1,5 @@
 import type { DatabaseClient } from "@template/database";
+import type { FinancialRuntimeAdmission } from "../../src/modules/custody/runtime-control.js";
 import { createIdentityFixture } from "../../src/modules/auth/testing/identity-fixtures.js";
 import {
   fundSubscriptionFixture,
@@ -14,6 +15,7 @@ export class P05TaskScenario {
   constructor(
     private readonly database: DatabaseClient,
     private readonly clock: () => Date,
+    private readonly admission: FinancialRuntimeAdmission,
   ) {}
   async fixtures() {
     const admin = await this.database.user.findUniqueOrThrow({
@@ -37,14 +39,12 @@ export class P05TaskScenario {
         this.database,
         account,
         { referral: "0", nonReferral: "60" },
-        this.clock(),
+        { now: this.clock(), admission: this.admission },
       );
-      await activateSubscriptionFixture(
-        this.database,
-        account,
-        "S1",
-        this.clock(),
-      );
+      await activateSubscriptionFixture(this.database, account, "S1", {
+        now: this.clock(),
+        admission: this.admission,
+      });
       accounts.push(account.user.id);
     }
     const [employeeId, otherId] = accounts;
@@ -61,7 +61,7 @@ export class P05TaskScenario {
       this.database,
       this.upgradeEmployee,
       { referral: "0", nonReferral: "120" },
-      this.clock(),
+      { now: this.clock(), admission: this.admission },
     );
     return null;
   }

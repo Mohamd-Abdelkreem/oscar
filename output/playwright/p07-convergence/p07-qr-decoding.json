@@ -1,0 +1,85 @@
+{
+  "decoder": "jsqr@1.4.0",
+  "checks": [
+    {
+      "stage": "first-before",
+      "width": 320,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-before",
+      "width": 390,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-before",
+      "width": 430,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-before",
+      "width": 1280,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-reload",
+      "width": 320,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-reload",
+      "width": 390,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-reload",
+      "width": 430,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "first-reload",
+      "width": 1280,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-before",
+      "width": 320,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-before",
+      "width": 390,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-before",
+      "width": 430,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-before",
+      "width": 1280,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-reload",
+      "width": 320,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-reload",
+      "width": 390,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-reload",
+      "width": 430,
+      "apiVisibleClipboardDecodedEqual": true
+    },
+    {
+      "stage": "other-reload",
+      "width": 1280,
+      "apiVisibleClipboardDecodedEqual": true
+    }
+  ]
+}

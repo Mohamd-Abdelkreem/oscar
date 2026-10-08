@@ -11,12 +11,7 @@ import type {
 } from "react";
 
 export type ButtonVariant =
-  | "primary"
-  | "dark"
-  | "outline"
-  | "ghost"
-  | "destructive"
-  | "white";
+  "primary" | "dark" | "outline" | "ghost" | "destructive" | "white";
 
 export type ButtonSize = "default" | "compact";
 
@@ -78,7 +73,12 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const isDisabled = disabled || loading;
-  const buttonClass = getButtonClassName({ variant, size, fullWidth, className });
+  const buttonClass = getButtonClassName({
+    variant,
+    size,
+    fullWidth,
+    className,
+  });
   const iconSize = size === "compact" ? 16 : 18;
 
   return (
@@ -93,7 +93,7 @@ export function Button({
       {loading ? (
         <Loader2
           size={iconSize}
-          className="animate-spin text-current shrink-0"
+          className="shrink-0 animate-spin text-current"
           aria-hidden="true"
         />
       ) : Icon ? (
@@ -147,10 +147,16 @@ export function ButtonLink({
         role="link"
         {...(ariaLabel ? { "aria-label": ariaLabel } : {})}
       >
-        {Icon && <Icon size={iconSize} className="shrink-0" aria-hidden="true" />}
+        {Icon && (
+          <Icon size={iconSize} className="shrink-0" aria-hidden="true" />
+        )}
         <span className="truncate">{children}</span>
         {TrailingIcon && (
-          <TrailingIcon size={iconSize} className="shrink-0" aria-hidden="true" />
+          <TrailingIcon
+            size={iconSize}
+            className="shrink-0"
+            aria-hidden="true"
+          />
         )}
       </span>
     );

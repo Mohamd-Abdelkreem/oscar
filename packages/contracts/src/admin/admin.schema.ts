@@ -4,6 +4,11 @@ import { emailSchema, resetPasswordBodySchema } from "../auth/auth.schema.ts";
 import {
   nonEmptyBoundedString,
   paginationMetaSchema,
+  boundedPageQueryShape,
+  boundedSearchSchema,
+  safePageOffset,
+  financialPageSchema,
+  paginatedFinancialEnvelopeSchema,
 } from "../http/http.schema.ts";
 import {
   accountVersionSchema,
@@ -12,6 +17,33 @@ import {
   versionedControlShape,
 } from "../identity/identity.schema.ts";
 import { safeUserSchema } from "../account/account.schema.ts";
+
+export const manualCreditTargetsQuerySchema = z
+  .object({ ...boundedPageQueryShape, q: boundedSearchSchema.optional() })
+  .strict()
+  .refine(safePageOffset, "Unsupported page offset.");
+export const manualCreditTargetSchema = z
+  .object({
+    id: z.uuid(),
+    name: nonEmptyBoundedString(150),
+    email: z.email().max(320),
+  })
+  .strict();
+export const manualCreditTargetsDataSchema = financialPageSchema(
+  manualCreditTargetSchema,
+);
+export const manualCreditTargetsEnvelopeSchema =
+  paginatedFinancialEnvelopeSchema(manualCreditTargetsDataSchema);
+export type ManualCreditTargetsQuery = z.infer<
+  typeof manualCreditTargetsQuerySchema
+>;
+export type ManualCreditTarget = z.infer<typeof manualCreditTargetSchema>;
+export type ManualCreditTargetsData = z.infer<
+  typeof manualCreditTargetsDataSchema
+>;
+export type ManualCreditTargetsEnvelope = z.infer<
+  typeof manualCreditTargetsEnvelopeSchema
+>;
 
 export const adminSchema = safeUserSchema.extend({
   role: z.literal("ADMIN"),

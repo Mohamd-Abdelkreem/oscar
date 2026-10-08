@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import type { DatabaseClient } from "@template/database";
+import type { FinancialRuntimeAdmission } from "../../src/modules/custody/runtime-control.js";
 import { formatUsdtAmount } from "../../src/core/financial/money.js";
 import { createIdentityFixture } from "../../src/modules/auth/testing/identity-fixtures.js";
 import { fundSubscriptionFixture } from "../../src/modules/subscriptions/testing/subscription-fixtures.js";
@@ -15,7 +16,10 @@ export class P04FinanceScenario {
   private instant = new Date();
   readonly clock = () => new Date(this.instant);
   private accounts = new Map<string, Account>();
-  constructor(private readonly database: DatabaseClient) {}
+  constructor(
+    private readonly database: DatabaseClient,
+    private readonly admission: FinancialRuntimeAdmission,
+  ) {}
   setClock(instant: string) {
     this.instant = new Date(instant);
   }
@@ -25,12 +29,10 @@ export class P04FinanceScenario {
   ) {
     const account = this.accounts.get(email);
     if (!account) throw new Error("P04_UNKNOWN_FIXTURE");
-    await fundSubscriptionFixture(
-      this.database,
-      account,
-      amounts,
-      this.clock(),
-    );
+    await fundSubscriptionFixture(this.database, account, amounts, {
+      now: this.clock(),
+      admission: this.admission,
+    });
   }
   async release(email: string) {
     const wallet = this.accounts.get(email)?.wallet;
@@ -41,10 +43,14 @@ export class P04FinanceScenario {
         orderBy: { grossUnits: "desc" },
       });
     const guard = () => Promise.resolve();
-    await new LedgerService(this.database, {
-      businessNamespaces: ["p04.e2e.release"],
-      processIds: ["p04-e2e"],
-    }).execute(
+    await new LedgerService(
+      this.database,
+      {
+        businessNamespaces: ["p04.e2e.release"],
+        processIds: ["p04-e2e"],
+      },
+      this.admission,
+    ).execute(
       {
         kind: "RELEASE",
         walletId: wallet.id,
@@ -68,7 +74,11 @@ export class P04FinanceScenario {
       this.database,
       this.clock,
     ).create(identity, { packageCode: "S1" });
-    await new SubscriptionPurchaseService(this.database, this.clock).purchase(
+    await new SubscriptionPurchaseService(
+      this.database,
+      this.clock,
+      this.admission,
+    ).purchase(
       identity,
       { quoteId: quote.quoteId, confirmed: true },
       quote.quoteId,
@@ -182,10 +192,14 @@ export class P04FinanceScenario {
     if (profile === "wallet") {
       const wallet = buyer.wallet;
       if (wallet === null) throw new Error("P04_WALLET_REQUIRED");
-      const ledger = new LedgerService(this.database, {
-        businessNamespaces: ["p04.e2e.reserve"],
-        processIds: ["p04-e2e"],
-      });
+      const ledger = new LedgerService(
+        this.database,
+        {
+          businessNamespaces: ["p04.e2e.reserve"],
+          processIds: ["p04-e2e"],
+        },
+        this.admission,
+      );
       const guard = () => Promise.resolve();
       const context: LedgerContext = {
         actor: { type: "PROCESS", processId: "p04-e2e" },

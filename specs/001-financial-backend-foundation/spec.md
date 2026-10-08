@@ -29,13 +29,13 @@ Employees are the owners of recorded funds. Trusted backend operations apply val
 
 Current source inspected for this specification:
 
-| Evidence | Existing capability and P01 gap |
-| --- | --- |
-| [API router](../../apps/api/src/router.ts) | Auth, users, health and OpenAPI are composed; no financial domain routes are composed. |
-| [Persistence schema](../../packages/database/prisma/schema.prisma) | User and RefreshToken exist; wallet, ledger, reservation, financial idempotency and audit persistence are absent. |
-| [Contract exports](../../packages/contracts/src/index.ts) | Auth, account and HTTP contracts exist; financial amount/rate/source contracts are absent. |
-| [Decimal serialization](../../apps/api/src/core/serialization/decimal.ts) | Generic decimal serialization exists; it is not bounded micro-USDT arithmetic or an exact micro-unit transport contract. |
-| [Date-only helper](../../apps/api/src/core/date-only.ts) | Calendar-date validation/UTC date-only serialization exists; Baghdad task, subscription and counted-hour policies are absent. |
+| Evidence                                                                                                                                                                                 | Existing capability and P01 gap                                                                                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [API router](../../apps/api/src/router.ts)                                                                                                                                               | Auth, users, health and OpenAPI are composed; no financial domain routes are composed.                                                                      |
+| [Persistence schema](../../packages/database/prisma/schema.prisma)                                                                                                                       | User and RefreshToken exist; wallet, ledger, reservation, financial idempotency and audit persistence are absent.                                           |
+| [Contract exports](../../packages/contracts/src/index.ts)                                                                                                                                | Auth, account and HTTP contracts exist; financial amount/rate/source contracts are absent.                                                                  |
+| [Decimal serialization](../../apps/api/src/core/serialization/decimal.ts)                                                                                                                | Generic decimal serialization exists; it is not bounded micro-USDT arithmetic or an exact micro-unit transport contract.                                    |
+| [Date-only helper](../../apps/api/src/core/date-only.ts)                                                                                                                                 | Calendar-date validation/UTC date-only serialization exists; Baghdad task, subscription and counted-hour policies are absent.                               |
 | [Schema inventory test](../../packages/database/tests/schema-contract.test.ts) and [migration integration test](../../packages/database/tests/integration/migration.integration.test.ts) | Inventories currently expect only auth models/tables. Financial additions must extend expectations while preserving existing auth checks and relationships. |
 
 None of the P01 financial deliverables is claimed to be implemented by this document.

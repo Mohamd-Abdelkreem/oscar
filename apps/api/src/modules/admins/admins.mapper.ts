@@ -5,6 +5,8 @@ import {
   adminInvitationSchema,
   type Admin,
   type AdminInvitation as InvitationProjection,
+  manualCreditTargetSchema,
+  type ManualCreditTarget,
 } from "@template/contracts";
 import type { User, AdminInvitation } from "@template/database";
 
@@ -44,6 +46,20 @@ export const ADMIN_SELECT = {
   createdAt: true,
   updatedAt: true,
 } as const;
+export const MANUAL_CREDIT_TARGET_SELECT = {
+  id: true,
+  fullName: true,
+  email: true,
+} as const;
+export function mapManualCreditTarget(
+  employee: Pick<User, keyof typeof MANUAL_CREDIT_TARGET_SELECT>,
+): ManualCreditTarget {
+  return manualCreditTargetSchema.parse({
+    id: employee.id,
+    name: employee.fullName,
+    email: employee.email,
+  });
+}
 export const INVITATION_SELECT = {
   id: true,
   email: true,

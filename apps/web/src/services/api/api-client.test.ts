@@ -113,12 +113,35 @@ afterEach(() => {
 });
 
 describe("transport boundary", () => {
+  it.each(["/deposits/me/address", "/admin/deposits/manual-credits"])(
+    "never refreshes or replays deposit POST %s after authentication or reply loss",
+    async (url) => {
+      for (const status of [401, 0]) {
+        let sends = 0;
+        apiClient.defaults.adapter = (config) => {
+          sends++;
+          throw status === 401
+            ? denied(config)
+            : new AxiosError("PRIVATE", "ERR_NETWORK", config);
+        };
+        await expect(apiClient.post(url, {})).rejects.toMatchObject({
+          category: status === 401 ? "denied" : "uncertain",
+        });
+        expect(sends).toBe(1);
+      }
+    },
+  );
   it.each([
     "/tasks/today",
     "/proofs/id/content",
     "/task-illustrations/id",
     "/admin/task-submissions/id",
     "/admin/task-codes",
+    "/deposits/me/address",
+    "/deposits/me/history",
+    "/admin/deposits",
+    "/admin/deposits/manual-credits/00000000-0000-4000-8000-000000000001",
+    "/admin/employees/manual-credit-targets",
   ])(
     "leaves private denial revalidation to the read owner for %s",
     async (url) => {

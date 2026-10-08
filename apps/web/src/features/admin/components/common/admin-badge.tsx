@@ -1,11 +1,7 @@
 import type { ReactNode } from "react";
 
 export type AdminBadgeVariant =
-  | "success"
-  | "warning"
-  | "danger"
-  | "info"
-  | "neutral";
+  "success" | "warning" | "danger" | "info" | "neutral";
 
 interface AdminBadgeProps {
   readonly children: ReactNode;
@@ -14,7 +10,10 @@ interface AdminBadgeProps {
   readonly dot?: boolean;
 }
 
-const variantClasses: Record<AdminBadgeVariant, { badge: string; dot: string }> = {
+const variantClasses: Record<
+  AdminBadgeVariant,
+  { badge: string; dot: string }
+> = {
   success: {
     badge: "border-emerald-200 bg-emerald-50 text-emerald-800",
     dot: "bg-emerald-600",
@@ -45,9 +44,7 @@ export function AdminBadge({
 }: AdminBadgeProps) {
   const styles = variantClasses[variant];
   const sizeClass =
-    size === "sm"
-      ? "px-2 py-0.5 text-[11px]"
-      : "px-2.5 py-1 text-xs";
+    size === "sm" ? "px-2 py-0.5 text-[11px]" : "px-2.5 py-1 text-xs";
 
   return (
     <span

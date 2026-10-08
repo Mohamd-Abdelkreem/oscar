@@ -122,12 +122,14 @@ export function StatusBadge({ status, label, size = "md" }: StatusBadgeProps) {
   const displayText = label ?? config.text;
 
   const sizeClasses =
-    size === "sm" ? "px-2 py-0.5 text-xs gap-1" : "px-2.5 py-1 text-xs sm:text-sm gap-1.5";
+    size === "sm"
+      ? "px-2 py-0.5 text-xs gap-1"
+      : "px-2.5 py-1 text-xs sm:text-sm gap-1.5";
   const iconSize = size === "sm" ? 12 : 14;
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded border ${config.bg} ${config.textCol} ${config.border} ${sizeClasses}`}
+      className={`inline-flex items-center rounded border font-medium ${config.bg} ${config.textCol} ${config.border} ${sizeClasses}`}
     >
       <Icon size={iconSize} className="shrink-0" aria-hidden="true" />
       <span>{displayText}</span>

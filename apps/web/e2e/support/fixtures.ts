@@ -6,7 +6,11 @@ import {
   controlReplySchema,
   type ControlReply,
   type ControlRequest,
+  p07StateSchema,
+  p07FixturesSchema,
+  type p07EmailSchema,
 } from "../../../api/tests/e2e/control.js";
+import type { z } from "zod";
 
 import {
   prepareWeb,
@@ -23,6 +27,13 @@ type ControlInput = ControlRequest extends infer Request
 export type Scenario = {
   command: (input: ControlInput) => Promise<ControlReply["data"]>;
 };
+export const p07Fixtures = async (scenario: Scenario) =>
+  p07FixturesSchema.parse(await scenario.command({ command: "p07-fixtures" }));
+export const p07State = async (
+  scenario: Scenario,
+  email: z.infer<typeof p07EmailSchema>,
+) =>
+  p07StateSchema.parse(await scenario.command({ command: "p07-state", email }));
 const apiDirectory = fileURLToPath(new URL("../../../api/", import.meta.url));
 
 const startApi = async (
@@ -125,7 +136,7 @@ export const test = base.extend<
           /\b(?:P03_(?:BUILD_FAILED|WEB_START_FAILED|API_START_FAILED|API_FAILED|IPC_TIMEOUT|API_EXITED)|P05_FIXTURE_(?:DATABASE|MIGRATION|SNAPSHOT|LINUX_LAUNCH|DEPENDENCIES|API_BOOT))\b/u,
         )?.[0];
         const location = error.stack?.match(
-          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals|tasks-codes-and-review)\.spec\.ts:(\d+):(\d+)/u,
+          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals|tasks-codes-and-review|support-smoke|deposits)\.spec\.ts:(\d+):(\d+)/u,
         );
         error.message =
           infrastructureCode ??

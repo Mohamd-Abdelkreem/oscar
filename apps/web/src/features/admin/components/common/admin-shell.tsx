@@ -13,13 +13,17 @@ export function AdminShell({ children }: AdminShellProps) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900 antialiased">
       {/* Sidebar */}
       <AdminSidebar
         isCollapsed={isCollapsed}
         isMobileOpen={isMobileOpen}
-        onCloseMobile={() => { setIsMobileOpen(false); }}
-        onToggleCollapse={() => { setIsCollapsed(!isCollapsed); }}
+        onCloseMobile={() => {
+          setIsMobileOpen(false);
+        }}
+        onToggleCollapse={() => {
+          setIsCollapsed(!isCollapsed);
+        }}
       />
 
       {/* Main Content Area (offset by sidebar width on desktop) */}
@@ -30,8 +34,12 @@ export function AdminShell({ children }: AdminShellProps) {
       >
         <AdminTopbar
           isCollapsed={isCollapsed}
-          onToggleCollapse={() => { setIsCollapsed(!isCollapsed); }}
-          onOpenMobile={() => { setIsMobileOpen(true); }}
+          onToggleCollapse={() => {
+            setIsCollapsed(!isCollapsed);
+          }}
+          onOpenMobile={() => {
+            setIsMobileOpen(true);
+          }}
         />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">

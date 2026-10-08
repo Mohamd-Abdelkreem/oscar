@@ -4,7 +4,13 @@ import { useManagedTimeout } from "@/shared/hooks/use-managed-timeout";
 
 import { Banknote, Check, Copy, Plus, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useAdminDeposits, useManualCredit } from "../../hooks/deposits.hooks";
+import { useManualCreditDialog } from "../../hooks/use-manual-credit-dialog";
+import { formatBaghdadDateTime } from "@/shared/time/baghdad-time";
+import { formatMoney } from "@/features/employee/utils/money-display";
+import { TaskQueryState } from "../common/task-query-state";
+import { getSessionRuntime } from "@/services/api/session-runtime";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
 import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
@@ -14,8 +20,6 @@ import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminPagination } from "../common/admin-pagination";
 import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
-import { useAdminState } from "../../context/admin-state.context";
-import type { AdminDepositStatus } from "../../types/admin.types";
 
 const PAGE_SIZE = 10;
 
@@ -23,105 +27,93 @@ const PAGE_SIZE = 10;
 // workflow. Revisit when the form is reused or acquires a separate lifecycle.
 export function DepositsScreen() {
   const scheduleTimeout = useManagedTimeout();
-  const { deposits, employees, manualCreditDeposit } = useAdminState();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const history = useAdminDeposits({
+    ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
+    ...(statusFilter === "CHAIN_DEPOSIT" || statusFilter === "MANUAL_CREDIT"
+      ? { kind: statusFilter }
+      : {}),
+  });
+  const visibleHistory = history.visibleHistory;
+  const copyAttempt = useRef(0);
+  const copyScope = JSON.stringify([
+    history.scope,
+    searchQuery.trim(),
+    statusFilter,
+    history.page,
+  ]);
+  useEffect(
+    () => () => {
+      copyAttempt.current++;
+    },
+    [copyScope],
+  );
   const [copiedTxId, setCopiedTxId] = useState<string | null>(null);
 
   // Manual deposit modal
   const [modalOpen, setModalOpen] = useState(false);
-  const [confirmDepositOpen, setConfirmDepositOpen] = useState(false);
-  const [selectedEmpId, setSelectedEmpId] = useState<string>(
-    employees[0]?.id ?? "",
-  );
-  const [depositAmount, setDepositAmount] = useState("");
-  const [depositReference, setDepositReference] = useState("");
-  const [depositReason, setDepositReason] = useState("");
+  const grant = useManualCredit(modalOpen, history.refetch);
+  const { draft, reviewed } = grant;
+  const formTitleId = useId();
+  const formOpen = modalOpen && history.allowed && grant.allowed;
+  const closeForm = useCallback(() => {
+    if (!grant.pending) setModalOpen(false);
+  }, [grant.pending]);
+  const formRef = useManualCreditDialog({
+    open: formOpen,
+    active: formOpen && reviewed === null,
+    close: closeForm,
+  });
   const [feedback, setFeedback] = useState<{
     success: boolean;
     message: string;
   } | null>(null);
 
-  const filteredDeposits = useMemo(() => {
-    return deposits.filter((d) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        if (
-          !d.employeeName.toLowerCase().includes(q) &&
-          !d.employeeEmail.toLowerCase().includes(q) &&
-          !d.txId.toLowerCase().includes(q) &&
-          !d.reference.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-
-      if (statusFilter !== "all" && d.status !== statusFilter) {
-        return false;
-      }
-
-      return true;
-    });
-  }, [deposits, searchQuery, statusFilter]);
-
-  const totalPages = Math.ceil(filteredDeposits.length / PAGE_SIZE) || 1;
-  const paginatedDeposits = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredDeposits.slice(start, start + PAGE_SIZE);
-  }, [filteredDeposits, currentPage]);
-
-  const handleCopy = (text: string) => {
-    void navigator.clipboard.writeText(text);
-    setCopiedTxId(text);
-    scheduleTimeout(() => {
-      setCopiedTxId(null);
-    }, 1500);
-  };
-
-  const selectedEmployee = useMemo(
-    () => employees.find((e) => e.id === selectedEmpId),
-    [employees, selectedEmpId],
-  );
-
-  const handleOpenConfirmDeposit = (e: React.SyntheticEvent) => {
-    e.preventDefault();
-    const amount = parseFloat(depositAmount);
-    if (isNaN(amount) || amount <= 0 || !depositReference.trim() || !depositReason.trim()) {
-      return;
+  const handleCopy = async (text: string) => {
+    if (!history.allowed) return;
+    const attempt = ++copyAttempt.current;
+    const scope = history.scope;
+    setCopiedTxId(null);
+    try {
+      await navigator.clipboard.writeText(text);
+      if (
+        attempt !== copyAttempt.current ||
+        !getSessionRuntime().isCurrentCheck(scope)
+      )
+        return;
+      setCopiedTxId(copyScope + text);
+      setFeedback(null);
+      scheduleTimeout(() => {
+        if (attempt === copyAttempt.current) setCopiedTxId(null);
+      }, 1500);
+    } catch {
+      if (
+        attempt !== copyAttempt.current ||
+        !getSessionRuntime().isCurrentCheck(scope)
+      )
+        return;
+      setFeedback({
+        success: false,
+        message: "تعذر نسخ المعرف. يمكنك تحديد القيمة ونسخها يدويًا.",
+      });
     }
-    setConfirmDepositOpen(true);
   };
-
-  const handleExecuteManualDeposit = () => {
-    const amount = parseFloat(depositAmount);
-    if (isNaN(amount) || amount <= 0) return;
-
-    const res = manualCreditDeposit(
-      selectedEmpId,
-      amount,
-      depositReference.trim(),
-      depositReason.trim(),
-    );
-
-    setFeedback(res);
-    if (res.success) {
-      setConfirmDepositOpen(false);
+  const handleOpenConfirmDeposit = (event: React.SyntheticEvent) => {
+    event.preventDefault();
+    grant.review();
+  };
+  const handleExecuteManualDeposit = async () => {
+    const committed = await grant.confirm();
+    if (committed && getSessionRuntime().isCurrentCheck(grant.scope)) {
       setModalOpen(false);
-      setDepositAmount("");
-      setDepositReference("");
-      setDepositReason("");
+      setFeedback({
+        success: true,
+        message: "تم تسجيل الإيداع اليدوي المعتمد.",
+      });
     }
-  };
-
-  const statusBadgeMap: Record<
-    AdminDepositStatus,
-    { label: string; variant: "success" | "warning" | "danger" }
-  > = {
-    confirmed: { label: "مؤكد", variant: "success" },
-    verifying: { label: "قيد التحقق", variant: "warning" },
-    rejected: { label: "مرفوض", variant: "danger" },
+    return committed;
   };
 
   return (
@@ -134,12 +126,9 @@ export function DepositsScreen() {
           <AdminButton
             variant="primary"
             icon={Plus}
+            disabled={!history.allowed || !grant.allowed || grant.pending}
             onClick={() => {
-              setDepositReference(
-                `MAN-DEP-${Date.now().toString(36).toUpperCase()}`,
-              );
-              setDepositReason("");
-              setDepositAmount("");
+              if (!history.allowed) return;
               setModalOpen(true);
             }}
           >
@@ -148,7 +137,20 @@ export function DepositsScreen() {
         }
       />
 
-      {feedback && (
+      {grant.allowed && grant.uncertain && (
+        <TaskQueryState
+          error="نتيجة الإيداع اليدوي غير محسومة. تُراجع العملية الأصلية فقط؛ لا يمكن إنشاء إضافة بديلة."
+          retry={grant.original.refetch}
+        />
+      )}
+      {grant.allowed && grant.error && !grant.uncertain && (
+        <TaskQueryState
+          error="تعذر تنفيذ الإيداع اليدوي بأمان. احتُفظ بالمدخلات؛ تحقق من الاتصال والتنسيق قبل المحاولة."
+          retry={grant.targets.refetch}
+        />
+      )}
+
+      {history.allowed && feedback && (
         <div
           className={`flex items-center justify-between rounded-lg p-3.5 text-xs font-bold sm:text-sm ${
             feedback.success
@@ -179,7 +181,6 @@ export function DepositsScreen() {
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
-                setCurrentPage(1);
               }}
               placeholder="بحث بالموظف، البريد، TxID، أو المرجع..."
               aria-label="بحث في الإيداعات"
@@ -191,33 +192,50 @@ export function DepositsScreen() {
               value={statusFilter}
               onValueChange={(val) => {
                 setStatusFilter(val);
-                setCurrentPage(1);
               }}
               options={[
-                { value: "all", label: "كل حالات الإيداع" },
-                { value: "confirmed", label: "مؤكد" },
-                { value: "verifying", label: "قيد التحقق" },
-                { value: "rejected", label: "مرفوض" },
+                { value: "all", label: "كل أنواع الإيداع" },
+                { value: "CHAIN_DEPOSIT", label: "آلي" },
+                { value: "MANUAL_CREDIT", label: "يدوي (إدارة)" },
               ]}
-              ariaLabel="تصفية حسب حالة الإيداع"
+              ariaLabel="تصفية حسب نوع الإيداع"
             />
           </div>
         </div>
       </div>
 
+      {history.isPending || history.error || history.observationExhausted ? (
+        <TaskQueryState
+          error={
+            history.error
+              ? history.error.category === "denied"
+                ? "غير مسموح بالوصول إلى هذه البيانات."
+                : "تعذر تحميل سجل الإيداعات. لا توجد نتيجة مؤكدة."
+              : history.observationExhausted
+                ? "توقف التحديث التلقائي. أعد التحديث للتحقق من السجل الحالي."
+                : undefined
+          }
+          retry={
+            visibleHistory === undefined
+              ? history.recoverFirstPage
+              : history.refetch
+          }
+        />
+      ) : null}
       {/* Deposits Table */}
       <AdminTableShell
         footer={
           <AdminPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredDeposits.length}
+            currentPage={history.page}
+            totalPages={visibleHistory?.pagination.totalPages ?? 0}
+            totalItems={visibleHistory?.pagination.total ?? 0}
             pageSize={PAGE_SIZE}
-            onPageChange={setCurrentPage}
+            onPageChange={history.setPage}
           />
         }
       >
-        {filteredDeposits.length === 0 ? (
+        {visibleHistory === undefined ? null : visibleHistory.items.length ===
+          0 ? (
           <AdminEmptyState
             title="لا توجد إيداعات مطابقة"
             description="لم يتم العثور على أي إيداعات تطابق معايير البحث الحالية."
@@ -237,24 +255,30 @@ export function DepositsScreen() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {paginatedDeposits.map((dep) => {
-                const statusMeta = statusBadgeMap[dep.status];
+              {visibleHistory.items.map((dep) => {
+                const isManual = dep.kind === "MANUAL_CREDIT";
+                const publicReference =
+                  dep.kind === "CHAIN_DEPOSIT"
+                    ? dep.transactionId
+                    : dep.reference.kind === "EXTERNAL"
+                      ? dep.reference.value
+                      : dep.reference.operationId;
 
                 return (
-                  <tr key={dep.id} className="hover:bg-slate-50/70">
+                  <tr key={dep.operationId} className="hover:bg-slate-50/70">
                     <td className="px-4 py-3">
                       <div className="space-y-0.5">
                         <Link
-                          href={`/admin/employees/${dep.employeeId}`}
+                          href={`/admin/employees/${dep.employee.id}`}
                           className="block font-bold text-slate-900 hover:text-emerald-700 hover:underline"
                         >
-                          {dep.employeeName}
+                          {dep.employee.name}
                         </Link>
                         <bdi
                           dir="ltr"
                           className="block text-[11px] text-slate-500"
                         >
-                          {dep.employeeEmail}
+                          {dep.employee.email}
                         </bdi>
                       </div>
                     </td>
@@ -263,11 +287,11 @@ export function DepositsScreen() {
                       className="px-4 py-3 font-mono text-sm font-bold whitespace-nowrap text-emerald-700"
                       dir="ltr"
                     >
-                      +{dep.amount.toFixed(2)} {dep.currency}
+                      +{formatMoney(dep.amount)} USDT
                     </td>
 
                     <td className="px-4 py-3 whitespace-nowrap text-slate-600">
-                      {dep.network}
+                      {dep.kind === "CHAIN_DEPOSIT" ? dep.network : "—"}
                     </td>
 
                     <td className="px-4 py-3">
@@ -277,58 +301,73 @@ export function DepositsScreen() {
                       >
                         <span
                           className="max-w-[12rem] truncate"
-                          title={dep.txId}
+                          title={publicReference}
                         >
-                          {dep.txId}
+                          {publicReference}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleCopy(dep.txId);
-                          }}
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
-                          title="نسخ معرف المعاملة"
-                          aria-label={`نسخ المعرف ${dep.txId}`}
-                        >
-                          {copiedTxId === dep.txId ? (
-                            <Check
-                              size={12}
-                              className="text-emerald-600"
-                              aria-hidden="true"
-                            />
-                          ) : (
-                            <Copy size={12} aria-hidden="true" />
-                          )}
-                        </button>
+                        {dep.kind === "CHAIN_DEPOSIT" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              void handleCopy(publicReference);
+                            }}
+                            className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                            title="نسخ معرف المعاملة"
+                            aria-label={`نسخ المعرف ${publicReference}`}
+                          >
+                            {copiedTxId === copyScope + publicReference ? (
+                              <Check
+                                size={12}
+                                className="text-emerald-600"
+                                aria-hidden="true"
+                              />
+                            ) : (
+                              <Copy size={12} aria-hidden="true" />
+                            )}
+                          </button>
+                        ) : null}
                       </div>
                       <span className="block font-mono text-[10px] text-slate-400">
-                        مرجع: {dep.reference}
+                        {dep.kind === "MANUAL_CREDIT" ? (
+                          <>
+                            {dep.actor.name} (
+                            <bdi dir="ltr">{dep.actor.email}</bdi>) —{" "}
+                            {dep.reason}
+                          </>
+                        ) : null}
                       </span>
+                      {dep.kind === "MANUAL_CREDIT" ? (
+                        <span className="block font-mono text-[10px] text-slate-400">
+                          معرف الإضافة: <bdi dir="ltr">{dep.operationId}</bdi>
+                        </span>
+                      ) : null}
                     </td>
 
                     <td
                       className="max-w-[10rem] truncate px-4 py-3 font-mono text-[11px] text-slate-500"
                       dir="ltr"
-                      title={dep.toAddress}
+                      title={
+                        dep.kind === "CHAIN_DEPOSIT" ? dep.address : undefined
+                      }
                     >
-                      {dep.toAddress}
+                      {dep.kind === "CHAIN_DEPOSIT" ? dep.address : "—"}
                     </td>
 
                     <td
                       className="px-4 py-3 font-mono whitespace-nowrap text-slate-500"
                       dir="ltr"
                     >
-                      {dep.createdAt}
+                      {formatBaghdadDateTime(dep.recordedAt)}
                     </td>
 
                     <td className="px-4 py-3 whitespace-nowrap">
-                      <AdminBadge variant={statusMeta.variant} size="sm" dot>
-                        {statusMeta.label}
+                      <AdminBadge variant="success" size="sm" dot>
+                        {isManual ? "مسجل" : "مؤكد"}
                       </AdminBadge>
                     </td>
 
                     <td className="px-4 py-3 whitespace-nowrap">
-                      {dep.isManual ? (
+                      {isManual ? (
                         <span className="rounded border border-sky-200 bg-sky-50 px-1.5 py-0.5 text-[10px] font-bold text-sky-800">
                           يدوي (إدارة)
                         </span>
@@ -345,17 +384,37 @@ export function DepositsScreen() {
       </AdminTableShell>
 
       {/* Manual Deposit Modal */}
-      {modalOpen && (
+      {formOpen && (
         <div
+          ref={formRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
+          aria-labelledby={formTitleId}
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-[2px]"
         >
           <div className="w-full max-w-md overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
-            <div className="border-b border-slate-100 p-4 font-bold text-slate-900">
+            <div
+              id={formTitleId}
+              className="border-b border-slate-100 p-4 font-bold text-slate-900"
+            >
               إضافة إيداع يدوي استثنائي معتمد
             </div>
 
+            {!grant.targets.data || grant.targets.isError ? (
+              <TaskQueryState
+                error={
+                  grant.targets.error
+                    ? "تعذر تحميل الموظفين. لا يمكن تأكيد إضافة حتى استعادة الاختيار المعتمد."
+                    : undefined
+                }
+                retry={grant.targets.refetch}
+              />
+            ) : grant.targets.data.items.length === 0 ? (
+              <p className="px-5 pt-4 text-xs text-slate-600" role="status">
+                لا يوجد موظفون مطابقون.
+              </p>
+            ) : null}
             <form
               onSubmit={handleOpenConfirmDeposit}
               className="space-y-4 p-5 text-xs sm:text-sm"
@@ -365,16 +424,25 @@ export function DepositsScreen() {
                   الموظف المستفيد: <span className="text-rose-600">*</span>
                 </label>
                 <AdminSelect
-                  value={selectedEmpId}
-                  onValueChange={setSelectedEmpId}
-                  options={employees
-                    .filter((e) => !e.isDeleted)
-                    .map((emp) => ({
-                      value: emp.id,
-                      label: `${emp.name} (${emp.email})`,
-                    }))}
+                  value={grant.selected?.id ?? ""}
+                  onValueChange={grant.select}
+                  options={grant.options}
+                  disabled={
+                    grant.blocked ||
+                    !grant.targets.isSuccess ||
+                    grant.targets.isFetching
+                  }
                   ariaLabel="الموظف المستفيد"
                 />
+                {grant.targets.data && !grant.blocked && (
+                  <AdminPagination
+                    currentPage={grant.targets.page}
+                    totalPages={grant.targets.data.pagination.totalPages}
+                    totalItems={grant.targets.data.pagination.total}
+                    pageSize={25}
+                    onPageChange={grant.targets.setPage}
+                  />
+                )}
               </div>
 
               <div>
@@ -382,13 +450,14 @@ export function DepositsScreen() {
                   المبلغ (USDT): <span className="text-rose-600">*</span>
                 </label>
                 <AdminInput
-                  type="number"
-                  step="0.01"
-                  min="0.01"
+                  type="text"
+                  inputMode="decimal"
                   icon={Banknote}
-                  value={depositAmount}
+                  value={draft.amount}
+                  aria-label="المبلغ (USDT)"
+                  disabled={grant.blocked}
                   onChange={(e) => {
-                    setDepositAmount(e.target.value);
+                    grant.edit("amount", e.target.value);
                   }}
                   placeholder="0.00"
                   required
@@ -397,20 +466,23 @@ export function DepositsScreen() {
 
               <div>
                 <label className="mb-1.5 block font-bold text-slate-700">
-                  الرقم المرجعي الفريد: <span className="text-rose-600">*</span>
+                  المرجع الإداري: <span className="text-rose-600">*</span>
                 </label>
                 <AdminInput
                   type="text"
                   dir="ltr"
-                  value={depositReference}
+                  value={draft.reference}
+                  aria-label="المرجع الإداري"
+                  disabled={grant.blocked}
                   onChange={(e) => {
-                    setDepositReference(e.target.value);
+                    grant.edit("reference", e.target.value);
                   }}
                   placeholder="MAN-DEP-..."
                   required
                 />
                 <p className="mt-1 text-[11px] text-slate-400">
-                  يمنع النظام تكرار قيد الإيداع لنفس الرقم المرجعي.
+                  تُحمى العملية نفسها من التكرار؛ يمكن استخدام المرجع في عمليات
+                  مستقلة مؤكدة.
                 </p>
               </div>
 
@@ -421,12 +493,14 @@ export function DepositsScreen() {
                 </label>
                 <textarea
                   rows={3}
-                  value={depositReason}
+                  value={draft.reason}
+                  aria-label="سبب الإيداع اليدوي الإلزامي"
+                  disabled={grant.blocked}
                   onChange={(e) => {
-                    setDepositReason(e.target.value);
+                    grant.edit("reason", e.target.value);
                   }}
                   placeholder="مثال: تسوية تحويل بنكي خارجي مؤكد أو مطابقة يدوية لإيداع شبكة..."
-                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                  className="w-full rounded-lg border border-slate-300 p-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 focus:outline-none"
                   required
                 />
               </div>
@@ -435,13 +509,17 @@ export function DepositsScreen() {
                 <AdminButton
                   variant="outline"
                   size="default"
-                  onClick={() => {
-                    setModalOpen(false);
-                  }}
+                  disabled={grant.pending}
+                  onClick={closeForm}
                 >
                   إلغاء
                 </AdminButton>
-                <AdminButton type="submit" variant="primary" size="default">
+                <AdminButton
+                  type="submit"
+                  variant="primary"
+                  size="default"
+                  disabled={!grant.canReview}
+                >
                   مراجعة وتأكيد الإيداع
                 </AdminButton>
               </div>
@@ -452,32 +530,53 @@ export function DepositsScreen() {
 
       {/* Confirm Manual Deposit Dialog */}
       <AdminConfirmDialog
-        isOpen={confirmDepositOpen}
+        isOpen={reviewed !== null && history.allowed && grant.allowed}
+        isLoading={grant.pending}
+        confirmDisabled={!grant.canReview}
+        error={
+          grant.uncertain
+            ? "نتيجة العملية غير محسومة؛ تُراجع العملية الأصلية فقط."
+            : grant.error
+              ? "تعذر تنفيذ الإضافة بأمان. لم يُعلن نجاح مالي."
+              : null
+        }
         title="تأكيد إضافة الإيداع اليدوي الاستثنائي"
         description={
           <div className="space-y-2">
             <p>
               أنت على وشك إضافة رصيد يدوي معتمد بقيمة{" "}
               <strong className="font-mono text-emerald-700">
-                {parseFloat(depositAmount || "0").toFixed(2)} USDT
+                <bdi dir="ltr">{reviewed?.body.amount} USDT</bdi>
               </strong>{" "}
-              إلى حساب الموظف <strong>{selectedEmployee?.name}</strong>.
+              إلى حساب الموظف{" "}
+              <strong>
+                {reviewed?.employee.name} (
+                <bdi dir="ltr">{reviewed?.employee.email}</bdi>)
+              </strong>
+              .
             </p>
+            <p className="text-slate-500">السبب: {reviewed?.body.reason}</p>
             <p className="text-slate-500">
-              المرجع: <bdi dir="ltr">{depositReference}</bdi> | سيتم تسجيل القيد فوراً في السجل المالي وسجل التدقيق.
+              المرجع:{" "}
+              <bdi dir="ltr">
+                {reviewed?.body.reference.kind === "EXTERNAL"
+                  ? reviewed.body.reference.value
+                  : ""}
+              </bdi>{" "}
+              | سيتم تسجيل القيد فوراً في السجل المالي وسجل التدقيق.
             </p>
           </div>
         }
         confirmLabel="تأكيد إضافة الرصيد"
         variant="primary"
         affectedRecord={{
-          id: selectedEmpId,
-          label: selectedEmployee?.name ?? "موظف",
-          subtitle: `المبلغ: ${depositAmount} USDT | المرجع: ${depositReference}`,
+          id: reviewed?.employee.id,
+          label: reviewed?.employee.name ?? "موظف",
+          subtitle: `المبلغ: ${reviewed?.body.amount ?? ""} USDT`,
         }}
         onConfirm={handleExecuteManualDeposit}
         onClose={() => {
-          setConfirmDepositOpen(false);
+          grant.closeReview();
         }}
       />
     </div>

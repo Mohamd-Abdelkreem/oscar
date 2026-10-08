@@ -128,6 +128,10 @@ export {
   adminInvitationStatusSchema,
   adminListDataSchema,
   adminSchema,
+  manualCreditTargetsQuerySchema,
+  manualCreditTargetSchema,
+  manualCreditTargetsDataSchema,
+  manualCreditTargetsEnvelopeSchema,
   adminStatusBodySchema,
   emailDeliveryStatusSchema,
 } from "./admin/admin.schema.ts";
@@ -138,6 +142,10 @@ export type {
   AdminInvitationCommandBody,
   AdminInvitationIssueBody,
   AdminStatusBody,
+  ManualCreditTargetsQuery,
+  ManualCreditTarget,
+  ManualCreditTargetsData,
+  ManualCreditTargetsEnvelope,
 } from "./admin/admin.schema.ts";
 
 export {

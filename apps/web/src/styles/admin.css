@@ -6,7 +6,8 @@
 /* Scope admin typography & reset */
 .admin-scope,
 .admin-portal {
-  --font-cairo: "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-cairo:
+    "Cairo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-family: var(--font-cairo) !important;
   letter-spacing: 0 !important;
   -webkit-font-smoothing: antialiased;

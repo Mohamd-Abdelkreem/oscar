@@ -1,6 +1,7 @@
 import type {
   EmployeeRestrictionsBody,
   IdentityListQuery,
+  ManualCreditTargetsQuery,
   AdminStatusBody,
   AdminInvitationIssueBody,
   AdminInvitationCommandBody,
@@ -49,6 +50,22 @@ export class AdminsController {
       response,
       admins,
       "Administrators loaded.",
+      request.path,
+      request.requestId,
+    );
+  };
+  listManualCreditTargets = async (
+    request: Request,
+    response: Response,
+  ): Promise<Response> => {
+    const targets = await this.admins.listManualCreditTargets(
+      this.actor(request),
+      request.validated?.query as ManualCreditTargetsQuery,
+    );
+    return ResponseHelper.ok(
+      response,
+      targets,
+      "Manual credit targets loaded.",
       request.path,
       request.requestId,
     );

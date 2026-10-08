@@ -169,11 +169,9 @@ Development browser runs were not acceptance passes: rendered `innerText` was in
 
 **Completion**: T073-T075 are marked complete in [tasks.md](tasks.md#phase-10-completion-evidence-2026-10-05-t073-t075). Schema/client, package suites, lint/types/build/build-output, both E2E type profiles, full browser and scoped formatting/diff checks passed. Gate B and renewed gate F pass; no required check remains unavailable or failing. Requirement approvals and the feature pointer are unchanged. Implementation hooks are skipped because `.specify/extensions.yml` is absent. This closes the selected P04 implementation scope; later release gates remain outside it.
 
-
 ## Phase 11 backend acceptance (2026-10-05, T077)
 
 T077 is complete before T076 frontend edits. The new transactional forward migration validates configuration/referral history with whole-predicate IS TRUE checks, preserves applied SQL/history, and fails closed on malformed retained rows. Fresh database integration passed 41 tests / five files; the final focused P04 rerun passed 15 tests. Contracts 174, database unit nine, API unit 289 and API integration 287 tests passed, including the required configuration/referral/purchase suites. Database schema/client/types/lint and scoped formatting/diff checks passed. The pre-migration regression run and the missing-script-context focused invocation were development failures; corrected acceptance passed. The API pg client-query deprecation warning remains non-fatal. [Backend acceptance record](tasks.md#phase-11-backend-acceptance-2026-10-05-t077) records the scope and review. Gate B passes; T076 and renewed gate F remain pending.
-
 
 ## Phase 11 completion evidence (2026-10-05, T077 then T076)
 

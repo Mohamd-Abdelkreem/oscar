@@ -5,7 +5,11 @@ export default defineConfig({
     include: ["src/**/*.integration.test.ts"],
     environment: "node",
     globals: false,
-    setupFiles: ["./vitest.setup.ts"],
+    setupFiles: [
+      "./vitest.setup.ts",
+      "./tests/integration/rate-limit-setup.ts",
+    ],
+    sequence: { setupFiles: "list" },
     globalSetup: ["./tests/integration/global-setup.ts"],
     testTimeout: 120_000,
     hookTimeout: 300_000,
