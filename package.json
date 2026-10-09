@@ -2,7 +2,12 @@
   "name": "full-stack-boilerplate",
   "private": true,
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "node scripts/dev/host.mjs start",
+    "dev:apps": "turbo run dev",
+    "dev:setup": "node scripts/dev/host.mjs setup",
+    "dev:services": "node scripts/dev/host.mjs services",
+    "dev:stop": "node scripts/dev/host.mjs stop",
+    "dev:status": "node scripts/dev/host.mjs status",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "check-types": "turbo run check-types",

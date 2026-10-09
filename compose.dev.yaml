@@ -1,0 +1,118 @@
+name: oscar-dev
+
+x-runtime: &runtime
+  image: oscar-dev-runtime:local
+  restart: "no"
+  working_dir: /opt/oscar/apps/api
+
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_USER: oscar_migrator
+      POSTGRES_PASSWORD: ${OSCAR_DEV_DB_PASSWORD:?Run pnpm dev:setup first}
+      POSTGRES_DB: oscar_dev
+    ports:
+      - "127.0.0.1:55438:5432"
+    volumes:
+      - database:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oscar_migrator -d oscar_dev"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  redis:
+    image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command:
+      [
+        "redis-server",
+        "--maxmemory-policy",
+        "noeviction",
+        "--appendonly",
+        "yes",
+      ]
+    ports:
+      - "127.0.0.1:6381:6379"
+    volumes:
+      - queue:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+  bootstrap:
+    <<: *runtime
+    user: "0:0"
+    command: ["node", "/opt/oscar/dev/container.mjs", "files"]
+    volumes:
+      - ${OSCAR_DEV_HOME}/input.json:/input.json:ro
+      - api-private:/private/api
+      - worker-private:/private/worker
+      - signer-private:/private/signer
+      - operator-private:/private/operator
+      - archive:/archive
+  recovery:
+    <<: *runtime
+    user: "0:0"
+    command: ["/usr/sbin/sshd", "-D", "-e", "-f", "/archive/sshd_config"]
+    volumes:
+      - archive:/archive
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "const s=require('node:net').connect(22,'127.0.0.1');s.on('connect',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1));setTimeout(()=>process.exit(1),2000)",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  api:
+    <<: *runtime
+    user: "1003:1003"
+    command: ["node", "/opt/oscar/dev/container.mjs", "run", "api"]
+    ports:
+      - "127.0.0.1:4000:4000"
+    volumes:
+      - api-private:/private/api
+      - ${OSCAR_WORKSPACE}/.local-emails:/opt/oscar/.local-emails
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  worker:
+    <<: *runtime
+    user: "1002:1002"
+    command: ["node", "/opt/oscar/dev/container.mjs", "run", "worker"]
+    volumes:
+      - worker-private:/private/worker
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  signer:
+    <<: *runtime
+    user: "1000:1000"
+    command: ["node", "/opt/oscar/dev/container.mjs", "run", "signer"]
+    volumes:
+      - signer-private:/private/signer
+    depends_on:
+      postgres: { condition: service_healthy }
+      recovery: { condition: service_healthy }
+  operator:
+    <<: *runtime
+    user: "1004:1004"
+    command: ["sleep", "infinity"]
+    volumes:
+      - operator-private:/private/operator
+    depends_on:
+      postgres: { condition: service_healthy }
+      recovery: { condition: service_healthy }
+
+volumes:
+  database:
+  queue:
+  api-private:
+  worker-private:
+  signer-private:
+  operator-private:
+  archive:

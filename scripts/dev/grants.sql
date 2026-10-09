@@ -1,0 +1,23 @@
+GRANT USAGE ON SCHEMA public TO p06_api,p06_deposit_worker,p06_signer,p06_recovery_operator;
+
+GRANT SELECT,INSERT,UPDATE,DELETE ON users,refresh_tokens,auth_sessions,admin_invitations,admin_setup_state TO p06_api;
+GRANT SELECT,INSERT ON identity_audit_records TO p06_api;
+GRANT SELECT,INSERT,UPDATE ON wallets,packages,referral_settings,configuration_changes,purchase_quotes,purchases,subscriptions,referral_decisions TO p06_api;
+GRANT SELECT,INSERT ON financial_operations,financial_request_identities,ledger_postings,financial_audit_records,reservation_allocations TO p06_api;
+GRANT SELECT,INSERT,UPDATE ON tasks,task_codes,task_unlocks,image_assets,task_submissions,submission_evidence,final_reviews,task_command_records TO p06_api;
+GRANT SELECT,INSERT ON deposit_address_assignments,manual_credits TO p06_api;
+GRANT SELECT ON deposit_candidates,deposit_candidate_discoveries,deposit_scan_progress,deposit_receipts TO p06_api;
+
+GRANT SELECT ON deposit_address_assignments,deposit_candidates,deposit_candidate_discoveries,deposit_scan_progress,deposit_receipts,wallets,financial_operations,ledger_postings,financial_request_identities,financial_audit_records,manual_credits,reservation_allocations TO p06_deposit_worker;
+GRANT SELECT(id,role,status,email_verified_at,updated_at) ON users TO p06_deposit_worker,p06_signer;
+GRANT INSERT,UPDATE ON deposit_candidates,deposit_candidate_discoveries,deposit_scan_progress TO p06_deposit_worker;
+GRANT INSERT ON deposit_receipts,financial_operations,ledger_postings,financial_request_identities,financial_audit_records TO p06_deposit_worker;
+GRANT UPDATE(available_non_referral_units,updated_at) ON wallets TO p06_deposit_worker;
+
+GRANT SELECT ON wallets,deposit_address_assignments,treasury_sweeps,transfer_attempts TO p06_signer;
+GRANT UPDATE ON deposit_address_assignments,treasury_sweeps,transfer_attempts TO p06_signer;
+GRANT INSERT ON transfer_attempts TO p06_signer;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO p06_recovery_operator;
+GRANT INSERT,UPDATE ON deposit_address_assignments,financial_runtime_control,financial_runtime_admissions,treasury_sweeps,transfer_attempts TO p06_recovery_operator;
+GRANT INSERT,UPDATE ON deposit_candidates,deposit_candidate_discoveries,deposit_scan_progress TO p06_recovery_operator;

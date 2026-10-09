@@ -1,8 +1,10 @@
-# Full-stack TypeScript authentication boilerplate
+# OSCAR
 
-A generic Next.js 16, Express 5, PostgreSQL, and Prisma 7 foundation with a
-complete email/password account lifecycle. It contains no product domain,
-organization, tenant, payment, or demo data model.
+A Next.js 16, Express 5, PostgreSQL, and Prisma 7 application built on the
+authentication foundation. Implemented domains include packages, subscriptions,
+wallet accounting, referrals, tasks, TRON deposits, and withdrawal backend flows.
+Some dashboard and withdrawal screens still use fixtures; see the
+[local development guide](docs/engineering/local-development.md) for usable flows.
 
 ## OSCAR governance
 
@@ -33,49 +35,33 @@ setup; they do not establish OSCAR financial acceptance or release authorization
 
 ## Local setup
 
-Requirements: Node.js 24, pnpm 11, and Docker (or PostgreSQL 18).
+Requirements: Node.js 24, pnpm 11, and Docker with Linux containers running.
+An internet connection is required for image/dependency downloads and Nile reads.
 
-Install dependencies and create both environment files.
-
-Unix/macOS:
-
-```bash
+```sh
 pnpm install --frozen-lockfile
-cp .env.example .env
-cp apps/web/.env.example apps/web/.env.local
-```
-
-PowerShell:
-
-```powershell
-pnpm install --frozen-lockfile
-Copy-Item .env.example .env
-Copy-Item apps/web/.env.example apps/web/.env.local
-```
-
-Fill every blank `AUTH_*_SECRET` in `.env` with an independent
-random value of at least 32 characters. For local use, set
-`EMAIL_PROVIDER=console` and `WEB_APP_URL=http://localhost:3000` in the copied
-`.env`; unset development/test provider settings default to
-`EMAIL_PROVIDER=console`, which writes complete HTML previews beneath the
-workspace-root, Git-ignored `.local-emails` directory, requesting owner-only
-filesystem modes where the platform supports them, without making a provider
-network call. Open the newest `.html` file and click its verification or reset
-button. The API log reports the preview file path, not the link or token.
-
-Start the database, deploy the migration, and run both applications:
-
-```bash
-docker compose up -d postgres
-pnpm db:generate
-pnpm db:migrate:deploy
 pnpm dev
 ```
 
-If port `5432` is already owned by a local PostgreSQL installation, choose a
-free `POSTGRES_PORT` in `.env` and use the same port in `DATABASE_URL` before
-starting Compose. A healthy container cannot make the API ready when the host
-URL resolves to a different PostgreSQL server.
+`pnpm dev` now prepares an isolated Nile environment, applies migrations, starts
+PostgreSQL, Redis, the API, worker, signer, SSH recovery store and local operator,
+then starts Next.js. It generates missing auth secrets, local account passwords,
+database roles and protected custody files. Existing data and keys persist between
+runs. Backend services run built JavaScript in Linux containers.
+
+Useful commands:
+
+```sh
+pnpm dev:setup     # prepare/rebuild and leave backend services running
+pnpm dev:services  # rebuild/restart backend services after backend edits
+pnpm dev:status    # show local containers
+pnpm dev:stop      # stop local containers, retain data and keys
+```
+
+Open the generated `credentials.json` under `%LOCALAPPDATA%/OSCAR/oscar-dev`
+on Windows (or `~/.local/share/OSCAR/oscar-dev` on Linux/macOS) for the admin and
+employee passwords. Email verification/reset previews are written to the
+Git-ignored `.local-emails` directory. SMTP/Resend accounts are not required.
 
 The local topology uses `localhost` consistently:
 
@@ -83,6 +69,10 @@ The local topology uses `localhost` consistently:
 | ------- | ------------------------------ |
 | Web     | `http://localhost:3000`        |
 | API     | `http://localhost:4000/api/v1` |
+
+The local database uses `127.0.0.1:55438`; Redis uses `127.0.0.1:6381`.
+See the [local development guide](docs/engineering/local-development.md) for
+runtime separation, testnet funding, limitations and a workshop workflow.
 
 `NEXT_PUBLIC_API_URL` is validated at module load and has no silent fallback.
 If `apps/web/.env.local` changes, restart the Next.js development server.
