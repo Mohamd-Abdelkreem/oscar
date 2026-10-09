@@ -20,6 +20,14 @@ describe("authentication and financial foundation Prisma schema", () => {
       (match) => match[1],
     );
     expect(models).toEqual([
+      "TreasuryPayoutKey",
+      "WithdrawalAttempt",
+      "WithdrawalDestination",
+      "WithdrawalDestinationAudit",
+      "WithdrawalPolicy",
+      "WithdrawalQuote",
+      "WithdrawalRequest",
+      "WithdrawalAction",
       "User",
       "RefreshToken",
       "AuthSession",

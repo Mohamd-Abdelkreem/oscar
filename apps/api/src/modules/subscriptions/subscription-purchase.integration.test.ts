@@ -26,6 +26,11 @@ import {
 import { createIdentityFixture } from "../auth/testing/identity-fixtures.js";
 import { PurchaseQuoteService } from "./purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "./subscription-purchase.service.js";
+import {
+  reservationEmployee,
+  reservationServices,
+  RESERVATION_NOW,
+} from "../withdrawals/testing/withdrawal-reservation-fixtures.js";
 import { SubscriptionsService } from "./subscriptions.service.js";
 import {
   activateSubscriptionFixture,
@@ -68,6 +73,57 @@ async function purchaseState(database: DatabaseClient) {
 }
 
 describe("atomic full-price purchases", () => {
+  it("spends only available referral-first sources after a real gross withdrawal reservation", async () =>
+    withSubscriptionDatabase(async (database) => {
+      const configured = await database.package.findUniqueOrThrow({
+        where: { code: "S2" },
+      });
+      const { formatUsdtAmount } =
+        await import("../../core/financial/money.js");
+      const owner = await reservationEmployee(database, {
+        paid: true,
+        nonReferral: "70",
+        referral: formatUsdtAmount(configured.priceUnits + 10000000n),
+      });
+      const services = reservationServices(database);
+      const quote = await services.quotes.create(owner.identity, {
+        gross: "80",
+      });
+      const accepted = await services.reservations.accept(owner.identity, {
+        quoteId: quote.quoteId,
+        confirmed: true,
+      });
+      const purchaseQuote = await new PurchaseQuoteService(
+        database,
+        () => RESERVATION_NOW,
+      ).create(owner.identity, { packageCode: "S2" });
+      await new SubscriptionPurchaseService(
+        database,
+        () => RESERVATION_NOW,
+        financialFixtureAdmission(database),
+      ).purchase(owner.identity, {
+        quoteId: purchaseQuote.quoteId,
+        confirmed: true,
+      });
+      const wallet = await database.wallet.findUniqueOrThrow({
+        where: { ownerUserId: owner.user.id },
+      });
+      expect(wallet).toMatchObject({
+        availableNonReferralUnits: 0n,
+        availableReferralUnits: 0n,
+        reservedNonReferralUnits: 70000000n,
+        reservedReferralUnits: 10000000n,
+      });
+      const request = await database.withdrawalRequest.findUniqueOrThrow({
+        where: { id: accepted.withdrawal.id },
+      });
+      expect(request).toMatchObject({
+        state: "SCHEDULED",
+        nonReferralUnits: 70000000n,
+        referralUnits: 10000000n,
+      });
+      expect(await database.reservationAllocation.count()).toBe(1);
+    }));
   it("conserves referral-first purchase funds during a verified deposit on an independent connection", async () => {
     await withSubscriptionDatabase(async (database, url) => {
       const buyer = await createIdentityFixture(database, {
@@ -1815,6 +1871,8 @@ describe("atomic full-price purchases", () => {
                   await start();
                   return new EmployeeRestrictionsService(
                     controller,
+                    financialFixtureAdmission(controller),
+                    () => now,
                   ).updateRestrictions(
                     { userId: admin.user.id, sessionId: admin.session.id },
                     restricted === "buyer" ? buyer.user.id : ancestor.user.id,

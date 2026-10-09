@@ -98,7 +98,7 @@ const allocateAvailable = (
 
 const sourcePostings = (
   allocation: { nonReferralUnits: bigint; referralUnits: bigint },
-  movement: "PURCHASE" | "RESERVE" | "RELEASE",
+  movement: "PURCHASE" | "RESERVE" | "RELEASE" | "SETTLE",
 ): SourceMovement[] => {
   const sourceAmounts = [
     { source: FundSource.NON_REFERRAL, units: allocation.nonReferralUnits },
@@ -108,9 +108,14 @@ const sourcePostings = (
     .filter(({ units }) => units !== 0n)
     .map(({ source, units }) => ({
       source,
-      availableDeltaUnits: movement === "RELEASE" ? units : -units,
+      availableDeltaUnits:
+        movement === "SETTLE" ? 0n : movement === "RELEASE" ? units : -units,
       reservedDeltaUnits:
-        movement === "PURCHASE" ? 0n : movement === "RELEASE" ? -units : units,
+        movement === "PURCHASE"
+          ? 0n
+          : movement === "RELEASE" || movement === "SETTLE"
+            ? -units
+            : units,
     }));
 };
 
@@ -181,6 +186,7 @@ export const planNewEffect = async (
 ): Promise<PlannedEffect> => {
   const walletBefore = mapWalletComponents(scope.wallet);
   if (intent.kind === "RELEASE") return planRelease(intent, context, scope);
+  if (intent.kind === "SETTLE") return planSettlement(intent, context, scope);
   const magnitudeUnits = parseUsdtAmount(intent.amount);
   if (intent.kind === "CREDIT") {
     if (intent.origin === "ADMIN_ADJUSTMENT") {
@@ -333,6 +339,46 @@ const planRelease = async (
       kind: intent.kind,
       walletBefore: mapWalletComponents(scope.wallet),
       reservationId: allocation.id,
+    },
+    allocation,
+    postings,
+    after: walletAfter(scope.wallet, postings),
+  };
+};
+
+const planSettlement = async (
+  intent: Extract<LedgerIntent, { kind: "SETTLE" }>,
+  context: LedgerContext,
+  scope: LedgerGuardScope,
+): Promise<PlannedEffect> => {
+  const allocation = await scope.transaction.reservationAllocation.findUnique({
+    where: { id: intent.reservationId },
+  });
+  const assertSafeSettlement = context.settlementSafety;
+  if (
+    allocation === null ||
+    allocation.walletId !== intent.walletId ||
+    context.actor.type !== "PROCESS" ||
+    assertSafeSettlement === undefined
+  )
+    throw new LedgerError("LEDGER_FORBIDDEN");
+  if (allocation.state !== "ACTIVE")
+    throw new LedgerError("LEDGER_RESERVATION_CLOSED");
+  await runAuthorityGuard(() =>
+    assertSafeSettlement({
+      ...scope,
+      allocation: Object.freeze({ ...allocation }),
+    }),
+  );
+  const postings = sourcePostings(allocation, "SETTLE");
+  return {
+    magnitudeUnits: allocation.grossUnits,
+    origin: FinancialOrigin.WITHDRAWAL_SETTLEMENT,
+    terms: {
+      kind: "SETTLE",
+      walletBefore: mapWalletComponents(scope.wallet),
+      reservationId: allocation.id,
+      withdrawalTerms: intent.withdrawalTerms,
     },
     allocation,
     postings,

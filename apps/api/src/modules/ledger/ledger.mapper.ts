@@ -49,7 +49,11 @@ export const mapRecordedOutcome = (
   if (!parsed.success) throw new LedgerError("LEDGER_INTERNAL");
   const recorded = parsed.data;
   Object.freeze(recorded.walletAfter);
-  if (recorded.kind === "RESERVE" || recorded.kind === "RELEASE") {
+  if (
+    recorded.kind === "RESERVE" ||
+    recorded.kind === "RELEASE" ||
+    recorded.kind === "SETTLE"
+  ) {
     Object.freeze(recorded.reservation.allocation);
     Object.freeze(recorded.reservation);
   }

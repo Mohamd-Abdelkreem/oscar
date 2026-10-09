@@ -7,6 +7,11 @@ import {
 } from "../../core/financial/money.js";
 
 const operationLabels = [
+  {
+    kind: "SETTLE",
+    origin: "WITHDRAWAL_SETTLEMENT",
+    labels: "withdrawal settlement completed سحب مكتمل",
+  },
   { kind: "CREDIT", origin: "DEPOSIT", labels: "deposit إيداع رصيد" },
   {
     kind: "CREDIT",

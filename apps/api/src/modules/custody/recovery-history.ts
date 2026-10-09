@@ -30,6 +30,13 @@ const historyTables = [
   "task_submissions",
   "final_reviews",
   "manual_credits",
+  "withdrawal_destinations",
+  "withdrawal_destination_audits",
+  "withdrawal_quotes",
+  "withdrawal_requests",
+  "withdrawal_actions",
+  "treasury_payout_keys",
+  "withdrawal_attempts",
 ] as const;
 export async function financialHistoryDigest(
   database: DatabaseClient,
@@ -43,13 +50,18 @@ export async function financialHistoryDigest(
         for (;;) {
           const rows: { id: string; contents: string }[] =
             await transaction.$queryRaw(
-              Prisma.sql`SELECT id::text, to_jsonb(record)::text AS contents FROM ${Prisma.raw(table)} record WHERE (${after}::uuid IS NULL OR id > ${after}::uuid) ORDER BY id LIMIT 100`,
+              Prisma.sql`SELECT id::text, (to_jsonb(record) - ${table === "withdrawal_attempts" ? ["next_check_at", "blocker", "version"] : table === "withdrawal_requests" ? ["next_check_at", "blocker"] : []}::text[])::text AS contents FROM ${Prisma.raw(table)} record WHERE (${after}::uuid IS NULL OR id > ${after}::uuid) ORDER BY id LIMIT 100`,
             );
           for (const row of rows) digest.update(`${row.contents}\n`);
           if (rows.length < 100) break;
           after = rows.at(-1)?.id ?? null;
         }
       }
+      digest.update("withdrawal_policy\n");
+      const policies = await transaction.$queryRaw<
+        { contents: string }[]
+      >`SELECT to_jsonb(record)::text AS contents FROM withdrawal_policy record ORDER BY id`;
+      for (const policy of policies) digest.update(`${policy.contents}\n`);
       return digest.digest("hex");
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead },

@@ -18,6 +18,30 @@ const databaseUrl = (): string => {
 };
 
 describe("fresh authentication and financial migration", () => {
+  it("commits payout enum labels before dependent migrations can consume them", async () => {
+    const pool = new Pool({ connectionString: databaseUrl() });
+    try {
+      const labels = await pool.query<{
+        kind: string;
+        origin: string;
+        state: string;
+      }>(
+        "SELECT 'SETTLE'::financial_operation_kind::text AS kind, 'WITHDRAWAL_SETTLEMENT'::financial_origin::text AS origin, 'SETTLED'::reservation_state::text AS state",
+      );
+      expect(labels.rows).toEqual([
+        { kind: "SETTLE", origin: "WITHDRAWAL_SETTLEMENT", state: "SETTLED" },
+      ]);
+      const applied = await pool.query<{ migration_name: string }>(
+        "SELECT migration_name FROM _prisma_migrations WHERE migration_name IN ('20261008000000_p08_withdrawal_reservations','20261008000100_p08_settlement_enums') AND finished_at IS NOT NULL ORDER BY finished_at",
+      );
+      expect(applied.rows.map((row) => row.migration_name)).toEqual([
+        "20261008000000_p08_withdrawal_reservations",
+        "20261008000100_p08_settlement_enums",
+      ]);
+    } finally {
+      await pool.end();
+    }
+  });
   it("installs P06 event/source uniqueness and deferred/immutable authority guards", async () => {
     const pool = new Pool({ connectionString: databaseUrl() });
     try {
@@ -105,9 +129,17 @@ describe("fresh authentication and financial migration", () => {
         "task_unlocks",
         "tasks",
         "transfer_attempts",
+        "treasury_payout_keys",
         "treasury_sweeps",
         "users",
         "wallets",
+        "withdrawal_actions",
+        "withdrawal_attempts",
+        "withdrawal_destination_audits",
+        "withdrawal_destinations",
+        "withdrawal_policy",
+        "withdrawal_quotes",
+        "withdrawal_requests",
       ]);
 
       const columns = await pool.query<{

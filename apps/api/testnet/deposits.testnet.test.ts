@@ -1,5 +1,7 @@
 import { expect, it } from "vitest";
-import { context, designation, inboundEvidence, until } from "./setup.js";
+import { context, p06Designation, inboundEvidence, until } from "./setup.js";
+
+const designation = p06Designation();
 
 it("credits the designated canonical inbound raw log once in exact units", async () => {
   const f = await context();

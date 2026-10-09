@@ -8,6 +8,7 @@ import {
   type TronWorkerConfig,
 } from "../../core/config/tron.config.js";
 import { TronProvider } from "./tron-provider.js";
+import { TRANSFER_TOPIC } from "./tron-receipt.js";
 
 const token = TronWeb.address.fromHex(`41${"11".repeat(20)}`);
 const block = {
@@ -38,6 +39,62 @@ const response = (body: unknown) =>
   Promise.resolve(new Response(JSON.stringify(body)));
 
 describe("protected provider boundary", () => {
+  it("builds and simulates the supplied original source/recipient/net and sends the retained object once", async () => {
+    const source = TronWeb.address.fromHex(`41${"22".repeat(20)}`);
+    const recipient = TronWeb.address.fromHex(`41${"33".repeat(20)}`);
+    const transaction = { txID: "a".repeat(64), raw_data_hex: "abcd" };
+    const calls: { path: string; body: unknown }[] = [];
+    const provider = new TronProvider(config, (url, init) => {
+      const path = new URL(url instanceof Request ? url.url : url).pathname;
+      if (typeof init?.body !== "string")
+        throw new Error("Expected JSON request body");
+      const body: unknown = JSON.parse(init.body);
+      calls.push({ path, body });
+      if (path === "/wallet/triggersmartcontract")
+        return response({ result: { result: true }, transaction });
+      if (path === "/wallet/triggerconstantcontract")
+        return response({
+          result: { result: true },
+          energy_used: 1000,
+          transaction: { ret: [{ contractRet: "SUCCESS" }] },
+          logs: [
+            {
+              address: TronWeb.address.toHex(token).slice(2).toLowerCase(),
+              topics: [
+                TRANSFER_TOPIC,
+                TronWeb.address.toHex(source).slice(2).padStart(64, "0"),
+                TronWeb.address.toHex(recipient).slice(2).padStart(64, "0"),
+              ],
+              data: 79000000n.toString(16).padStart(64, "0"),
+            },
+          ],
+        });
+      return response({ result: true, txid: transaction.txID });
+    });
+    expect(
+      await provider.buildTransfer(source, recipient, 79000000n, 1000000n),
+    ).toEqual(transaction);
+    expect(await provider.estimateTransfer(source, recipient, 79000000n)).toBe(
+      1000,
+    );
+    expect(await provider.broadcastTransfer(transaction)).toBe(true);
+    expect(calls).toHaveLength(3);
+    expect(calls[0]?.body).toMatchObject({
+      owner_address: TronWeb.address.toHex(source),
+      contract_address: TronWeb.address.toHex(token),
+      function_selector: "transfer(address,uint256)",
+      parameter:
+        TronWeb.address.toHex(recipient).slice(2).padStart(64, "0") +
+        79000000n.toString(16).padStart(64, "0"),
+      call_value: 0,
+      fee_limit: 1000000,
+    });
+    expect(calls[2]?.body).toEqual(transaction);
+    await expect(
+      provider.estimateTransfer(source, recipient, 0n),
+    ).rejects.toThrow("TRON_INPUT_INVALID");
+    expect(calls).toHaveLength(3);
+  });
   it.each([
     "zero-return-transfer",
     "failed-vm",

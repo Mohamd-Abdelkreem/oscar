@@ -1,5 +1,7 @@
 import { expect, it } from "vitest";
-import { context, designation } from "./setup.js";
+import { context, p06Designation } from "./setup.js";
+
+const designation = p06Designation();
 
 it("publishes a fresh designated key only after independent SSH ACK and recovers its address with escrow", async () => {
   const f = await context();

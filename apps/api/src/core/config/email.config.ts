@@ -112,6 +112,34 @@ export const parseEmailEnvironment = (
       );
     invitationAcceptUrl = destination.toString();
   }
+  const confirmationSetting = environment["WITHDRAWAL_ADDRESS_CONFIRM_URL"];
+  let withdrawalConfirmationUrl: string | null = null;
+  if (
+    production ||
+    (confirmationSetting !== undefined && confirmationSetting !== "")
+  ) {
+    let destination: URL;
+    try {
+      destination = new URL(setting("WITHDRAWAL_ADDRESS_CONFIRM_URL", ""));
+    } catch {
+      throw new Error(
+        "WITHDRAWAL_ADDRESS_CONFIRM_URL requires an approved account destination.",
+      );
+    }
+    if (
+      destination.origin !== webUrl.origin ||
+      destination.pathname !== "/employee/account" ||
+      destination.username !== "" ||
+      destination.password !== "" ||
+      destination.search !== "" ||
+      destination.hash !== "" ||
+      (production && destination.protocol !== "https:")
+    )
+      throw new Error(
+        "WITHDRAWAL_ADDRESS_CONFIRM_URL must use the approved same-origin account destination.",
+      );
+    withdrawalConfirmationUrl = destination.toString();
+  }
   return Object.freeze({
     provider,
     publicWebUrl: webUrl.toString().replace(/\/+$/, ""),
@@ -120,6 +148,7 @@ export const parseEmailEnvironment = (
     fromAddress,
     replyTo,
     invitationAcceptUrl,
+    withdrawalConfirmationUrl,
   });
 };
 

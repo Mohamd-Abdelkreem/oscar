@@ -23,6 +23,7 @@ import {
   safeCountSchema,
 } from "../packages/package.schema.ts";
 import { membershipSchema } from "../subscriptions/subscription.schema.ts";
+import { withdrawalSettlementTermsSchema } from "../withdrawals/withdrawal.schema.ts";
 
 export const employeeFinancialIdentitySchema = z
   .object({
@@ -109,6 +110,7 @@ export const financialOperationKindSchema = z.enum([
   "CORRECTION",
   "RESERVE",
   "RELEASE",
+  "SETTLE",
 ]);
 export const financialOriginSchema = z.enum([
   "DEPOSIT",
@@ -118,6 +120,7 @@ export const financialOriginSchema = z.enum([
   "WITHDRAWAL_RESERVATION",
   "RESERVATION_RELEASE",
   "ADMIN_ADJUSTMENT",
+  "WITHDRAWAL_SETTLEMENT",
 ]);
 export const ledgerDirectionSchema = z.enum(["CREDIT", "DEBIT", "NEUTRAL"]);
 const ledgerFilterShape = {
@@ -202,6 +205,7 @@ export const ledgerRowSchema = z
 const detailShape = {
   ...ledgerRowShape,
   savedTerms: packageTermsSchema.nullable(),
+  withdrawalTerms: withdrawalSettlementTermsSchema.nullable().default(null),
 };
 const fullMovementsAgree = (
   row: z.infer<z.ZodObject<typeof ledgerRowShape>>,
@@ -212,9 +216,37 @@ const fullMovementsAgree = (
       sum + units(movement.availableDelta) + units(movement.reservedDelta),
     0n,
   ) === units(row.signedOwnershipDelta);
+const settlementDetailAgrees = (
+  row: z.infer<z.ZodObject<typeof detailShape>>,
+): boolean => {
+  const terms = row.withdrawalTerms;
+  if (row.kind !== "SETTLE") return terms === null;
+  if (
+    terms === null ||
+    row.origin !== "WITHDRAWAL_SETTLEMENT" ||
+    row.savedTerms !== null ||
+    row.magnitude !== terms.gross ||
+    units(row.signedOwnershipDelta) !== -units(terms.gross)
+  )
+    return false;
+  return row.sourceMovements.every(
+    (posting) =>
+      units(posting.availableDelta) === 0n &&
+      units(posting.reservedDelta) ===
+        -units(
+          posting.source === "NON_REFERRAL"
+            ? terms.sourceAllocation.nonReferral
+            : terms.sourceAllocation.referral,
+        ),
+  );
+};
 export const employeeLedgerDetailSchema = z
   .object(detailShape)
   .strict()
+  .refine(
+    settlementDetailAgrees,
+    "Settlement detail must preserve original gross sources.",
+  )
   .refine(
     fullMovementsAgree,
     "Full source movements must equal ownership delta.",
@@ -237,6 +269,10 @@ export const adminLedgerDetailSchema = z
       .nullable(),
   })
   .strict()
+  .refine(
+    settlementDetailAgrees,
+    "Settlement detail must preserve original gross sources.",
+  )
   .refine(
     fullMovementsAgree,
     "Full source movements must equal ownership delta.",

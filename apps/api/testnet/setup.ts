@@ -1,14 +1,26 @@
 import { readFile } from "node:fs/promises";
 import { setTimeout as delay } from "node:timers/promises";
-import { parseTestnetAdmission } from "../src/core/config/testnet.config.js";
+import {
+  parseTestnetAdmission,
+  parseTestnetProfile,
+} from "../src/core/config/testnet.config.js";
 import { z } from "zod";
 
-export const designation = parseTestnetAdmission(process.env);
-async function databaseUrl(setting: string) {
+const profile = parseTestnetProfile(process.env);
+export function p06Designation() {
+  return parseTestnetAdmission(process.env);
+}
+export async function databaseUrl(setting: string) {
   const { privateCredentialFile } =
     await import("../src/core/config/custody.config.js");
   const file = privateCredentialFile(process.env, setting, process.cwd());
-  const url = new URL((await readFile(file, "utf8")).trim());
+  const value = (await readFile(file, "utf8")).trim();
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("Designated database credentials invalid.");
+  }
   if (
     !["postgres:", "postgresql:"].includes(url.protocol) ||
     !url.username ||
@@ -32,6 +44,7 @@ export async function until<T>(
   );
 }
 async function initialize() {
+  const designation = p06Designation();
   if (process.platform !== "linux")
     throw new Error(
       "Controlled testnet requires Linux private-file boundaries.",
@@ -145,6 +158,7 @@ export function context() {
   return current;
 }
 export async function inboundEvidence() {
+  const designation = p06Designation();
   const { privateCredentialFile } =
     await import("../src/core/config/custody.config.js");
   const path = privateCredentialFile(
@@ -162,4 +176,11 @@ export async function inboundEvidence() {
     })
     .strict()
     .parse(input);
+}
+
+export async function payoutContext() {
+  if (profile.profile !== "P08_PAYOUT")
+    throw new Error("Payout context requires the payout-only profile.");
+  const { initializePayout } = await import("./payout-setup.js");
+  return initializePayout(profile.designation);
 }

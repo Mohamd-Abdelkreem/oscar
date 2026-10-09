@@ -2,6 +2,7 @@ import { TronWeb } from "tronweb";
 import {
   privateCredentialFile,
   requiredCustodySetting,
+  payoutTreasuryKeyId,
 } from "./custody.config.js";
 
 type Environment = Readonly<Record<string, string | undefined>>;
@@ -72,7 +73,11 @@ function providerKeyFile(
   if (auth === "PUBLIC_TESTNET") {
     if (
       network === "TRON_MAINNET" ||
-      environment["P06_TESTNET_OPT_IN"] !== "YES"
+      !(
+        environment["P06_TESTNET_OPT_IN"] === "YES" ||
+        (environment["OSCAR_TESTNET_PROFILE"] === "P08_PAYOUT" &&
+          environment["P08_TESTNET_OPT_IN"] === "YES")
+      )
     )
       throw new Error("PUBLIC_TESTNET requires opted-in Nile or Shasta.");
     return null;
@@ -242,3 +247,30 @@ export function parseTronTestnetEnvironment(
 }
 
 export type TronWorkerConfig = ReturnType<typeof parseTronWorkerEnvironment>;
+
+export function parseTronPayoutEnvironment(
+  environment: Environment,
+  projectRoot: string,
+) {
+  const signer = parseTronSignerEnvironment(environment, projectRoot);
+  const treasuryKeyId = payoutTreasuryKeyId(environment);
+  const maximumPayoutUnits = exactUnits(environment, "TRON_MAX_PAYOUT_UNITS");
+  const payoutEnergyFeeLimitSun = exactUnits(
+    environment,
+    "TRON_PAYOUT_ENERGY_FEE_LIMIT_SUN",
+  );
+  const payoutMaximumCompanyCostSun = exactUnits(
+    environment,
+    "TRON_PAYOUT_MAX_COMPANY_COST_SUN",
+  );
+  if (payoutEnergyFeeLimitSun > payoutMaximumCompanyCostSun)
+    throw new Error("Payout energy limit exceeds company resource budget.");
+  return Object.freeze({
+    ...signer,
+    treasuryKeyId,
+    maximumPayoutUnits,
+    payoutEnergyFeeLimitSun,
+    payoutMaximumCompanyCostSun,
+  });
+}
+export type TronPayoutConfig = ReturnType<typeof parseTronPayoutEnvironment>;

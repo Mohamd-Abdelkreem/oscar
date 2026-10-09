@@ -39,6 +39,7 @@ import {
 } from "./testing/deposit-fixtures.js";
 import { runLinuxProofProgram } from "../proofs/testing/linux-proof-runtime.js";
 import { depositBootProgram } from "./testing/deposit-boot-program.js";
+import { withWithdrawalRedis } from "../withdrawals/testing/redis-harness.js";
 import { runtimeAuthorityRejections } from "../custody/testing/runtime-authority-fixtures.js";
 import {
   fenceFinancialRuntime,
@@ -213,100 +214,108 @@ describe("durable deposit recovery", () => {
     });
   });
   it("starts the actual built nonowner API and worker closed against stale OPEN, admits their own boots and invalidates both after restore", async () => {
-    await withAdmittedFinancialDatabase(async (isolated, databaseUrl) =>
-      withTaskFileFixture(async (root) => {
-        const review = await acceptedReviewFixture(isolated, root);
-        const buyer = await createIdentityFixture(isolated);
-        await fundSubscriptionFixture(
-          isolated,
-          buyer,
-          { referral: "0", nonReferral: "100" },
-          new Date(),
-        );
-        if (buyer.wallet === null) throw new Error("Missing wallet");
-        await bindDepositAssignment(isolated, {
-          ownerUserId: buyer.user.id,
-          wallet: buyer.wallet,
-        });
-        const suffix = randomUUID().replaceAll("-", "");
-        const password = randomUUID();
-        const apiRole = `p06_boot_api_${suffix}`;
-        const workerRole = `p06_boot_worker_${suffix}`;
-        const recoveryRole = `p06_boot_recovery_${suffix}`;
-        const signerRole = `p06_boot_signer_${suffix}`;
-        const tableOwnerRole = `p06_boot_owner_${suffix}`;
-        for (const [role, group] of [
-          [apiRole, "p06_api"],
-          [workerRole, "p06_deposit_worker"],
-          [recoveryRole, "p06_recovery_operator"],
-          [signerRole, "p06_signer"],
-          [tableOwnerRole, "p06_api"],
-        ] as const) {
+    await withWithdrawalRedis(async (redis) =>
+      withAdmittedFinancialDatabase(async (isolated, databaseUrl) =>
+        withTaskFileFixture(async (root) => {
+          const review = await acceptedReviewFixture(isolated, root);
+          const buyer = await createIdentityFixture(isolated);
+          await fundSubscriptionFixture(
+            isolated,
+            buyer,
+            { referral: "0", nonReferral: "100" },
+            new Date(),
+          );
+          if (buyer.wallet === null) throw new Error("Missing wallet");
+          await bindDepositAssignment(isolated, {
+            ownerUserId: buyer.user.id,
+            wallet: buyer.wallet,
+          });
+          const suffix = randomUUID().replaceAll("-", "");
+          const password = randomUUID();
+          const apiRole = `p06_boot_api_${suffix}`;
+          const workerRole = `p06_boot_worker_${suffix}`;
+          const recoveryRole = `p06_boot_recovery_${suffix}`;
+          const signerRole = `p06_boot_signer_${suffix}`;
+          const tableOwnerRole = `p06_boot_owner_${suffix}`;
+          for (const [role, group] of [
+            [apiRole, "p06_api"],
+            [workerRole, "p06_deposit_worker"],
+            [recoveryRole, "p06_recovery_operator"],
+            [signerRole, "p06_signer"],
+            [tableOwnerRole, "p06_api"],
+          ] as const) {
+            await isolated.$executeRawUnsafe(
+              `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${group}') THEN CREATE ROLE ${group} NOLOGIN; END IF; END $$`,
+            );
+            await isolated.$executeRawUnsafe(
+              `CREATE ROLE "${role}" LOGIN PASSWORD '${password}'`,
+            );
+            await isolated.$executeRawUnsafe(`GRANT ${group} TO "${role}"`);
+            await isolated.$executeRawUnsafe(
+              `GRANT USAGE ON SCHEMA public TO "${role}"`,
+            );
+            await isolated.$executeRawUnsafe(
+              `GRANT SELECT ON ALL TABLES IN SCHEMA public TO "${role}"`,
+            );
+            await isolated.$executeRawUnsafe(
+              `GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO "${role}"`,
+            );
+          }
           await isolated.$executeRawUnsafe(
-            `DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='${group}') THEN CREATE ROLE ${group} NOLOGIN; END IF; END $$`,
+            `GRANT p06_api TO "${recoveryRole}"`,
           );
           await isolated.$executeRawUnsafe(
-            `CREATE ROLE "${role}" LOGIN PASSWORD '${password}'`,
+            `ALTER TABLE manual_credits OWNER TO "${tableOwnerRole}"`,
           );
-          await isolated.$executeRawUnsafe(`GRANT ${group} TO "${role}"`);
-          await isolated.$executeRawUnsafe(
-            `GRANT USAGE ON SCHEMA public TO "${role}"`,
+          const workerRejections = await runtimeAuthorityRejections(
+            isolated,
+            databaseUrl,
+            "p06_deposit_worker",
           );
-          await isolated.$executeRawUnsafe(
-            `GRANT SELECT ON ALL TABLES IN SCHEMA public TO "${role}"`,
+          const raw = rawDeposit();
+          raw.info.blockTimeStamp = Date.now() - 1000;
+          raw.block.block_header.raw_data.timestamp = raw.info.blockTimeStamp;
+          raw.solidified.block_header.raw_data.timestamp =
+            raw.info.blockTimeStamp;
+          const redisUrl = new URL(redis.url);
+          redisUrl.hostname = "host.docker.internal";
+          const output = await runLinuxProofProgram(
+            depositBootProgram,
+            databaseUrl,
+            {
+              apiRole,
+              workerRole,
+              recoveryRole,
+              signerRole,
+              tableOwnerRole,
+              workerRejections,
+              password,
+              oldBootId: financialFixtureAdmission(isolated).bootId,
+              buyerToken: taskHttpToken(buyer),
+              adminToken: taskHttpToken(review.admin),
+              submissionId: review.submission.id,
+              review: review.intent,
+              raw,
+              token: depositToken,
+              recipient: depositRecipient,
+              withdrawalRedisUrl: redisUrl.toString(),
+              withdrawalQueuePrefix: redis.prefix,
+            },
           );
-          await isolated.$executeRawUnsafe(
-            `GRANT INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO "${role}"`,
-          );
-        }
-        await isolated.$executeRawUnsafe(`GRANT p06_api TO "${recoveryRole}"`);
-        await isolated.$executeRawUnsafe(
-          `ALTER TABLE manual_credits OWNER TO "${tableOwnerRole}"`,
-        );
-        const workerRejections = await runtimeAuthorityRejections(
-          isolated,
-          databaseUrl,
-          "p06_deposit_worker",
-        );
-        const raw = rawDeposit();
-        raw.info.blockTimeStamp = Date.now() - 1000;
-        raw.block.block_header.raw_data.timestamp = raw.info.blockTimeStamp;
-        raw.solidified.block_header.raw_data.timestamp =
-          raw.info.blockTimeStamp;
-        const output = await runLinuxProofProgram(
-          depositBootProgram,
-          databaseUrl,
-          {
-            apiRole,
-            workerRole,
-            recoveryRole,
-            signerRole,
-            tableOwnerRole,
-            workerRejections,
-            password,
-            oldBootId: financialFixtureAdmission(isolated).bootId,
-            buyerToken: taskHttpToken(buyer),
-            adminToken: taskHttpToken(review.admin),
-            submissionId: review.submission.id,
-            review: review.intent,
-            raw,
-            token: depositToken,
-            recipient: depositRecipient,
-          },
-        );
-        expect(JSON.parse(output)).toEqual({
-          state: "ACTUAL_BOOTS_FENCED",
-          purchaseDenied: true,
-          rewardDenied: true,
-          depositDeniedBeforeAcknowledgement: true,
-          admittedPurchaseAndDeposit: true,
-          restoreInvalidated: true,
-          observationsAvailable: true,
-          cleanShutdown: true,
-          unsafeCredentialsDenied: true,
-          unsafeWorkerCredentialsDenied: workerRejections.length,
-        });
-      }),
+          expect(JSON.parse(output)).toEqual({
+            state: "ACTUAL_BOOTS_FENCED",
+            purchaseDenied: true,
+            rewardDenied: true,
+            depositDeniedBeforeAcknowledgement: true,
+            admittedPurchaseAndDeposit: true,
+            restoreInvalidated: true,
+            observationsAvailable: true,
+            cleanShutdown: true,
+            unsafeCredentialsDenied: true,
+            unsafeWorkerCredentialsDenied: workerRejections.length,
+          });
+        }),
+      ),
     );
   }, 300000);
   it("retains fixed inclusive bounds across equal-time pages and accounts every raw log once", async () => {

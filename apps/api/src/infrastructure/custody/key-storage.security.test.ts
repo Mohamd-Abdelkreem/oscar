@@ -5,6 +5,10 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { TronWeb } from "tronweb";
 import { CustodyKeyStorage } from "./key-storage.js";
+import {
+  signedAttemptSchema,
+  broadcastIntentSchema,
+} from "../../modules/treasury/treasury-attempts.js";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -33,6 +37,40 @@ async function fixture() {
   return { root, store, binding, id: randomUUID(), keyFile };
 }
 describe("encrypted custody files", () => {
+  it.each([
+    "TREASURY_KEY",
+    "PAYOUT_SIGNED_ATTEMPT",
+    "PAYOUT_BROADCAST_INTENT",
+  ] as const)(
+    "retains a sole encrypted %s winner and cannot interpret it as an assignment or sweep",
+    async (type) => {
+      const { store, id, root } = await fixture();
+      const first = store.sealRecord(type, id, {
+        privateSentinel: "test-only-payout-secret",
+        attemptId: id,
+      });
+      const second = store.sealRecord(type, id, {
+        privateSentinel: "competing-test-only-secret",
+        attemptId: id,
+      });
+      const winners = await Promise.all([
+        store.obtainRecord(first),
+        store.obtainRecord(second),
+      ]);
+      expect(winners[0]).toEqual(winners[1]);
+      expect(await store.readRecord(id)).toEqual(winners[0]);
+      expect(await readFile(join(root, `${id}.1.json`), "utf8")).not.toContain(
+        "test-only-payout-secret",
+      );
+      expect(() => store.decrypt(winners[0])).toThrow();
+      expect(
+        signedAttemptSchema.safeParse(store.openRecord(winners[0])).success,
+      ).toBe(false);
+      expect(
+        broadcastIntentSchema.safeParse(store.openRecord(winners[0])).success,
+      ).toBe(false);
+    },
+  );
   it("retains one generated account during concurrent no-replace writes and rederives it", async () => {
     const { root, store, binding, id } = await fixture();
     const [first, second] = await Promise.all([

@@ -136,6 +136,18 @@ export async function signSweepTransaction(
     intent,
     { ...policy, signed: false },
   );
+  return signOriginalSweepTransaction(unsigned, intent, policy, privateKey);
+}
+async function signOriginalSweepTransaction(
+  unsigned: SweepTransaction,
+  intent: SweepMovement,
+  policy: Readonly<{
+    now: number;
+    maximumFeeSun: bigint;
+    historical?: boolean;
+  }>,
+  privateKey: string,
+): Promise<SweepTransaction> {
   if (TronWeb.address.fromPrivateKey(privateKey) !== intent.source)
     throw new TreasuryPolicyError();
   const sdk = new TronWeb({ fullHost: "https://nile.trongrid.io" });
@@ -152,4 +164,73 @@ export async function signSweepTransaction(
   )
     throw new TreasuryPolicyError();
   return signed;
+}
+export type Trc20TransferMovement = Readonly<{
+  source: string;
+  tokenContract: string;
+  recipient: string;
+  amountUnits: bigint;
+}>;
+export function assertTransferTransaction(
+  input: unknown,
+  intent: Trc20TransferMovement,
+  policy: Readonly<{
+    now: number;
+    maximumFeeSun: bigint;
+    signed: boolean;
+    historical?: boolean;
+  }>,
+): SweepTransaction {
+  return assertSweepTransaction(
+    input,
+    {
+      source: intent.source,
+      tokenContract: intent.tokenContract,
+      treasury: intent.recipient,
+      amountUnits: intent.amountUnits,
+    },
+    policy,
+  );
+}
+export function signTransferTransaction(
+  input: unknown,
+  intent: Trc20TransferMovement,
+  policy: Readonly<{ now: number; maximumFeeSun: bigint }>,
+  privateKey: string,
+) {
+  return signSweepTransaction(
+    input,
+    {
+      source: intent.source,
+      tokenContract: intent.tokenContract,
+      treasury: intent.recipient,
+      amountUnits: intent.amountUnits,
+    },
+    policy,
+    privateKey,
+  );
+}
+// Retained bytes can outlive the fresh-build window, but expired or future bodies cannot be signed.
+export function signRetainedTransferTransaction(
+  input: unknown,
+  intent: Trc20TransferMovement,
+  policy: Readonly<{ now: number; maximumFeeSun: bigint }>,
+  privateKey: string,
+) {
+  const retainedPolicy = { ...policy, historical: true };
+  const unsigned = assertTransferTransaction(input, intent, {
+    ...retainedPolicy,
+    signed: false,
+  });
+  if (
+    unsigned.raw_data.expiration <= policy.now ||
+    unsigned.raw_data.timestamp > policy.now + 30000
+  )
+    throw new TreasuryPolicyError();
+  return signOriginalSweepTransaction(
+    unsigned,
+    { ...intent, treasury: intent.recipient },
+    retainedPolicy,
+    privateKey,
+  );
 }

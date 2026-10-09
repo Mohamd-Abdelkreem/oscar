@@ -23,6 +23,7 @@
     "src/modules/deposits/testing/**",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "src/modules/treasury/testing/**"
+    "src/modules/treasury/testing/**",
+    "src/modules/withdrawals/testing/**"
   ]
 }

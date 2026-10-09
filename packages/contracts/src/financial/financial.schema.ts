@@ -228,10 +228,21 @@ export const financialOperationResultSchema = z
           .strict(),
       })
       .strict(),
+    z
+      .object({
+        ...operationFields,
+        kind: z.literal("SETTLE"),
+        reservation: z
+          .object({ ...reservationFields, state: z.literal("SETTLED") })
+          .strict(),
+      })
+      .strict(),
   ])
   .refine(
     (operation) =>
-      (operation.kind !== "RESERVE" && operation.kind !== "RELEASE") ||
+      (operation.kind !== "RESERVE" &&
+        operation.kind !== "RELEASE" &&
+        operation.kind !== "SETTLE") ||
       operation.amount === operation.reservation.allocation.gross,
     "Reservation magnitude must equal gross.",
   );

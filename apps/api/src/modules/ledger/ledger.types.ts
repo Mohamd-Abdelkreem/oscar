@@ -4,6 +4,7 @@ import {
   positiveUsdtAmountSchema,
   walletComponentsSchema,
   manualCreditGrantSchema,
+  withdrawalSettlementTermsSchema,
   type FinancialOperationResult,
   type FundSource,
 } from "@template/contracts";
@@ -111,6 +112,14 @@ export const ledgerIntentSchema = z.discriminatedUnion("kind", [
       reservationId: z.uuid(),
     })
     .strict(),
+  z
+    .object({
+      ...identityFields,
+      kind: z.literal("SETTLE"),
+      reservationId: z.uuid(),
+      withdrawalTerms: withdrawalSettlementTermsSchema,
+    })
+    .strict(),
 ]);
 export type LedgerIntent = z.infer<typeof ledgerIntentSchema>;
 export type CreditIntent = Extract<LedgerIntent, { kind: "CREDIT" }>;
@@ -120,9 +129,18 @@ export type PurchaseDebitIntent = Extract<
 >;
 export type ReservationIntent = Extract<LedgerIntent, { kind: "RESERVE" }>;
 export type ReleaseIntent = Extract<LedgerIntent, { kind: "RELEASE" }>;
+export type SettlementIntent = Extract<LedgerIntent, { kind: "SETTLE" }>;
 export type CorrectionIntent = Extract<LedgerIntent, { kind: "CORRECTION" }>;
 
 export const acceptedTermsSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("SETTLE"),
+      walletBefore: walletComponentsSchema,
+      reservationId: z.uuid(),
+      withdrawalTerms: withdrawalSettlementTermsSchema,
+    })
+    .strict(),
   z
     .object({
       kind: z.literal("CREDIT"),
@@ -181,6 +199,9 @@ export type LedgerContext = {
   releaseSafety?: (
     scope: LedgerGuardScope & { allocation: Readonly<ReservationAllocation> },
   ) => Promise<void>;
+  settlementSafety?: (
+    scope: LedgerGuardScope & { allocation: Readonly<ReservationAllocation> },
+  ) => Promise<void>;
 };
 export type LedgerPolicy = {
   businessNamespaces: readonly string[];
@@ -200,6 +221,10 @@ export type LedgerDomainWrite = (
   operation: FinancialOperationResult,
 ) => Promise<void>;
 export type TransactionLedger = {
+  settleReservation: (
+    intent: SettlementIntent,
+    domainWrite?: LedgerDomainWrite,
+  ) => Promise<LedgerReply>;
   correctAvailable: (
     intent: CorrectionIntent,
     domainWrite?: LedgerDomainWrite,

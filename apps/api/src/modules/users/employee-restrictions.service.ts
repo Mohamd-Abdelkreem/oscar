@@ -24,6 +24,19 @@ import {
   EMPLOYEE_RESTRICTIONS_SELECT,
   mapEmployeeRestrictions,
 } from "../admins/admins.mapper.js";
+import type { FinancialRuntimeAdmission } from "../custody/runtime-control.js";
+import { LedgerService } from "../ledger/ledger.service.js";
+import {
+  cancelScheduledWithdrawal,
+  lockWithdrawalRequest,
+  withdrawalReleaseContext,
+} from "../withdrawals/withdrawal-cancellation.service.js";
+import {
+  withdrawalTermsHash,
+  ACTIVE_WITHDRAWAL_STATES,
+} from "../withdrawals/withdrawal-quote.service.js";
+import { WithdrawalError } from "../withdrawals/withdrawals.errors.js";
+import { LedgerError } from "../ledger/ledger.errors.js";
 
 function employeeUpdates(
   employee: User,
@@ -59,7 +72,11 @@ function employeeUpdates(
 
 export class EmployeeRestrictionsService {
   private readonly sessions = new AuthSessionService();
-  constructor(private readonly database: DatabaseClient) {}
+  constructor(
+    private readonly database: DatabaseClient,
+    private readonly admission?: FinancialRuntimeAdmission,
+    private readonly clock: () => Date = () => new Date(),
+  ) {}
 
   async getRestrictions(
     actor: AuthenticatedSession,
@@ -92,13 +109,38 @@ export class EmployeeRestrictionsService {
       select: { id: true },
     });
     if (target === null) throw new NotFoundException("Employee not found.");
-    return runIdentityTransaction(
+    if (this.admission === undefined || this.admission.processKind !== "API")
+      throw new WithdrawalError("WITHDRAWAL_UNAVAILABLE");
+    const wallet = await this.database.wallet.findUniqueOrThrow({
+      where: { ownerUserId: userId },
+      select: { id: true },
+    });
+    const ledger = new LedgerService(
       this.database,
-      { userIds: [actor.userId, userId], adminPopulation: false },
-      async (transaction) => {
+      { businessNamespaces: ["p08.withdrawal.release"], processIds: [] },
+      this.admission,
+    );
+    let eventTime: Date | undefined;
+    return ledger.runInTransaction(
+      withdrawalReleaseContext(actor.userId, wallet.id, () => {
+        if (eventTime === undefined) throw new LedgerError("LEDGER_INTERNAL");
+        return eventTime;
+      }),
+      async (transaction, transactionalLedger) => {
         for (const participantId of [...new Set([actor.userId, userId])].sort())
           await this.sessions.lockSessions(transaction, participantId);
-        const now = new Date();
+        const active = await transaction.withdrawalRequest.findFirst({
+          where: {
+            employeeId: userId,
+            state: { in: ACTIVE_WITHDRAWAL_STATES },
+          },
+        });
+        const request =
+          active === null
+            ? null
+            : await lockWithdrawalRequest(transaction, active);
+        const now = this.clock();
+        eventTime = now;
         await readSessionAuthority(transaction, actor, now, UserRole.ADMIN);
         const employee = await transaction.user.findFirst({
           where: { id: userId, role: UserRole.USER },
@@ -106,6 +148,25 @@ export class EmployeeRestrictionsService {
         if (employee === null)
           throw new NotFoundException("Employee not found.");
         const updates = employeeUpdates(employee, command);
+        if (
+          request !== null &&
+          (command.status === "BANNED" ||
+            command.status === "SUSPENDED" ||
+            command.withdrawalsBlocked === true)
+        ) {
+          await cancelScheduledWithdrawal(
+            transaction,
+            transactionalLedger,
+            request,
+            {
+              actorUserId: actor.userId,
+              kind: "RESTRICTION_CANCEL",
+              intentHash: withdrawalTermsHash([userId, command]),
+              reason: command.reason,
+              now,
+            },
+          );
+        }
         if (command.status === "SUSPENDED" || command.status === "BANNED") {
           await this.sessions.revokeAll(transaction, userId, now);
           Object.assign(updates, {

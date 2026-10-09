@@ -10,13 +10,19 @@ const configured = {
   WEB_APP_URL: "https://configured-company.test",
   ADMIN_INVITATION_ACCEPT_URL:
     "https://configured-company.test/approved-recipient-surface",
+  WITHDRAWAL_ADDRESS_CONFIRM_URL:
+    "https://configured-company.test/employee/account",
 };
 describe("production email configuration", () => {
   afterEach(() => {
     vi.unstubAllEnvs();
     vi.resetModules();
   });
-  it.each(["MAIL_FROM_ADDRESS", "ADMIN_INVITATION_ACCEPT_URL"])(
+  it.each([
+    "MAIL_FROM_ADDRESS",
+    "ADMIN_INVITATION_ACCEPT_URL",
+    "WITHDRAWAL_ADDRESS_CONFIRM_URL",
+  ])(
     "fails module initialization without %s instead of inheriting a local default",
     async (missing) => {
       vi.resetModules();
@@ -98,5 +104,31 @@ describe("production email configuration", () => {
       provider: "console",
       invitationAcceptUrl: null,
     });
+  });
+});
+
+describe("withdrawal confirmation destination", () => {
+  it.each([
+    "https://another-origin.test/employee/account",
+    "https://configured-company.test/employee/wallet",
+    "https://configured-company.test/employee/account?token=private-sentinel",
+    "https://configured-company.test/employee/account#private-sentinel",
+    "https://private:sentinel@configured-company.test/employee/account",
+    "http://configured-company.test/employee/account",
+  ])("rejects an unapproved confirmation target", (target) => {
+    expect(() =>
+      parseEmailEnvironment(
+        { ...configured, WITHDRAWAL_ADDRESS_CONFIRM_URL: target },
+        "production",
+      ),
+    ).toThrow("WITHDRAWAL_ADDRESS_CONFIRM_URL");
+  });
+  it("keeps an unconfigured local target unavailable and accepts the exact approved account URL", () => {
+    expect(
+      parseEmailEnvironment({}, "test").withdrawalConfirmationUrl,
+    ).toBeNull();
+    expect(
+      parseEmailEnvironment(configured, "production").withdrawalConfirmationUrl,
+    ).toBe(configured.WITHDRAWAL_ADDRESS_CONFIRM_URL);
   });
 });

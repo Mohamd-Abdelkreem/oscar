@@ -29,6 +29,8 @@ import { DepositReconciliation } from "../deposits/deposit-reconciliation.js";
 import { RuntimeSignals } from "../../infrastructure/logger/runtime-signals.js";
 import { createLogger } from "../../infrastructure/logger/logger.js";
 import { CustodyStorageError } from "../../infrastructure/custody/protected-files.js";
+import { WithdrawalRecovery } from "../withdrawals/withdrawal-recovery.js";
+import { hasIndependentRecoveryAuthority } from "./recovery-authority.js";
 
 const signals = new RuntimeSignals(
   createLogger({
@@ -102,6 +104,8 @@ export async function runCustodyRecovery(): Promise<void> {
   try {
     await database.$connect();
     await assertProtectedDatabaseRole(database, "p06_recovery_operator");
+    if (!(await hasIndependentRecoveryAuthority(database)))
+      throw new Error("CUSTODY_AUTHORITY_DENIED");
     const command = await protectedInput();
     if (command.operation === "FENCE") {
       await fenceFinancialRuntime(database, {
@@ -160,6 +164,15 @@ export async function runCustodyRecovery(): Promise<void> {
     }
     const inventory = await recovery.restoreInventory();
     await new TreasuryRecovery(database, keys, archive).restoreInventory();
+    const payouts = new WithdrawalRecovery(database, { keys, archive });
+    await payouts.completeUnacknowledgedBroadcasts({
+      environment: process.env,
+      projectRoot: root,
+      reference: command.evidence.financialHistoryReference,
+      recoveredThrough: through,
+      cutoff,
+    });
+    if (command.operation === "RESTORE") await payouts.assertInventory(archive);
     if (command.operation === "ACKNOWLEDGE") {
       const admissionControl =
         await database.financialRuntimeControl.findUniqueOrThrow({
@@ -234,6 +247,7 @@ export async function runCustodyRecovery(): Promise<void> {
         recoveredThrough: through,
         cutoff,
       });
+      const payoutInventory = await payouts.verifyAdmission(provider, archive);
       await acknowledgeFinancialBoot(database, {
         bootId: command.bootId,
         ...(command.additionalBootIds === undefined
@@ -244,6 +258,7 @@ export async function runCustodyRecovery(): Promise<void> {
         expectedGeneration: inventory.generation,
         expectedFencedVersion: admissionControl.version,
         signals,
+        payoutInventory,
         evidence: {
           ...command.evidence,
           reconciliationCutoff: cutoff,

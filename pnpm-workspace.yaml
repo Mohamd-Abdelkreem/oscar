@@ -17,6 +17,7 @@ allowBuilds:
   argon2: true
   cpu-features: false
   esbuild: false
+  msgpackr-extract: false
   prisma: true
   protobufjs: false
   sharp: true

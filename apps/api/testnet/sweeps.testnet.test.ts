@@ -1,5 +1,7 @@
 import { expect, it } from "vitest";
-import { context, designation, until } from "./setup.js";
+import { context, p06Designation, until } from "./setup.js";
+
+const designation = p06Designation();
 
 it("reuses the recovered signed attempt and proves canonical treasury movement and company costs without employee effects", async () => {
   const f = await context();

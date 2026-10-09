@@ -1,4 +1,14 @@
 import { Router } from "express";
+import { WithdrawalDestinationService } from "./modules/withdrawals/withdrawal-destination.service.js";
+import { WithdrawalsController } from "./modules/withdrawals/withdrawals.controller.js";
+import {
+  withdrawalsRoutes,
+  adminWithdrawalsRoutes,
+} from "./modules/withdrawals/withdrawals.routes.js";
+import { WithdrawalQuoteService } from "./modules/withdrawals/withdrawal-quote.service.js";
+import { WithdrawalReservationService } from "./modules/withdrawals/withdrawal-reservation.service.js";
+import { WithdrawalsService } from "./modules/withdrawals/withdrawals.service.js";
+import type { WithdrawalWakeupPublisher } from "./infrastructure/queue/withdrawal-wakeups.js";
 
 import type { DatabaseClient } from "@template/database";
 
@@ -96,6 +106,7 @@ export const createApiRouter = (
     proofs?: ProofsRuntime;
     financialAdmission?: FinancialRuntimeAdmission;
     depositMetadata?: CustodyMetadata;
+    withdrawalWakeups?: WithdrawalWakeupPublisher;
   } = {},
 ): Router => {
   const { proofs, financialAdmission } = runtime;
@@ -104,6 +115,49 @@ export const createApiRouter = (
   const healthService = new HealthService(database);
   const healthController = new HealthController(healthService);
   const authenticationMiddleware = createAuthenticationMiddleware(database);
+  const withdrawalDestinations = new WithdrawalDestinationService(
+    database,
+    emailService,
+    {
+      clock: financialClock,
+      network: runtime.depositMetadata?.network,
+      ...(financialAdmission === undefined
+        ? {}
+        : { admission: financialAdmission }),
+    },
+  );
+  const withdrawalController = new WithdrawalsController(
+    new WithdrawalsService(
+      database,
+      financialClock,
+      financialAdmission,
+      runtime.withdrawalWakeups,
+    ),
+    withdrawalDestinations,
+    new WithdrawalQuoteService(database, {
+      clock: financialClock,
+      network: runtime.depositMetadata?.network,
+      ...(financialAdmission === undefined
+        ? {}
+        : { admission: financialAdmission }),
+    }),
+    new WithdrawalReservationService(database, {
+      clock: financialClock,
+      admission: financialAdmission,
+      network: runtime.depositMetadata?.network,
+      ...(runtime.withdrawalWakeups === undefined
+        ? {}
+        : { wakeups: runtime.withdrawalWakeups }),
+    }),
+  );
+  router.use(
+    "/admin/withdrawals",
+    adminWithdrawalsRoutes(withdrawalController, authenticationMiddleware),
+  );
+  router.use(
+    "/withdrawals",
+    withdrawalsRoutes(withdrawalController, authenticationMiddleware),
+  );
   const depositsController = new DepositsController(
     new DepositsService(
       database,
@@ -228,7 +282,11 @@ export const createApiRouter = (
   );
   const usersController = new UsersController(new UsersService(database));
   const adminsController = new AdminsController(
-    new EmployeeRestrictionsService(database),
+    new EmployeeRestrictionsService(
+      database,
+      financialAdmission,
+      financialClock,
+    ),
     new AdminsService(database),
     new AdminLifecycleService(database),
     invitations,

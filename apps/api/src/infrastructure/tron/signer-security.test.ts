@@ -5,9 +5,18 @@ import {
   sameSweepEvidence,
 } from "../../modules/treasury/treasury-reconciliation.evidence.js";
 import { treasuryCommandSchema } from "../../modules/treasury/treasury.intent.js";
+import {
+  payoutIntentSchema,
+  payoutPolicySchema,
+} from "../../modules/withdrawals/withdrawal-payout.intent.js";
 import { randomBytes, randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { TronWeb, utils } from "tronweb";
+import {
+  assertTransferTransaction,
+  signTransferTransaction,
+  signRetainedTransferTransaction,
+} from "./tron-signer.js";
 import {
   assertSweepTransaction,
   signSweepTransaction,
@@ -55,6 +64,90 @@ function contract(tx: ReturnType<typeof transaction>) {
 }
 const options = { now, maximumFeeSun: 1000000n, signed: false };
 describe("independent treasury signing policy", () => {
+  it("signs the original retained unexpired body after the fresh-build window and refuses expiry or future time", async () => {
+    const original = transaction();
+    original.raw_data.expiration = now + 600000;
+    const protobuf: unknown = utils.transaction.txJsonToPb(original);
+    original.raw_data_hex = utils.transaction
+      .txPbToRawDataHex(protobuf)
+      .toLowerCase();
+    original.txID = utils.transaction.txPbToTxID(protobuf).replace(/^0x/u, "");
+    const movement = {
+      source,
+      recipient: treasury,
+      tokenContract,
+      amountUnits: intent.amountUnits,
+    };
+    await expect(
+      signTransferTransaction(
+        original,
+        movement,
+        { ...options, now: now + 90000 },
+        key,
+      ),
+    ).rejects.toThrow();
+    const signed = await signRetainedTransferTransaction(
+      original,
+      movement,
+      { ...options, now: now + 90000 },
+      key,
+    );
+    expect(signed.txID).toBe(original.txID);
+    expect(signed.raw_data_hex).toBe(original.raw_data_hex);
+    expect(() =>
+      signRetainedTransferTransaction(
+        original,
+        movement,
+        { ...options, now: now + 600000 },
+        key,
+      ),
+    ).toThrow();
+    expect(() =>
+      signRetainedTransferTransaction(
+        original,
+        movement,
+        { ...options, now: now - 31000 },
+        key,
+      ),
+    ).toThrow();
+  });
+  it("signs supplied original payout recipient/net and rejects other recipient, net, source or company cap", async () => {
+    const movement = {
+      source,
+      recipient: treasury,
+      tokenContract,
+      amountUnits: intent.amountUnits,
+    };
+    const signed = await signTransferTransaction(
+      transaction(),
+      movement,
+      options,
+      key,
+    );
+    expect(
+      assertTransferTransaction(signed, movement, { ...options, signed: true })
+        .txID,
+    ).toBe(signed.txID);
+    for (const patch of [
+      { recipient: source },
+      { source: treasury },
+      { amountUnits: intent.amountUnits + 1n },
+    ])
+      expect(() =>
+        assertTransferTransaction(
+          signed,
+          { ...movement, ...patch },
+          { ...options, signed: true },
+        ),
+      ).toThrow();
+    expect(() =>
+      assertTransferTransaction(signed, movement, {
+        ...options,
+        maximumFeeSun: 1n,
+        signed: true,
+      }),
+    ).toThrow();
+  });
   it("validates exact calldata and persists the returned installed-SDK signed object", async () => {
     const { signature: _signature, ...unsigned } = assertSweepTransaction(
       transaction(),
@@ -197,6 +290,58 @@ describe("independent treasury signing policy", () => {
 });
 
 describe("protected parser and safe treasury signals", () => {
+  it.each([
+    "not-integer",
+    "1.5",
+    "1e3",
+    "-1",
+    "0",
+    "01",
+    "9223372036854775808",
+  ])(
+    "rejects malformed or out-of-range original payout units %s without native exceptions",
+    (units) => {
+      const policy = {
+        maximumPayoutUnits: "500000000",
+        energyFeeLimitSun: "1000000",
+        maximumCompanyCostSun: "2000000",
+      };
+      const payout = {
+        operation: "WITHDRAWAL_PAYOUT",
+        requestId: randomUUID(),
+        attemptId: randomUUID(),
+        employeeId: randomUUID(),
+        walletId: randomUUID(),
+        reservationId: randomUUID(),
+        treasuryKeyId: randomUUID(),
+        network: "TRON_NILE",
+        tokenContract,
+        source,
+        recipient: treasury,
+        addressVersion: 1,
+        netUnits: "79000000",
+        termsHash: "a".repeat(64),
+        policy,
+      };
+      expect(payoutIntentSchema.safeParse(payout).success).toBe(true);
+      expect(
+        payoutIntentSchema.safeParse({ ...payout, netUnits: units }).success,
+      ).toBe(false);
+      for (const field of [
+        "maximumPayoutUnits",
+        "energyFeeLimitSun",
+        "maximumCompanyCostSun",
+      ]) {
+        const invalidPolicy = { ...policy, [field]: units };
+        expect(payoutPolicySchema.safeParse(invalidPolicy).success).toBe(false);
+        expect(
+          payoutIntentSchema.safeParse({ ...payout, policy: invalidPolicy })
+            .success,
+        ).toBe(false);
+      }
+    },
+  );
+
   it("rejects private authority arguments and unbounded operator input", () => {
     const command = {
       operation: "CREATE",

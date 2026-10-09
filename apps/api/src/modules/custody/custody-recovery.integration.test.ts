@@ -21,6 +21,8 @@ import {
   withAdmittedFinancialDatabase,
   financialFixtureAdmission,
   withAdmittedIndependentFinancialClients,
+  admitCleanDisposableFinancialBoot,
+  withIndependentFinancialClients,
 } from "../ledger/testing/financial-fixtures.js";
 import {
   acknowledgeFinancialBoot,
@@ -29,6 +31,34 @@ import {
 } from "./runtime-control.js";
 
 describe("recoverable assignment persistence", () => {
+  it("refuses known-clean boot admission when a retained payout key exists", async () => {
+    await withAdmittedFinancialDatabase(async (database, databaseUrl) => {
+      const createdAt = new Date();
+      await database.treasuryPayoutKey.create({
+        data: {
+          id: randomUUID(),
+          network: "TRON_NILE",
+          tokenContract: `T${"1".repeat(33)}`,
+          source: `T${"2".repeat(33)}`,
+          envelopeId: randomUUID(),
+          envelopeDigest: "a".repeat(64),
+          recoveryDigest: "a".repeat(64),
+          recoveryAckId: randomUUID(),
+          recoveryAcknowledgedAt: createdAt,
+          createdAt,
+          operatorIdentity: "disposable-test",
+          reason: "Retained payout inventory guard",
+        },
+      });
+      await withIndependentFinancialClients(databaseUrl, async (restored) => {
+        await expect(
+          admitCleanDisposableFinancialBoot(restored),
+        ).rejects.toThrow(
+          "Fixture admission cannot bypass custody/attempt recovery.",
+        );
+      });
+    });
+  });
   it("denies stale-generation recovery approval and revoked or foreign session provisioning", async () => {
     await withAdmittedFinancialDatabase(async (database) => {
       const first = await createIdentityFixture(database);

@@ -70,6 +70,38 @@ const finance = {
   },
 };
 describe("source-aware wallet and finance boundaries", () => {
+  it("keeps original withdrawal sources in reserve/release history and denies premature settlement", () => {
+    for (const kind of ["RESERVE", "RELEASE"]) {
+      const row = {
+        ...neutralRow,
+        kind,
+        sourceMovements: [
+          {
+            source: "NON_REFERRAL",
+            availableDelta: kind === "RESERVE" ? "-2" : "2",
+            reservedDelta: kind === "RESERVE" ? "2" : "-2",
+          },
+        ],
+        savedTerms: null,
+      };
+      expect(employeeLedgerDetailSchema.parse(row).signedOwnershipDelta).toBe(
+        "0",
+      );
+    }
+    expect(
+      ledgerRowSchema.safeParse({
+        ...neutralRow,
+        kind: "SETTLE",
+        origin: "WITHDRAWAL_SETTLEMENT",
+      }).success,
+    ).toBe(false);
+    expect(
+      walletViewSchema.safeParse({
+        ...walletView,
+        withdrawalExecutionReady: null,
+      }).success,
+    ).toBe(false);
+  });
   it("retains all ownership while separating locked funds and execution readiness", () => {
     expect(walletViewSchema.parse(walletView).walletComponents.total).toBe(
       "45",

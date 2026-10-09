@@ -7,6 +7,7 @@ import { createDatabaseClient } from '@template/database';
 const fixtures = JSON.parse(await readFile('/fixture/fixtures.json', 'utf8'));
 const environment = JSON.parse(await readFile('/fixture/environment.json', 'utf8'));
 Object.assign(process.env, environment);
+Object.assign(process.env, { WITHDRAWAL_REDIS_URL: fixtures.withdrawalRedisUrl, WITHDRAWAL_QUEUE_PREFIX: fixtures.withdrawalQueuePrefix });
 const { acknowledgeFinancialBoot, fenceFinancialRuntime } = await import('./api/modules/custody/runtime-control.js');
 const database = createDatabaseClient(environment.DATABASE_URL);
 const children = [];

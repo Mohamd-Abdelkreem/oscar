@@ -65,6 +65,14 @@ function transactionId(input: string): string {
     throw new TronProviderError("TRON_INPUT_INVALID");
   return input;
 }
+function transferParameter(recipient: string, amountUnits: bigint) {
+  if (amountUnits <= 0n || amountUnits > 9223372036854775807n)
+    throw new TronProviderError("TRON_INPUT_INVALID");
+  return (
+    TronWeb.address.toHex(address(recipient)).slice(2).padStart(64, "0") +
+    amountUnits.toString(16).padStart(64, "0")
+  );
+}
 function simulatedTransferSchema(
   source: string,
   treasury: string,
@@ -300,15 +308,8 @@ export class TronProvider {
     amountUnits: bigint,
     feeLimitSun: bigint,
   ): Promise<unknown> {
-    const parameter =
-      TronWeb.address.toHex(address(treasury)).slice(2).padStart(64, "0") +
-      amountUnits.toString(16).padStart(64, "0");
-    if (
-      amountUnits <= 0n ||
-      amountUnits > 9223372036854775807n ||
-      feeLimitSun <= 0n ||
-      feeLimitSun > BigInt(Number.MAX_SAFE_INTEGER)
-    )
+    const parameter = transferParameter(treasury, amountUnits);
+    if (feeLimitSun <= 0n || feeLimitSun > BigInt(Number.MAX_SAFE_INTEGER))
       throw new TronProviderError("TRON_INPUT_INVALID");
     const response = parsed(
       z.object({
@@ -332,9 +333,7 @@ export class TronProvider {
     treasury: string,
     amountUnits: bigint,
   ): Promise<number> {
-    const parameter =
-      TronWeb.address.toHex(address(treasury)).slice(2).padStart(64, "0") +
-      amountUnits.toString(16).padStart(64, "0");
+    const parameter = transferParameter(treasury, amountUnits);
     const estimate = parsed(
       z.object({
         result: z.object({ result: z.literal(true) }),
@@ -380,6 +379,20 @@ export class TronProvider {
     if (response.result && response.txid !== transaction["txID"])
       throw new TronProviderError("TRON_IDENTITY_CONFLICT");
     return response.result;
+  }
+  buildTransfer(
+    source: string,
+    recipient: string,
+    amountUnits: bigint,
+    feeLimitSun: bigint,
+  ) {
+    return this.buildSweep(source, recipient, amountUnits, feeLimitSun);
+  }
+  estimateTransfer(source: string, recipient: string, amountUnits: bigint) {
+    return this.estimateSweep(source, recipient, amountUnits);
+  }
+  broadcastTransfer(transaction: Record<string, unknown>) {
+    return this.broadcastSweep(transaction);
   }
   async discover(
     window: Readonly<{

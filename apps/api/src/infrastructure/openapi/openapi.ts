@@ -2,6 +2,24 @@ import { z } from "zod";
 import { createDocument } from "zod-openapi";
 
 import {
+  withdrawalDestinationSchema,
+  withdrawalDestinationBodySchema,
+  withdrawalResendBodySchema,
+  withdrawalConsumeBodySchema,
+  withdrawalQuoteBodySchema,
+  withdrawalAcceptBodySchema,
+  withdrawalQuoteSchema,
+  withdrawalRequestSchema,
+  withdrawalCommandResultSchema,
+  withdrawalHistorySchema,
+  withdrawalQuoteOutcomeSchema,
+  withdrawalStatusSchema,
+  withdrawalFilterSchema,
+  adminWithdrawalFilterSchema,
+  withdrawalParamsSchema,
+  withdrawalQuoteParamsSchema,
+  withdrawalExtensionBodySchema,
+  withdrawalRejectionBodySchema,
   identityUserSchema,
   depositAddressDataSchema,
   depositProvisionRequestSchema,
@@ -378,6 +396,266 @@ export const buildOpenApiDocument = () =>
       },
     },
     paths: {
+      "/withdrawals/me": {
+        get: {
+          summary: "Read own withdrawal status",
+          description:
+            "Current USER session; no-store. Withdrawal-only restrictions permit reads. Execution readiness remains false in Group A.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse("Own status", withdrawalStatusSchema),
+            ...commonErrors,
+          },
+        },
+      },
+      "/withdrawals/quotes": {
+        post: {
+          summary: "Review current exact gross withdrawal terms",
+          description:
+            "Current USER session, CSRF, bounded limiter and financial admission. Exact non-referral-first eligible allocation; partial funding is nonaccepting. Configured expiry is immutable; preview creates no reservation. No-store.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(withdrawalQuoteBodySchema),
+          responses: {
+            "201": successResponse(
+              "Saved reviewed quote",
+              withdrawalQuoteSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse(
+              "WITHDRAWAL_DESTINATION_REQUIRED or FINANCIAL_WRITES_FENCED",
+            ),
+            "503": errorResponse("WITHDRAWAL_UNAVAILABLE"),
+          },
+        },
+      },
+      "/withdrawals/quotes/{quoteId}/outcome": {
+        get: {
+          summary: "Observe permanent own quote acceptance",
+          description:
+            "Current USER session and ownership; no-store. COMMITTED remains observable after expiry or closure; NOT_OBSERVED is not proof a competing command cannot commit.",
+          security: adminReadSecurity,
+          requestParams: { path: withdrawalQuoteParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Durable quote outcome",
+              withdrawalQuoteOutcomeSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/withdrawals": {
+        get: {
+          summary: "Read bounded own withdrawal history",
+          description:
+            "Current USER session; no-store. Fixed acceptedAt/id descending order. Withdrawal-only restriction permits reads.",
+          security: adminReadSecurity,
+          requestParams: { query: withdrawalFilterSchema },
+          responses: {
+            "200": successResponse("Owned history", withdrawalHistorySchema),
+            ...commonErrors,
+          },
+        },
+        post: {
+          summary: "Atomically reserve one reviewed exact gross withdrawal",
+          description:
+            "Current USER session, CSRF, bounded limiter and financial admission. Rechecks reviewed material facts; WITHDRAWAL_QUOTE_STALE never silently accepts new terms. Permanent quote identity survives fresh/missing keys and closure. Atomic sources/ledger/request/action; no payout. No-store.",
+          security: adminWriteSecurity,
+          requestParams: {
+            header: z.object({
+              "Idempotency-Key": financialRequestKeySchema
+                .optional()
+                .meta({ param: { required: false } }),
+            }),
+          },
+          requestBody: jsonBody(withdrawalAcceptBodySchema),
+          responses: {
+            "201": successResponse(
+              "Accepted original reservation",
+              withdrawalCommandResultSchema,
+            ),
+            "200": successResponse(
+              "Replayed original reservation",
+              withdrawalCommandResultSchema,
+            ),
+            ...adminReadErrors,
+            "409": errorResponse(
+              "WITHDRAWAL_QUOTE_STALE, WITHDRAWAL_ACTIVE, LEDGER_IDENTITY_CONFLICT, LEDGER_UNRESOLVED or FINANCIAL_WRITES_FENCED",
+            ),
+          },
+        },
+      },
+      "/withdrawals/{withdrawalId}": {
+        get: {
+          summary: "Read owned withdrawal detail",
+          description:
+            "Current USER session and ownership; missing and other employees' IDs return 404. No-store; safe immutable terms and exact server countdown.",
+          security: adminReadSecurity,
+          requestParams: { path: withdrawalParamsSchema },
+          responses: {
+            "200": successResponse("Owned request", withdrawalRequestSchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/withdrawals": {
+        get: {
+          summary: "Read bounded administrator withdrawal history",
+          description: `${adminAuthority} Bounded employee/state/from-inclusive/to-exclusive/search filters; fixed acceptedAt/id descending order. No private custody or proof facts.`,
+          security: adminReadSecurity,
+          requestParams: { query: adminWithdrawalFilterSchema },
+          responses: {
+            "200": successResponse("Filtered history", withdrawalHistorySchema),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/withdrawals/{withdrawalId}": {
+        get: {
+          summary: "Read authorized withdrawal detail",
+          description: adminAuthority,
+          security: adminReadSecurity,
+          requestParams: { path: withdrawalParamsSchema },
+          responses: {
+            "200": successResponse(
+              "Safe request and actions",
+              withdrawalRequestSchema,
+            ),
+            ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/withdrawals/{withdrawalId}/extensions": {
+        post: {
+          summary: "Extend a safely scheduled withdrawal",
+          description: `${adminAuthority} Current SCHEDULED only; confirmation/reason and expected version required. Exact positive counted hours add to current due, preserving original due/terms; a stale job is harmless. Payload-bound key replay never extends twice.`,
+          security: adminWriteSecurity,
+          requestParams: {
+            path: withdrawalParamsSchema,
+            header: z.object({
+              "Idempotency-Key": financialRequestKeySchema
+                .optional()
+                .meta({ param: { required: false } }),
+            }),
+          },
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": { schema: withdrawalExtensionBodySchema },
+            },
+          },
+          responses: {
+            "200": successResponse(
+              "Saved extension or replay",
+              withdrawalCommandResultSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/admin/withdrawals/{withdrawalId}/rejections": {
+        post: {
+          summary: "Safely reject an unsent scheduled withdrawal",
+          description: `${adminAuthority} Current SCHEDULED only; confirmation/reason and expected version required. Atomically releases original source amounts once. Processing states cannot be rejected; no manual payout or hold. Payload-conflicting keys and stale versions return 409.`,
+          security: adminWriteSecurity,
+          requestParams: {
+            path: withdrawalParamsSchema,
+            header: z.object({
+              "Idempotency-Key": financialRequestKeySchema
+                .optional()
+                .meta({ param: { required: false } }),
+            }),
+          },
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": { schema: withdrawalRejectionBodySchema },
+            },
+          },
+          responses: {
+            "200": successResponse(
+              "Safe rejection or replay",
+              withdrawalCommandResultSchema,
+            ),
+            ...adminCommandErrors,
+          },
+        },
+      },
+      "/withdrawals/me/destination": {
+        get: {
+          summary: "Read own fixed or pending withdrawal destination",
+          description:
+            "Current ACTIVE verified USER session; no-store. UNSET/PENDING/CONFIRMED are saved facts. GET never consumes proof. Withdrawal-only restriction permits reads; proof hashes and credentials are excluded.",
+          security: adminReadSecurity,
+          responses: {
+            "200": successResponse(
+              "Own destination state",
+              withdrawalDestinationSchema,
+            ),
+            ...commonErrors,
+          },
+        },
+      },
+      "/withdrawals/me/destination/confirmations": {
+        post: {
+          summary: "Issue sole current first-address email proof",
+          description:
+            "Current USER session, CSRF and bounded critical-action limiter. Commits supersession and issuance audit before email I/O; ACKNOWLEDGED means provider acceptance, never mailbox delivery or confirmed address. No-store. Same-origin account-fragment link has no P08 browser consumer.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(withdrawalDestinationBodySchema),
+          responses: {
+            "201": successResponse(
+              "Committed pending proof and delivery facts",
+              withdrawalDestinationSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse(
+              "WITHDRAWAL_DESTINATION_FIXED or FINANCIAL_WRITES_FENCED",
+            ),
+            "503": errorResponse("WITHDRAWAL_UNAVAILABLE"),
+          },
+        },
+      },
+      "/withdrawals/me/destination/resend": {
+        post: {
+          summary: "Supersede current pending destination proof",
+          description:
+            "Current USER session, CSRF, persisted cooldown and expectedVersion. No-store. New proof keeps the pending exact address; rejected commands change no authority. Late delivery updates only its own generation.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(withdrawalResendBodySchema),
+          responses: {
+            "200": successResponse(
+              "Current pending destination and delivery",
+              withdrawalDestinationSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse(
+              "WITHDRAWAL_DESTINATION_STALE, WITHDRAWAL_DESTINATION_FIXED or FINANCIAL_WRITES_FENCED",
+            ),
+            "503": errorResponse("WITHDRAWAL_UNAVAILABLE"),
+          },
+        },
+      },
+      "/withdrawals/me/destination/consume": {
+        post: {
+          summary: "Consume latest proof and save the first fixed recipient",
+          description:
+            "Current USER session, CSRF and bounded limiter. Atomic exact latest user/address/generation proof consumption and audit; expiry, supersession and replay rejected. No-store. No reservation or payout. GET/link opening never saves the address.",
+          security: adminWriteSecurity,
+          requestBody: jsonBody(withdrawalConsumeBodySchema),
+          responses: {
+            "200": successResponse(
+              "Confirmed exact first destination",
+              withdrawalDestinationSchema,
+            ),
+            ...commonErrors,
+            "409": errorResponse(
+              "WITHDRAWAL_PROOF_INVALID (expired, superseded, replayed or mismatched proof); FINANCIAL_WRITES_FENCED",
+            ),
+            "503": errorResponse("WITHDRAWAL_UNAVAILABLE"),
+          },
+        },
+      },
       "/deposits/me/address": {
         get: {
           summary: "Read own public deposit assignment without provisioning",

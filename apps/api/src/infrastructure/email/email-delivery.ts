@@ -26,6 +26,7 @@ export type EmailSendRequest = Readonly<{
   replyTo?: string;
   localPreviewUrl?: string;
   assertCanDispatch?: () => Promise<void>;
+  retainLocalPreview?: false;
 }>;
 
 export type EmailSendResult = Readonly<{
@@ -113,6 +114,13 @@ export const findWorkspaceRoot = async (
 export const createFileConsolePreview =
   (providedPreviewDirectory?: string): ConsoleEmailPreview =>
   async (request) => {
+    if (request.retainLocalPreview === false)
+      throw new EmailDeliveryError(
+        "console",
+        0,
+        "REJECTED",
+        "PROVIDER_REJECTED",
+      );
     const previewDirectory =
       providedPreviewDirectory === undefined
         ? join(await findWorkspaceRoot(process.cwd()), ".local-emails")
@@ -154,6 +162,14 @@ export class ConsoleEmailDelivery implements EmailDelivery {
   ) {}
 
   async send(request: EmailSendRequest): Promise<EmailSendResult> {
+    await request.assertCanDispatch?.();
+    if (request.retainLocalPreview === false)
+      throw new EmailDeliveryError(
+        this.provider,
+        0,
+        "REJECTED",
+        "PROVIDER_REJECTED",
+      );
     try {
       await this.preview(request);
     } catch {
@@ -357,7 +373,14 @@ export class SmtpEmailDelivery implements EmailDelivery {
   ) {}
 
   async send(request: EmailSendRequest): Promise<EmailSendResult> {
+    let uncertain = false;
     for (let attempt = 1; attempt <= maximumAttempts; attempt += 1) {
+      try {
+        await request.assertCanDispatch?.();
+      } catch (failure) {
+        if (!uncertain) throw failure;
+        throw new EmailDeliveryError(this.provider, attempt - 1, "UNKNOWN");
+      }
       try {
         const result = await this.getTransporter().sendMail({
           from: request.from,
@@ -370,6 +393,7 @@ export class SmtpEmailDelivery implements EmailDelivery {
         });
         return { providerMessageId: result.messageId ?? null };
       } catch {
+        uncertain = true;
         logFailure(this.provider, attempt);
         if (attempt === maximumAttempts) {
           throw new EmailDeliveryError(this.provider, attempt);

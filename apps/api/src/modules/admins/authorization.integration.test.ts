@@ -55,6 +55,7 @@ const database = createDatabaseClient(databaseUrl);
 await admitCleanDisposableFinancialBoot(database);
 const app = createApp({
   database,
+  financialAdmission: financialFixtureAdmission(database),
   logger: pino({ level: "silent" }),
   emailDelivery: {
     provider: "console",
@@ -620,6 +621,7 @@ describe("P02 US4 employee controls", () => {
           await acquired;
           const contenderApp = createApp({
             database: contender,
+            financialAdmission: financialFixtureAdmission(database),
             logger: pino({ level: "silent" }),
             emailDelivery: {
               provider: "console",
@@ -704,6 +706,7 @@ describe("P02 US4 employee controls", () => {
         });
         const controlApp = createApp({
           database: second,
+          financialAdmission: financialFixtureAdmission(database),
           logger: pino({ level: "silent" }),
           emailDelivery: {
             provider: "console",
@@ -1214,6 +1217,7 @@ describe("P02 US4 employee controls", () => {
           [first, second].map(async (client, index) => {
             const contenderApp = createApp({
               database: client,
+              financialAdmission: financialFixtureAdmission(database),
               logger: pino({ level: "silent" }),
               emailDelivery: {
                 provider: "console",

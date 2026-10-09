@@ -3,6 +3,11 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { z } from "zod";
 
 type Environment = Readonly<Record<string, string | undefined>>;
+export function payoutTreasuryKeyId(environment: Environment): string {
+  return z
+    .uuid()
+    .parse(requiredCustodySetting(environment, "TRON_PAYOUT_KEY_ID"));
+}
 
 export function requiredCustodySetting(
   environment: Environment,

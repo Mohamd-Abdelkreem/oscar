@@ -20,6 +20,60 @@ const createService = () => {
 };
 
 describe("EmailService local previews", () => {
+  it("sends an escaped account-fragment proof with no retained preview or delivery-success log", async () => {
+    const { send } = createService();
+    const service = new EmailService(
+      { provider: "resend", send },
+      "sender@company.test",
+      "Company",
+      "",
+      "https://company.test",
+      null,
+      "https://company.test/employee/account",
+    );
+    await service.sendWithdrawalConfirmation({
+      fullName: "<script>name</script>",
+      email: "recipient@company.test",
+      address: "<address>",
+      token: "sentinel-proof",
+      assertCanDispatch: () => Promise.resolve(),
+    });
+    const mail = send.mock.calls[0]?.[0];
+    expect(mail?.html).toContain(
+      "https://company.test/employee/account#withdrawal-confirmation=sentinel-proof",
+    );
+    expect(mail?.html).toContain("&lt;address&gt;");
+    expect(mail?.html).not.toContain("<script>");
+    expect(mail?.localPreviewUrl).toBeUndefined();
+    expect(mail?.retainLocalPreview).toBe(false);
+  });
+  it.each(["UNKNOWN", "REJECTED"] as const)(
+    "preserves %s proof delivery without claiming a save",
+    async (disposition) => {
+      const { send } = createService();
+      const service = new EmailService(
+        { provider: "resend", send },
+        "sender@company.test",
+        "Company",
+        "",
+        "https://company.test",
+        null,
+        "https://company.test/employee/account",
+      );
+      const failure = new EmailDeliveryError("resend", 1, disposition);
+      send.mockRejectedValueOnce(failure);
+      await expect(
+        service.sendWithdrawalConfirmation({
+          fullName: "Recipient",
+          email: "recipient@company.test",
+          address: "recipient",
+          token: "sentinel-proof",
+          assertCanDispatch: () => Promise.resolve(),
+        }),
+      ).rejects.toBe(failure);
+      expect(String(failure)).not.toContain("sentinel-proof");
+    },
+  );
   it("retains rejected and unknown invitation outcomes without retaining or logging recipient action credentials", async () => {
     const { send } = createService();
     const service = new EmailService(

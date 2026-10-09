@@ -1,6 +1,7 @@
 import type { LedgerRow } from "@template/contracts";
 
 export const operationLabels: Record<LedgerRow["origin"], string> = {
+  WITHDRAWAL_SETTLEMENT: "سحب مكتمل",
   DEPOSIT: "إيداع رصيد",
   TASK_REWARD: "مكافأة مهمة معتمدة",
   REFERRAL_COMMISSION: "عمولة إحالة",

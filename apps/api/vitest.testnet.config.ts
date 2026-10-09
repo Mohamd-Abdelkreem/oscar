@@ -1,10 +1,10 @@
 import { defineConfig } from "vitest/config";
-import { parseTestnetAdmission } from "./src/core/config/testnet.config.js";
+import { parseTestnetProfile } from "./src/core/config/testnet.config.js";
 
-parseTestnetAdmission(process.env);
+const admission = parseTestnetProfile(process.env);
 export default defineConfig({
   test: {
-    include: ["testnet/*.testnet.test.ts"],
+    include: [...admission.files],
     bail: 1,
     fileParallelism: false,
     maxWorkers: 1,
@@ -18,10 +18,10 @@ export default defineConfig({
         sort<T extends { moduleId: string }>(files: T[]) {
           return [...files].sort(
             (a, b) =>
-              ["custody", "deposits", "sweeps"].findIndex((s) =>
+              ["payouts", "custody", "deposits", "sweeps"].findIndex((s) =>
                 a.moduleId.includes(s),
               ) -
-              ["custody", "deposits", "sweeps"].findIndex((s) =>
+              ["payouts", "custody", "deposits", "sweeps"].findIndex((s) =>
                 b.moduleId.includes(s),
               ),
           );
