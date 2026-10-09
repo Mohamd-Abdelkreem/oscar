@@ -9,6 +9,9 @@ const eventSchema = z.enum([
   "RUNTIME_ADMISSION",
   "RESOURCE_SHORTFALL",
   "UNRESOLVED_ATTEMPT",
+  "LIQUIDITY_SHORTFALL",
+  "PROVIDER_UNAVAILABLE",
+  "DISPATCH_PAUSED",
 ]);
 const metadataSchema = z
   .object({
@@ -22,6 +25,7 @@ const metadataSchema = z
     bootId: z.uuid().optional(),
     assignmentId: z.uuid().optional(),
     attemptId: z.uuid().optional(),
+    withdrawalId: z.uuid().optional(),
     count: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
     ageMs: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
     generation: z
@@ -42,7 +46,19 @@ export class RuntimeSignals {
     const validatedEvent = eventSchema.parse(event);
     const projected = metadataSchema.parse(metadata);
     const now = this.clock();
-    const scope = `${event}:${projected.attemptId ?? projected.assignmentId ?? "runtime"}`;
+    const scope = `${event}:${projected.attemptId ?? projected.withdrawalId ?? projected.assignmentId ?? "runtime"}`;
+    if (
+      active &&
+      scope !== `${event}:runtime` &&
+      !this.active.has(scope) &&
+      this.active.size >= 1024
+    ) {
+      this.observe(event, true, {
+        processKind: projected.processKind ?? "SIGNER",
+        count: this.active.size,
+      });
+      return;
+    }
     const previous = this.active.get(scope);
     if (
       active &&

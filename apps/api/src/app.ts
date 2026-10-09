@@ -27,6 +27,7 @@ import { createApiRouter } from "./router.js";
 import type { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 import type { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
 import type { CustodyMetadata } from "./modules/custody/custody.service.js";
+import type { WithdrawalWakeupPublisher } from "./infrastructure/queue/withdrawal-wakeups.js";
 
 type AppDependencies = Readonly<{
   database: DatabaseClient;
@@ -36,6 +37,7 @@ type AppDependencies = Readonly<{
   proofs?: ProofsRuntime;
   financialAdmission?: FinancialRuntimeAdmission;
   depositMetadata?: CustodyMetadata;
+  withdrawalWakeups?: WithdrawalWakeupPublisher;
 }>;
 
 const buildCorsOriginValidator = (): CorsOptions["origin"] => {
@@ -59,6 +61,7 @@ export const createApp = ({
   proofs,
   financialAdmission,
   depositMetadata,
+  withdrawalWakeups,
 }: AppDependencies): Application => {
   const app = express();
 
@@ -90,6 +93,7 @@ export const createApp = ({
       ...(proofs === undefined ? {} : { proofs }),
       ...(financialAdmission === undefined ? {} : { financialAdmission }),
       ...(depositMetadata === undefined ? {} : { depositMetadata }),
+      ...(withdrawalWakeups === undefined ? {} : { withdrawalWakeups }),
     }),
   );
 

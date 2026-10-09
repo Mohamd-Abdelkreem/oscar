@@ -12,6 +12,8 @@ import { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 import { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
 import { parseTronPublicEnvironment } from "./core/config/tron.config.js";
 import { assertApiDatabaseAuthority } from "./modules/custody/api-database-authority.js";
+import { parseWithdrawalQueueEnvironment } from "./core/config/withdrawal.config.js";
+import { WithdrawalWakeups } from "./infrastructure/queue/withdrawal-wakeups.js";
 
 const database = createDatabaseClient(databaseConfig.url);
 const financialAdmission = new FinancialRuntimeAdmission(database, "API");
@@ -29,13 +31,7 @@ const proofs = new ProofsRuntime(
 const depositMetadata = process.env["TRON_NETWORK"]?.trim()
   ? parseTronPublicEnvironment(process.env)
   : undefined;
-const app = createApp({
-  database,
-  logger,
-  proofs,
-  financialAdmission,
-  ...(depositMetadata === undefined ? {} : { depositMetadata }),
-});
+let withdrawalWakeups: WithdrawalWakeups | undefined;
 
 let server: Server | undefined;
 let isShuttingDown = false;
@@ -54,18 +50,27 @@ const shutdown = async (reason: string, exitCode = 0): Promise<void> => {
   forceShutdownTimer.unref();
 
   try {
-    await proofs.stop();
-    if (server !== undefined) {
-      await new Promise<void>((resolve, reject) => {
-        server?.close((error) => {
-          if (error !== undefined) reject(error);
-          else resolve();
-        });
-        server?.closeIdleConnections();
-      });
+    try {
+      await proofs.stop();
+    } finally {
+      try {
+        if (server !== undefined) {
+          await new Promise<void>((resolve, reject) => {
+            server?.close((error) => {
+              if (error !== undefined) reject(error);
+              else resolve();
+            });
+            server?.closeIdleConnections();
+          });
+        }
+      } finally {
+        try {
+          await withdrawalWakeups?.close();
+        } finally {
+          await database.$disconnect();
+        }
+      }
     }
-
-    await database.$disconnect();
     clearTimeout(forceShutdownTimer);
     logger.info("Graceful shutdown completed.");
     process.exit(exitCode);
@@ -81,7 +86,20 @@ const startServer = async (): Promise<void> => {
     await database.$connect();
     await assertApiDatabaseAuthority(database);
     await financialAdmission.register();
+    withdrawalWakeups = new WithdrawalWakeups(
+      parseWithdrawalQueueEnvironment(process.env),
+    );
+    await withdrawalWakeups.ready();
     await proofs.start();
+
+    const app = createApp({
+      database,
+      logger,
+      proofs,
+      financialAdmission,
+      withdrawalWakeups,
+      ...(depositMetadata === undefined ? {} : { depositMetadata }),
+    });
 
     server = app.listen(appConfig.port, appConfig.host, (error?: Error) => {
       if (error !== undefined) {
@@ -106,8 +124,15 @@ const startServer = async (): Promise<void> => {
     server.keepAliveTimeout = appConfig.keepAliveTimeoutMs;
   } catch (error) {
     logger.fatal({ err: error }, "Failed to start the API server.");
-    await proofs.stop();
-    await database.$disconnect();
+    try {
+      await proofs.stop();
+    } finally {
+      try {
+        await withdrawalWakeups?.close();
+      } finally {
+        await database.$disconnect();
+      }
+    }
     process.exit(1);
   }
 };

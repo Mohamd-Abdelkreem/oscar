@@ -8,6 +8,7 @@ import {
   parseTronWorkerEnvironment,
   parseTronSignerEnvironment,
   parseTronTestnetEnvironment,
+  parseTronPayoutEnvironment,
 } from "./tron.config.js";
 
 const root = mkdtempSync(join(tmpdir(), "p06-provider-config-"));
@@ -37,6 +38,39 @@ afterAll(() => {
 });
 
 describe("explicit bounded TRON configuration", () => {
+  it("requires a separate immutable payout key and independent positive bounded payout caps", () => {
+    const payout = {
+      ...environment,
+      TRON_PAYOUT_KEY_ID: "8f4be6e1-6b22-4c54-b9ec-9af1ba7bff15",
+      TRON_MAX_PAYOUT_UNITS: "500000000",
+      TRON_PAYOUT_ENERGY_FEE_LIMIT_SUN: "1000000",
+      TRON_PAYOUT_MAX_COMPANY_COST_SUN: "2000000",
+    };
+    expect(parseTronPayoutEnvironment(payout, project)).toMatchObject({
+      treasuryKeyId: payout.TRON_PAYOUT_KEY_ID,
+      maximumPayoutUnits: 500000000n,
+      payoutEnergyFeeLimitSun: 1000000n,
+    });
+    for (const key of [
+      "TRON_PAYOUT_KEY_ID",
+      "TRON_MAX_PAYOUT_UNITS",
+      "TRON_PAYOUT_ENERGY_FEE_LIMIT_SUN",
+      "TRON_PAYOUT_MAX_COMPANY_COST_SUN",
+    ]) {
+      expect(() =>
+        parseTronPayoutEnvironment({ ...payout, [key]: undefined }, project),
+      ).toThrow();
+      expect(() =>
+        parseTronPayoutEnvironment({ ...payout, [key]: "-1" }, project),
+      ).toThrow();
+    }
+    expect(() =>
+      parseTronPayoutEnvironment(
+        { ...payout, TRON_PAYOUT_ENERGY_FEE_LIMIT_SUN: "2000001" },
+        project,
+      ),
+    ).toThrow();
+  });
   it("allows credential-free public testnet only with explicit live opt-in", () => {
     const publicTestnet = {
       ...environment,
@@ -69,6 +103,30 @@ describe("explicit bounded TRON configuration", () => {
         project,
       ),
     ).toThrow("TRON_PROVIDER_AUTH");
+  });
+  it("admits public payout provider authentication only with its exact separately opted-in profile", () => {
+    const payout = {
+      ...environment,
+      TRON_PROVIDER_AUTH: "PUBLIC_TESTNET",
+      TRON_PROVIDER_API_KEY_FILE: undefined,
+      OSCAR_TESTNET_PROFILE: "P08_PAYOUT",
+      P08_TESTNET_OPT_IN: "YES",
+    };
+    expect(
+      parseTronWorkerEnvironment(payout, project).providerApiKeyFile,
+    ).toBeNull();
+    for (const rejected of [
+      { ...payout, OSCAR_TESTNET_PROFILE: undefined },
+      { ...payout, P08_TESTNET_OPT_IN: undefined },
+      {
+        ...payout,
+        TRON_NETWORK: "TRON_MAINNET",
+        TRON_PROVIDER_URL: "https://api.trongrid.io",
+      },
+    ])
+      expect(() => parseTronWorkerEnvironment(rejected, project)).toThrow(
+        "opted-in",
+      );
   });
   it("exposes only public token metadata and pins provider policy", () => {
     expect(Object.keys(parseTronPublicEnvironment(environment)).sort()).toEqual(

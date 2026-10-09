@@ -4,6 +4,10 @@ import type { EmailDelivery } from "./email-delivery.js";
 import { resetPasswordTemplate } from "./templates/reset-password.template.js";
 import { verifyEmailTemplate } from "./templates/verify-email.template.js";
 import {
+  withdrawalConfirmationTemplate,
+  withdrawalConfirmationUrl,
+} from "./templates/withdrawal-confirmation.template.js";
+import {
   adminInvitationTemplate,
   adminInvitationUrl,
 } from "./templates/admin-invitation.template.js";
@@ -16,7 +20,45 @@ export class EmailService {
     private readonly replyTo = emailConfig.replyTo,
     private readonly publicWebUrl = emailConfig.publicWebUrl,
     private readonly invitationDestination = emailConfig.invitationAcceptUrl,
+    private readonly withdrawalDestination = emailConfig.withdrawalConfirmationUrl,
   ) {}
+
+  assertWithdrawalConfirmationAvailable(): void {
+    withdrawalConfirmationUrl(
+      this.withdrawalDestination,
+      this.publicWebUrl,
+      "configuration-check",
+    );
+  }
+
+  async sendWithdrawalConfirmation(
+    input: Readonly<{
+      fullName: string;
+      email: string;
+      address: string;
+      token: string;
+      assertCanDispatch: () => Promise<void>;
+    }>,
+  ): Promise<void> {
+    const actionUrl = withdrawalConfirmationUrl(
+      this.withdrawalDestination,
+      this.publicWebUrl,
+      input.token,
+    );
+    await this.delivery.send({
+      from: `"${this.fromName}" <${this.fromAddress}>`,
+      to: input.email,
+      subject: "Confirm withdrawal destination",
+      html: withdrawalConfirmationTemplate(
+        input.fullName,
+        input.address,
+        actionUrl,
+      ),
+      ...(this.replyTo === "" ? {} : { replyTo: this.replyTo }),
+      retainLocalPreview: false,
+      assertCanDispatch: input.assertCanDispatch,
+    });
+  }
 
   async sendAdminInvitation(
     input: Readonly<{

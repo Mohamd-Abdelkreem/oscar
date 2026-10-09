@@ -8,6 +8,13 @@ export type TreasuryConfig = ReturnType<typeof parseTronSignerEnvironment>;
 export const treasuryCommandSchema = z.discriminatedUnion("operation", [
   z
     .object({
+      operation: z.literal("PROVISION_PAYOUT_KEY"),
+      privateKey: z.string().regex(/^[0-9a-fA-F]{64}$/u),
+      reason: z.string().trim().min(1).max(500),
+    })
+    .strict(),
+  z
+    .object({
       operation: z.literal("CREATE"),
       operationId: z.uuid(),
       assignmentId: z.uuid(),

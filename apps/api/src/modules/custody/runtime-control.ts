@@ -7,6 +7,10 @@ import {
 import { z } from "zod";
 import { AppError } from "../../core/errors/app.error.js";
 import type { RuntimeSignals } from "../../infrastructure/logger/runtime-signals.js";
+import {
+  assertPayoutRecoveryAdmission,
+  type PayoutRecoveryAdmission,
+} from "../withdrawals/withdrawal-recovery.js";
 
 const ADMISSION_LOCK = 606033n;
 const referenceSchema = z.string().regex(/^[A-Za-z0-9._:-]{1,256}$/u);
@@ -166,6 +170,7 @@ export async function acknowledgeFinancialBoot(
     evidence: RecoveryAdmissionEvidence;
     expectedGeneration?: bigint;
     expectedFencedVersion?: number;
+    payoutInventory?: PayoutRecoveryAdmission;
     signals?: RuntimeSignals;
   },
 ): Promise<void> {
@@ -191,6 +196,21 @@ export async function acknowledgeFinancialBoot(
   const evidenceReference = evidence.reconciliationReference;
   await database.$transaction(async (transaction) => {
     const control = await exclusiveControl(transaction);
+    if (approval.payoutInventory !== undefined) {
+      assertPayoutRecoveryAdmission(approval.payoutInventory);
+      if (
+        approval.payoutInventory.generation !== control.generation ||
+        approval.payoutInventory.version !== control.version ||
+        !control.financialWritesFenced
+      )
+        fenced();
+      const [inventory] = await transaction.$queryRaw<
+        { fingerprint: string }[]
+      >`SELECT p08_recovery_fingerprint() AS fingerprint`;
+      if (inventory?.fingerprint !== approval.payoutInventory.fingerprint)
+        fenced();
+      await transaction.$queryRaw`SELECT set_config('p08.verified_inventory',${approval.payoutInventory.fingerprint},true)`;
+    }
     if (
       approval.expectedGeneration !== undefined &&
       control.generation !== approval.expectedGeneration

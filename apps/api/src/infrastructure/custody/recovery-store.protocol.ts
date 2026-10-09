@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { envelopeDigest } from "./key-storage.js";
-import { recoveryEnvelopeSchema as envelopeSchema } from "./encrypted-envelope.js";
+import {
+  recoveryEnvelopeSchema as envelopeSchema,
+  recoveryRecordTypeSchema,
+} from "./encrypted-envelope.js";
 import { CustodyStorageError } from "./protected-files.js";
 
 const identity = {
@@ -12,13 +15,13 @@ const cursor = z.string().regex(/^[0-9a-f-]{36}\.[1-9][0-9]{0,9}$/u);
 const recordSchema = z
   .object({
     ...identity,
-    type: z.enum(["KEY_ASSIGNMENT", "SIGNED_ATTEMPT", "BROADCAST_INTENT"]),
+    type: recoveryRecordTypeSchema,
     digest,
   })
   .strict();
 const ack = {
   ...identity,
-  type: z.enum(["KEY_ASSIGNMENT", "SIGNED_ATTEMPT", "BROADCAST_INTENT"]),
+  type: recoveryRecordTypeSchema,
   digest,
   ackId: z.uuid(),
   acknowledgedAt: z.iso.datetime(),
@@ -32,7 +35,7 @@ export const recoveryRequestSchema = z.discriminatedUnion("operation", [
   z
     .object({
       operation: z.literal("LIST"),
-      type: z.enum(["KEY_ASSIGNMENT", "SIGNED_ATTEMPT", "BROADCAST_INTENT"]),
+      type: recoveryRecordTypeSchema,
       limit: z.number().int().min(1).max(100),
       cursor: cursor.optional(),
     })

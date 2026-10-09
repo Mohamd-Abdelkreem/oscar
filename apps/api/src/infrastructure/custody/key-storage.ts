@@ -114,7 +114,7 @@ export class CustodyKeyStorage {
     }
   }
   sealRecord(
-    type: "SIGNED_ATTEMPT" | "BROADCAST_INTENT",
+    type: Exclude<RecoveryEnvelope["type"], "KEY_ASSIGNMENT">,
     objectId: string,
     payload: unknown,
   ): RecoveryEnvelope {
@@ -163,6 +163,25 @@ export class CustodyKeyStorage {
     if (envelopeDigest(stored) !== envelopeDigest(input))
       throw new CustodyStorageError("CUSTODY_EVIDENCE_CONFLICT");
     return stored;
+  }
+  async obtainRecord(input: RecoveryEnvelope): Promise<RecoveryEnvelope> {
+    this.openRecord(input);
+    const bytes = await publishProtectedFile(
+      this.config.storageRoot,
+      filename(input.objectId, input.version),
+      envelopeBytes(input),
+    );
+    const winner = recoveryEnvelopeSchema.parse(
+      JSON.parse(bytes.toString("utf8")),
+    );
+    if (
+      winner.objectId !== input.objectId ||
+      winner.version !== input.version ||
+      winner.type !== input.type
+    )
+      throw new CustodyStorageError("CUSTODY_EVIDENCE_CONFLICT");
+    this.openRecord(winner);
+    return winner;
   }
   assertBinding(payload: KeyPayload, binding: KeyBinding): void {
     const {

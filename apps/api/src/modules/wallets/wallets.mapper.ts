@@ -6,6 +6,7 @@ import {
   adminLedgerRowSchema,
   employeeLedgerDetailSchema,
   adminLedgerDetailSchema,
+  withdrawalSettlementTermsSchema,
 } from "@template/contracts";
 import type { Prisma } from "@template/database";
 import {
@@ -18,6 +19,7 @@ import {
   mapSubscription,
 } from "../subscriptions/subscriptions.mapper.js";
 import { mapWalletComponents } from "../ledger/ledger.mapper.js";
+import { acceptedTermsSchema } from "../ledger/ledger.types.js";
 
 export const financialIdentitySelect = {
   id: true,
@@ -101,6 +103,7 @@ export const operationViewSelect = {
 } as const satisfies Prisma.FinancialOperationSelect;
 export const operationDetailSelect = {
   ...operationViewSelect,
+  acceptedTerms: true,
   packagePurchase: { select: { acceptedTerms: true } },
   referralDecision: {
     select: { purchase: { select: { acceptedTerms: true } } },
@@ -148,7 +151,19 @@ export function mapLedgerDetail(operation: OperationDetail) {
   return employeeLedgerDetailSchema.parse({
     ...mapLedgerRow(operation),
     savedTerms: terms === undefined ? null : packageTermsSchema.parse(terms),
+    withdrawalTerms:
+      operation.kind === "SETTLE"
+        ? withdrawalSettlementTermsSchema.parse(
+            settlementTerms(operation.acceptedTerms),
+          )
+        : null,
   });
+}
+function settlementTerms(input: Prisma.JsonValue) {
+  const accepted = acceptedTermsSchema.parse(input);
+  if (accepted.kind !== "SETTLE")
+    throw new Error("Settlement terms are missing.");
+  return accepted.withdrawalTerms;
 }
 export function mapAdminLedgerDetail(operation: OperationDetail) {
   const audit = operation.audit;

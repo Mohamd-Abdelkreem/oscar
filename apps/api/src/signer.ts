@@ -3,7 +3,11 @@ import { resolve } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import { createDatabaseClient, type DatabaseClient } from "@template/database";
 import { parseSignerCustodyEnvironment } from "./core/config/custody.config.js";
-import { parseTronSignerEnvironment } from "./core/config/tron.config.js";
+import {
+  parseTronSignerEnvironment,
+  parseTronPayoutEnvironment,
+} from "./core/config/tron.config.js";
+import { parseWithdrawalSignerEnvironment } from "./core/config/withdrawal.config.js";
 import { CustodyKeyStorage } from "./infrastructure/custody/key-storage.js";
 import { CustodyStorageError } from "./infrastructure/custody/protected-files.js";
 import { SshRecoveryStore } from "./infrastructure/custody/recovery-store.js";
@@ -25,6 +29,9 @@ import {
   runTreasuryOperation,
 } from "./modules/treasury/treasury.runtime.js";
 import { TreasuryPolicyError } from "./infrastructure/tron/tron-signer.js";
+import { WithdrawalAttempts } from "./modules/withdrawals/withdrawal-attempts.js";
+import { WithdrawalRecovery } from "./modules/withdrawals/withdrawal-recovery.js";
+import { WithdrawalPayoutRuntime } from "./modules/withdrawals/withdrawal-runtime.js";
 
 export async function assertProtectedDatabaseRole(
   database: DatabaseClient,
@@ -46,6 +53,13 @@ export async function runSigner(): Promise<void> {
   const root = fileURLToPath(new URL("../../../", import.meta.url));
   const custody = parseSignerCustodyEnvironment(process.env, root);
   const provider = parseTronSignerEnvironment(process.env, root);
+  const payoutConfig =
+    (process.env["TRON_PAYOUT_KEY_ID"]?.trim() ?? "") === ""
+      ? undefined
+      : {
+          chain: parseTronPayoutEnvironment(process.env, root),
+          scan: parseWithdrawalSignerEnvironment(process.env),
+        };
   const url = process.env["DATABASE_URL"];
   if (url === undefined || !/^postgres(?:ql)?:$/u.test(new URL(url).protocol))
     throw new Error("CUSTODY_CONFIGURATION_INVALID");
@@ -96,102 +110,136 @@ export async function runSigner(): Promise<void> {
       provider,
     );
     const inventory = new TreasuryRecovery(database, keys, archive);
-    while (!isStopping()) {
-      try {
-        await inventory.assertInventory();
-        const pending = await database.transferAttempt.findMany({
-          where: {
-            state: { in: ["SIGNED", "SUBMITTED", "UNKNOWN"] },
-            nextAttemptAt: { lte: new Date() },
-          },
-          take: 20,
-          orderBy: [{ nextAttemptAt: "asc" }, { id: "asc" }],
-        });
-        for (const attempt of pending) {
-          if (isStopping()) break;
-          await runTreasuryOperation({
+    const payout =
+      payoutConfig === undefined
+        ? undefined
+        : new WithdrawalPayoutRuntime({
             database,
-            sweepId: attempt.sweepId,
+            admission,
+            attempts: new WithdrawalAttempts(
+              database,
+              admission,
+              payoutConfig.chain,
+              { stores: { keys, archive }, provider: chain },
+            ),
+            recovery: new WithdrawalRecovery(database, { keys, archive }),
+            archive,
+            treasuryKeyId: payoutConfig.chain.treasuryKeyId,
+            config: payoutConfig.scan,
             signals,
-            operation: async () => {
-              const observed = await reconciliation.reconcile(attempt.sweepId);
-              signals.observe(
-                "UNRESOLVED_ATTEMPT",
-                observed?.state === "UNKNOWN",
-                { processKind: "SIGNER", attemptId: attempt.id },
-              );
-              if (
-                observed !== null &&
-                ["SIGNED", "SUBMITTED", "UNKNOWN"].includes(observed.state) &&
-                observed.expiration !== null &&
-                observed.expiration > BigInt(Date.now()) &&
-                observed.attemptCount < provider.maximumAttempts &&
-                !isStopping()
-              )
-                await treasury.broadcast(attempt.sweepId);
-            },
+            clock: () => new Date(),
           });
-        }
-        if (!isStopping()) {
-          const requested = await readDueTreasurySweeps(database, new Date());
-          for (const sweep of requested) {
+    let lastCustodyScan = -Infinity;
+    while (!isStopping()) {
+      if (performance.now() - lastCustodyScan >= 1000) {
+        lastCustodyScan = performance.now();
+        try {
+          await inventory.assertInventory();
+          const pending = await database.transferAttempt.findMany({
+            where: {
+              state: { in: ["SIGNED", "SUBMITTED", "UNKNOWN"] },
+              nextAttemptAt: { lte: new Date() },
+            },
+            take: 20,
+            orderBy: [{ nextAttemptAt: "asc" }, { id: "asc" }],
+          });
+          for (const attempt of pending) {
             if (isStopping()) break;
             await runTreasuryOperation({
               database,
-              sweepId: sweep.id,
+              sweepId: attempt.sweepId,
               signals,
               operation: async () => {
-                const signed = await treasury.sign(sweep.id);
-                if (signed.state === "SIGNED" && !isStopping())
-                  await treasury.broadcast(sweep.id);
+                const observed = await reconciliation.reconcile(
+                  attempt.sweepId,
+                );
+                signals.observe(
+                  "UNRESOLVED_ATTEMPT",
+                  observed?.state === "UNKNOWN",
+                  { processKind: "SIGNER", attemptId: attempt.id },
+                );
+                if (
+                  observed !== null &&
+                  ["SIGNED", "SUBMITTED", "UNKNOWN"].includes(observed.state) &&
+                  observed.expiration !== null &&
+                  observed.expiration > BigInt(Date.now()) &&
+                  observed.attemptCount < provider.maximumAttempts &&
+                  !isStopping()
+                )
+                  await treasury.broadcast(attempt.sweepId);
               },
             });
           }
+          if (!isStopping()) {
+            const requested = await readDueTreasurySweeps(database, new Date());
+            for (const sweep of requested) {
+              if (isStopping()) break;
+              await runTreasuryOperation({
+                database,
+                sweepId: sweep.id,
+                signals,
+                operation: async () => {
+                  const signed = await treasury.sign(sweep.id);
+                  if (signed.state === "SIGNED" && !isStopping())
+                    await treasury.broadcast(sweep.id);
+                },
+              });
+            }
+          }
+          if (!isStopping() && (await provisioner.provisionNext()) !== null) {
+            signals.observe("RECOVERY_UNAVAILABLE", false, {
+              processKind: "SIGNER",
+            });
+            signals.observe("EVIDENCE_CONFLICT", false, {
+              processKind: "SIGNER",
+            });
+          }
+          signals.observe("RUNTIME_ADMISSION", false, {
+            processKind: "SIGNER",
+          });
+        } catch (failure) {
+          if (
+            !(failure instanceof AppError) &&
+            !(failure instanceof CustodyStorageError) &&
+            !(failure instanceof TronProviderError) &&
+            !(failure instanceof TreasuryPolicyError)
+          )
+            throw failure;
+          if (
+            failure instanceof AppError &&
+            failure.code === "FINANCIAL_WRITES_FENCED"
+          )
+            signals.observe("RUNTIME_ADMISSION", true, {
+              processKind: "SIGNER",
+              code: failure.code,
+            });
+          else if (failure instanceof CustodyStorageError)
+            signals.observe(
+              failure.code === "CUSTODY_EVIDENCE_CONFLICT"
+                ? "EVIDENCE_CONFLICT"
+                : "RECOVERY_UNAVAILABLE",
+              true,
+              { processKind: "SIGNER", code: failure.code },
+            );
+          else if (
+            failure instanceof TronProviderError &&
+            failure.code === "TRON_IDENTITY_CONFLICT"
+          )
+            signals.observe("EVIDENCE_CONFLICT", true, {
+              processKind: "SIGNER",
+              code: failure.code,
+            });
         }
-        if (!isStopping() && (await provisioner.provisionNext()) !== null) {
-          signals.observe("RECOVERY_UNAVAILABLE", false, {
-            processKind: "SIGNER",
-          });
-          signals.observe("EVIDENCE_CONFLICT", false, {
-            processKind: "SIGNER",
-          });
-        }
-        signals.observe("RUNTIME_ADMISSION", false, { processKind: "SIGNER" });
-      } catch (failure) {
-        if (
-          !(failure instanceof AppError) &&
-          !(failure instanceof CustodyStorageError) &&
-          !(failure instanceof TronProviderError) &&
-          !(failure instanceof TreasuryPolicyError)
-        )
-          throw failure;
-        if (
-          failure instanceof AppError &&
-          failure.code === "FINANCIAL_WRITES_FENCED"
-        )
-          signals.observe("RUNTIME_ADMISSION", true, {
-            processKind: "SIGNER",
-            code: failure.code,
-          });
-        else if (failure instanceof CustodyStorageError)
-          signals.observe(
-            failure.code === "CUSTODY_EVIDENCE_CONFLICT"
-              ? "EVIDENCE_CONFLICT"
-              : "RECOVERY_UNAVAILABLE",
-            true,
-            { processKind: "SIGNER", code: failure.code },
-          );
-        else if (
-          failure instanceof TronProviderError &&
-          failure.code === "TRON_IDENTITY_CONFLICT"
-        )
-          signals.observe("EVIDENCE_CONFLICT", true, {
-            processKind: "SIGNER",
-            code: failure.code,
-          });
       }
+      if (payout !== undefined && !isStopping()) await payout.tick(isStopping);
       try {
-        await delay(1000, undefined, { signal: shutdown.signal });
+        await delay(
+          payout === undefined
+            ? 1000
+            : Math.min(1000, payoutConfig?.scan.scanIntervalMs ?? 1000),
+          undefined,
+          { signal: shutdown.signal },
+        );
       } catch (failure) {
         if (!(failure instanceof Error) || failure.name !== "AbortError")
           throw failure;

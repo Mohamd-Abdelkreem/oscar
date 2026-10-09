@@ -39,12 +39,17 @@ import {
 } from "./testing/identity-fixtures.js";
 import { AuthService } from "./auth.service.js";
 import { EmailService } from "../../infrastructure/email/email.service.js";
+import {
+  admitCleanDisposableFinancialBoot,
+  financialFixtureAdmission,
+} from "../ledger/testing/financial-fixtures.js";
 
 const databaseUrl = process.env["DATABASE_URL"];
 if (databaseUrl === undefined)
   throw new Error("The Testcontainers runtime is required.");
 const connectionUrl = databaseUrl;
 const database = createDatabaseClient(databaseUrl);
+await admitCleanDisposableFinancialBoot(database);
 const password = "test-only-original-password";
 const newPassword = "test-only-replacement-password";
 let passwordHash: string;
@@ -60,6 +65,7 @@ const email = new EmailService(delivery);
 const service = new AuthService(database, email);
 const app = createApp({
   database,
+  financialAdmission: financialFixtureAdmission(database),
   logger: pino({ level: "silent" }),
   emailDelivery: delivery,
 });
@@ -208,6 +214,8 @@ describe("P02 US6 production HTTP cookies", () => {
           WEB_APP_URL: "https://company.test",
           ADMIN_INVITATION_ACCEPT_URL:
             "https://company.test/approved-test-invitation",
+          WITHDRAWAL_ADDRESS_CONFIRM_URL:
+            "https://company.test/employee/account",
           AUTH_COOKIE_SAME_SITE: "lax",
         },
       },

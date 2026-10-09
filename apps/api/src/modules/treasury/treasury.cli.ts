@@ -1,8 +1,17 @@
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { createDatabaseClient } from "@template/database";
-import { requiredCustodySetting } from "../../core/config/custody.config.js";
-import { parseTronSignerEnvironment } from "../../core/config/tron.config.js";
+import {
+  requiredCustodySetting,
+  parseSignerCustodyEnvironment,
+} from "../../core/config/custody.config.js";
+import {
+  parseTronSignerEnvironment,
+  parseTronPayoutEnvironment,
+} from "../../core/config/tron.config.js";
+import { CustodyKeyStorage } from "../../infrastructure/custody/key-storage.js";
+import { SshRecoveryStore } from "../../infrastructure/custody/recovery-store.js";
+import { provisionTreasuryPayoutKey } from "./treasury-payout-key.js";
 import { TronProvider } from "../../infrastructure/tron/tron-provider.js";
 import { TreasuryService, treasuryAuthority } from "./treasury.service.js";
 import { treasuryCommandSchema } from "./treasury.intent.js";
@@ -50,6 +59,30 @@ export async function runTreasuryTool(): Promise<void> {
       return;
     }
     const root = fileURLToPath(new URL("../../../../../", import.meta.url));
+    if (command.operation === "PROVISION_PAYOUT_KEY") {
+      const custody = parseSignerCustodyEnvironment(process.env, root);
+      const key = await provisionTreasuryPayoutKey(
+        database,
+        parseTronPayoutEnvironment(process.env, root),
+        {
+          operatorIdentity,
+          input: command,
+          stores: {
+            keys: new CustodyKeyStorage({
+              storageRoot: custody.storageRoot,
+              currentKeyId: custody.keyId,
+              keyFiles: custody.keyFiles,
+              projectRoot: root,
+            }),
+            archive: new SshRecoveryStore(custody),
+          },
+        },
+      );
+      process.stdout.write(
+        JSON.stringify({ keyRecordId: key.id, state: "RECOVERY_ACKED" }) + "\n",
+      );
+      return;
+    }
     const config = parseTronSignerEnvironment(process.env, root);
     const service = new TreasuryService(database, config, operatorIdentity);
     if (command.operation === "RECONCILE")

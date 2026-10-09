@@ -18,6 +18,7 @@ export const operationEvidence = {
   postings: true,
   openingAllocation: true,
   releaseAllocation: true,
+  settlementAllocation: true,
   audit: { include: { referenceOperation: { select: { walletId: true } } } },
   depositReceipt: {
     include: {
@@ -173,6 +174,15 @@ const expectedMovements = (
         ),
       ].filter((posting) => posting.availableDeltaUnits !== 0n);
     }
+    case "SETTLE": {
+      const allocation = operation.settlementAllocation;
+      if (operation.origin !== "WITHDRAWAL_SETTLEMENT" || allocation === null)
+        return null;
+      return [
+        movement("NON_REFERRAL", 0n, -allocation.nonReferralUnits),
+        movement("REFERRAL", 0n, -allocation.referralUnits),
+      ].filter((posting) => posting.reservedDeltaUnits !== 0n);
+    }
   }
 };
 const checkPostings = (
@@ -302,11 +312,17 @@ const checkOutcome = (
     )
       report({ category: "INVALID_OUTCOME", operationId: operation.id });
   }
-  if (outcome.kind === "RESERVE" || outcome.kind === "RELEASE") {
+  if (
+    outcome.kind === "RESERVE" ||
+    outcome.kind === "RELEASE" ||
+    outcome.kind === "SETTLE"
+  ) {
     const allocation =
       outcome.kind === "RESERVE"
         ? operation.openingAllocation
-        : operation.releaseAllocation;
+        : outcome.kind === "SETTLE"
+          ? operation.settlementAllocation
+          : operation.releaseAllocation;
     if (
       allocation === null ||
       outcome.reservation.id !== allocation.id ||
@@ -326,10 +342,15 @@ const checkAllocation = (
   expected: SourceMovement[] | null,
   report: ReportFault,
 ) => {
-  if (operation.kind !== "RESERVE" && operation.kind !== "RELEASE") {
+  if (
+    operation.kind !== "RESERVE" &&
+    operation.kind !== "RELEASE" &&
+    operation.kind !== "SETTLE"
+  ) {
     if (
       operation.openingAllocation !== null ||
-      operation.releaseAllocation !== null
+      operation.releaseAllocation !== null ||
+      operation.settlementAllocation !== null
     )
       report({ category: "ALLOCATION_MISMATCH", operationId: operation.id });
     return;
@@ -337,9 +358,13 @@ const checkAllocation = (
   const allocation =
     operation.kind === "RESERVE"
       ? operation.openingAllocation
-      : operation.releaseAllocation;
+      : operation.kind === "SETTLE"
+        ? operation.settlementAllocation
+        : operation.releaseAllocation;
   const reference =
-    terms?.kind === "RESERVE" || terms?.kind === "RELEASE"
+    terms?.kind === "RESERVE" ||
+    terms?.kind === "RELEASE" ||
+    terms?.kind === "SETTLE"
       ? terms.reservationId
       : null;
   const invalid =
@@ -352,13 +377,23 @@ const checkAllocation = (
     (operation.kind === "RESERVE"
       ? allocation.openingOperationId !== operation.id ||
         allocation.createdAt.getTime() !== operation.createdAt.getTime()
-      : allocation.releaseOperationId !== operation.id ||
-        allocation.state !== "RELEASED" ||
-        allocation.releasedAt?.getTime() !== operation.createdAt.getTime()) ||
-    (allocation.state === "ACTIVE"
-      ? allocation.releaseOperationId !== null || allocation.releasedAt !== null
-      : allocation.releaseOperationId === null ||
-        allocation.releasedAt === null);
+      : operation.kind === "SETTLE"
+        ? allocation.settlementOperationId !== operation.id ||
+          allocation.state !== "SETTLED" ||
+          allocation.settledAt?.getTime() !== operation.createdAt.getTime()
+        : allocation.releaseOperationId !== operation.id ||
+          allocation.state !== "RELEASED" ||
+          allocation.releasedAt?.getTime() !== operation.createdAt.getTime()) ||
+    (allocation.state === "SETTLED"
+      ? allocation.settlementOperationId === null ||
+        allocation.settledAt === null ||
+        allocation.releaseOperationId !== null ||
+        allocation.releasedAt !== null
+      : allocation.state === "ACTIVE"
+        ? allocation.releaseOperationId !== null ||
+          allocation.releasedAt !== null
+        : allocation.releaseOperationId === null ||
+          allocation.releasedAt === null);
   if (invalid) {
     report({ category: "ALLOCATION_MISMATCH", operationId: operation.id });
     return;

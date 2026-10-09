@@ -50,7 +50,10 @@ const intentFingerprint = (intent: LedgerIntent): string => {
     intent.businessNamespace,
     intent.businessKey,
   ];
-  if (intent.kind !== "RELEASE") consequential.push(intent.amount);
+  if (intent.kind !== "RELEASE" && intent.kind !== "SETTLE")
+    consequential.push(intent.amount);
+  if (intent.kind === "SETTLE")
+    consequential.push(JSON.stringify(intent.withdrawalTerms));
   if (intent.kind === "CREDIT")
     consequential.push(intent.source, intent.origin);
   if (intent.kind === "CREDIT" && intent.grant !== undefined)
@@ -62,7 +65,11 @@ const intentFingerprint = (intent: LedgerIntent): string => {
       intent.reason,
       intent.referenceOperationId,
     );
-  if (intent.kind === "RESERVE" || intent.kind === "RELEASE")
+  if (
+    intent.kind === "RESERVE" ||
+    intent.kind === "RELEASE" ||
+    intent.kind === "SETTLE"
+  )
     consequential.push(intent.reservationId);
   return createHash(HASH_ALGORITHM)
     .update(JSON.stringify(consequential))
@@ -189,6 +196,7 @@ export class LedgerService {
             reserveForWithdrawal: apply,
             releaseReservation: apply,
             correctAvailable: apply,
+            settleReservation: apply,
           };
           let result: T;
           try {
@@ -304,7 +312,11 @@ export class LedgerService {
       amount: formatUsdtAmount(effect.magnitudeUnits),
       walletAfter: mapWalletComponents(effect.after),
     };
-    if (intent.kind === "RESERVE" || intent.kind === "RELEASE") {
+    if (
+      intent.kind === "RESERVE" ||
+      intent.kind === "RELEASE" ||
+      intent.kind === "SETTLE"
+    ) {
       if (effect.allocation === undefined)
         throw new LedgerError("LEDGER_INTERNAL");
       return mapRecordedOutcome({
@@ -312,7 +324,12 @@ export class LedgerService {
         reservation: {
           id: effect.allocation.id,
           allocation: mapSourceAllocation(effect.allocation),
-          state: intent.kind === "RESERVE" ? "ACTIVE" : "RELEASED",
+          state:
+            intent.kind === "RESERVE"
+              ? "ACTIVE"
+              : intent.kind === "SETTLE"
+                ? "SETTLED"
+                : "RELEASED",
         },
       });
     }
@@ -395,7 +412,12 @@ export class LedgerService {
     effect: PlannedEffect,
     result: LedgerReply["result"],
   ): Promise<void> {
-    if (intent.kind !== "RESERVE" && intent.kind !== "RELEASE") return;
+    if (
+      intent.kind !== "RESERVE" &&
+      intent.kind !== "RELEASE" &&
+      intent.kind !== "SETTLE"
+    )
+      return;
     if (effect.allocation === undefined)
       throw new LedgerError("LEDGER_INTERNAL");
     if (intent.kind === "RESERVE") {
@@ -421,9 +443,17 @@ export class LedgerService {
         state: "ACTIVE",
       },
       data: {
-        state: "RELEASED",
-        releaseOperationId: result.operationId,
-        releasedAt: new Date(result.recordedAt),
+        ...(intent.kind === "SETTLE"
+          ? {
+              state: "SETTLED" as const,
+              settlementOperationId: result.operationId,
+              settledAt: new Date(result.recordedAt),
+            }
+          : {
+              state: "RELEASED" as const,
+              releaseOperationId: result.operationId,
+              releasedAt: new Date(result.recordedAt),
+            }),
       },
     });
     if (changed.count !== 1) throw new LedgerError("LEDGER_RESERVATION_CLOSED");

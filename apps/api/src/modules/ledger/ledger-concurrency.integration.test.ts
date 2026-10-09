@@ -11,6 +11,10 @@ import { z } from "zod";
 
 import { LedgerService } from "./ledger.service.js";
 import {
+  withPayoutFixture,
+  withPayoutSigners,
+} from "../withdrawals/testing/withdrawal-payout-fixtures.js";
+import {
   fenceFinancialRuntime,
   FinancialRuntimeAdmission,
   acknowledgeFinancialBoot,
@@ -95,6 +99,82 @@ afterAll(async () => {
   await database.$disconnect();
 });
 describe("ledger competing PostgreSQL connections", () => {
+  it("serializes competing canonical payout observations into one gross settlement and terminal action", async () =>
+    withPayoutFixture(async (fixture) =>
+      withPayoutSigners(fixture, async (first, second) => {
+        await first.sign(fixture.request.id);
+        await first.broadcast(fixture.request.id);
+        const barrier = financialRaceBarrier(2);
+        const canonicalBlock = fixture.provider.transactionBlock;
+        let readers = 0;
+        fixture.provider.transactionBlock = async () => {
+          readers++;
+          await barrier();
+          return canonicalBlock();
+        };
+        let replies;
+        try {
+          replies = await Promise.all([
+            first.reconciliation.observe(fixture.request.id),
+            second.reconciliation.observe(fixture.request.id),
+          ]);
+          expect(readers).toBe(2);
+        } finally {
+          fixture.provider.transactionBlock = canonicalBlock;
+        }
+        expect(replies.map((reply) => reply.state)).toEqual([
+          "COMPLETED",
+          "COMPLETED",
+        ]);
+        expect(
+          await fixture.database.financialOperation.count({
+            where: { kind: "SETTLE", businessKey: fixture.request.id },
+          }),
+        ).toBe(1);
+        expect(
+          await fixture.database.ledgerPosting.count({
+            where: {
+              operation: { kind: "SETTLE", businessKey: fixture.request.id },
+            },
+          }),
+        ).toBe(2);
+        expect(
+          await fixture.database.withdrawalAction.count({
+            where: { kind: "COMPLETE", requestId: fixture.request.id },
+          }),
+        ).toBe(1);
+        expect(
+          await fixture.database.reservationAllocation.findUniqueOrThrow({
+            where: { id: fixture.request.reservationId },
+          }),
+        ).toMatchObject({ state: "SETTLED" });
+        expect(
+          await fixture.database.withdrawalAttempt.findUniqueOrThrow({
+            where: { withdrawalId: fixture.request.id },
+          }),
+        ).toMatchObject({
+          state: "CONFIRMED_SUCCESS",
+          recipient: fixture.request.recipient,
+          transactionId: fixture.sent[0]?.txID,
+          netUnits: 79000000n,
+        });
+        expect(
+          await fixture.database.withdrawalAttempt.count({
+            where: {
+              treasuryKeyId: fixture.key.id,
+              state: { notIn: ["CONFIRMED_SUCCESS", "CHAIN_FAILED"] },
+            },
+          }),
+        ).toBe(0);
+        expect(
+          await fixture.database.financialOperation.count({
+            where: { kind: "RELEASE" },
+          }),
+        ).toBe(0);
+        expect(fixture.built()).toBe(1);
+        expect(fixture.sent).toHaveLength(1);
+      }),
+    ));
   it("separates financial admission from signer dispatch pause and rejects incomplete recovery evidence", async () => {
     await withAdmittedFinancialDatabase(async (isolated) => {
       const signer = new FinancialRuntimeAdmission(isolated, "SIGNER");

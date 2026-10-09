@@ -25,6 +25,9 @@ import {
   P04_FIXTURE_NOW,
 } from "../subscriptions/testing/subscription-fixtures.js";
 import { WalletsService } from "./wallets.service.js";
+import { withPayoutFixture } from "../withdrawals/testing/withdrawal-payout-fixtures.js";
+import { withWithdrawalRole } from "../withdrawals/testing/withdrawal-authority-fixtures.js";
+import { WithdrawalsService } from "../withdrawals/withdrawals.service.js";
 import { TaskReviewService } from "../task-submissions/task-review.service.js";
 import { acceptedReviewFixture } from "../task-submissions/testing/review-fixtures.js";
 import {
@@ -36,11 +39,123 @@ import { PurchaseQuoteService } from "../subscriptions/purchase-quote.service.js
 import { SubscriptionPurchaseService } from "../subscriptions/subscription-purchase.service.js";
 import { ManualCreditService } from "../deposits/manual-credit.service.js";
 import {
+  reservationEmployee,
+  reservationServices,
+  RESERVATION_NOW,
+} from "../withdrawals/testing/withdrawal-reservation-fixtures.js";
+import {
   depositIdentity,
   manualGrant,
 } from "../deposits/testing/deposit-http-fixtures.js";
 
 describe("source-aware wallet projections", () => {
+  it("shows and searches a full original settlement through actual API grants without exposing private authority", async () =>
+    withPayoutFixture(async (fixture) => {
+      await fixture.attempts().sign(fixture.request.id);
+      await fixture.attempts().broadcast(fixture.request.id);
+      const completed = await fixture
+        .attempts()
+        .reconciliation.observe(fixture.request.id);
+      if (completed.settlementOperationId === null)
+        throw new Error("Expected settlement identity");
+      const operationId = completed.settlementOperationId;
+      const admin = await createIdentityFixture(fixture.database, {
+        role: "ADMIN",
+      });
+      await withWithdrawalRole(
+        {
+          database: fixture.database,
+          databaseUrl: fixture.databaseUrl,
+          role: "p06_api",
+        },
+        async (api) => {
+          const wallets = new WalletsService(api);
+          const detail = await wallets.detail(
+            fixture.employee.identity,
+            operationId,
+          );
+          expect(detail).toMatchObject({
+            kind: "SETTLE",
+            origin: "WITHDRAWAL_SETTLEMENT",
+            direction: "DEBIT",
+            magnitude: "100",
+            signedOwnershipDelta: "-100",
+            savedTerms: null,
+            withdrawalTerms: {
+              gross: "100",
+              fee: "21",
+              net: "79",
+              transactionId: fixture.sent[0]?.txID,
+              sourceAllocation: {
+                nonReferral: "70",
+                referral: "30",
+                gross: "100",
+              },
+            },
+          });
+          expect(await wallets.wallet(fixture.employee.identity)).toMatchObject(
+            { withdrawalExecutionReady: false },
+          );
+          const finance = await wallets.finance(
+            { userId: admin.user.id, sessionId: admin.session.id },
+            { q: "سحب مكتمل", employeeId: fixture.employee.user.id },
+          );
+          expect(finance.items).toHaveLength(1);
+          expect(finance.summary).toMatchObject({
+            debits: "100",
+            credits: "0",
+            net: "-100",
+          });
+          const history = await new WithdrawalsService(
+            api,
+            () => new Date(),
+          ).history(fixture.employee.identity, {});
+          expect(history.items[0]).toMatchObject({
+            state: "COMPLETED",
+            transactionId: detail.withdrawalTerms?.transactionId,
+            settlement: detail.withdrawalTerms,
+          });
+          expect(JSON.stringify(history)).not.toMatch(
+            /signedDigest|unsignedDigest|privateKey|policySnapshot|envelopeId|recoveryAckId/u,
+          );
+          await expect(api.withdrawalAttempt.findMany()).rejects.toThrow();
+          await expect(api.treasuryPayoutKey.findMany()).rejects.toThrow();
+        },
+      );
+    }));
+  it("exposes accepted gross reservation provenance without making it spendable or enabling execution", async () =>
+    withSubscriptionDatabase(async (database) => {
+      const owner = await reservationEmployee(database, {
+        paid: true,
+        nonReferral: "70",
+        referral: "30",
+      });
+      const services = reservationServices(database);
+      const quote = await services.quotes.create(owner.identity, {
+        gross: "80",
+      });
+      await services.reservations.accept(owner.identity, {
+        quoteId: quote.quoteId,
+        confirmed: true,
+      });
+      const wallets = new WalletsService(database, () => RESERVATION_NOW);
+      const projection = await wallets.wallet(owner.identity);
+      expect(projection).toMatchObject({
+        purchaseEligibleAmount: "20",
+        withdrawalFunds: {
+          eligibleNonReferral: "0",
+          eligibleReferral: "20",
+          total: "20",
+        },
+        withdrawalExecutionReady: false,
+      });
+      expect(projection.walletComponents).toMatchObject({
+        availableReferral: "20",
+        reservedReferral: "10",
+        availableNonReferral: "0",
+        reservedNonReferral: "70",
+      });
+    }));
   it("projects administrative grants as CREDIT with correction null and retains referral/reserved provenance", async () =>
     withSubscriptionDatabase(async (database) => {
       const employee = await createIdentityFixture(database);

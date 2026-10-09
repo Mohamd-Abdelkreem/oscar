@@ -208,4 +208,26 @@ describe("Baghdad business boundaries", () => {
       RangeError,
     );
   });
+  it("adds extension duration to counted remaining time without counting the weekend", () => {
+    const now = "2026-10-02T23:30:00+03:00";
+    const due = "2026-10-03T00:00:00+03:00";
+    const extended = clock.extendDeadline(due, "0.500005");
+    expect(clock.remainingCountedMilliseconds(now, due)).toBe(1800000n);
+    expect(clock.remainingCountedMilliseconds(now, extended)).toBe(3600018n);
+    expect(extended).toBe("2026-10-04T21:30:00.018Z");
+    expect(new Date(extended).getTime() - new Date(due).getTime()).toBe(
+      174600018,
+    );
+  });
+  it.each([
+    ["2026-10-02T12:00:00+03:00", "2026-10-07T12:00:00+03:00", 259200000n],
+    ["2026-10-03T12:00:00+03:00", "2026-10-05T00:00:00+03:00", 0n],
+    ["2026-10-08T09:00:00.000Z", "2026-10-08T09:00:00.001Z", 1n],
+    ["2026-10-08T09:00:00.001Z", "2026-10-08T09:00:00.000Z", 0n],
+  ])(
+    "counts remaining weekday milliseconds from %s through %s",
+    (now, due, expected) => {
+      expect(clock.remainingCountedMilliseconds(now, due)).toBe(expected);
+    },
+  );
 });

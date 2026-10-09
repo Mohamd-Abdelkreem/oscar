@@ -16,6 +16,12 @@ import { DepositCreditService } from "./modules/deposits/deposit-credit.service.
 import { DepositVerifier } from "./modules/deposits/deposit-verifier.js";
 import { DepositIndexer } from "./modules/deposits/deposit-indexer.js";
 import { DepositReconciliation } from "./modules/deposits/deposit-reconciliation.js";
+import { parseWithdrawalQueueEnvironment } from "./core/config/withdrawal.config.js";
+import {
+  WithdrawalWakeups,
+  WithdrawalWakeupConsumer,
+} from "./infrastructure/queue/withdrawal-wakeups.js";
+import { WithdrawalScheduler } from "./modules/withdrawals/withdrawal-scheduler.js";
 
 export async function runDepositWorker(): Promise<void> {
   if (process.platform !== "linux" || process.argv.length !== 2)
@@ -35,6 +41,8 @@ export async function runDepositWorker(): Promise<void> {
   process.on("SIGINT", stop);
   const clock = () => new Date();
   const signals = new RuntimeSignals(logger, clock);
+  let wakeups: WithdrawalWakeups | undefined;
+  let consumer: WithdrawalWakeupConsumer | undefined;
   try {
     await database.$connect();
     await assertRuntimeDatabaseAuthority(database, "p06_deposit_worker");
@@ -60,6 +68,18 @@ export async function runDepositWorker(): Promise<void> {
       clock,
     });
     const reconciliation = new DepositReconciliation(database, verifier);
+    const withdrawalQueueConfig = parseWithdrawalQueueEnvironment(process.env);
+    wakeups = new WithdrawalWakeups(withdrawalQueueConfig);
+    const withdrawals = new WithdrawalScheduler(
+      database,
+      admission,
+      clock,
+      withdrawalQueueConfig.batchSize,
+    );
+    consumer = new WithdrawalWakeupConsumer(withdrawalQueueConfig, (payload) =>
+      stopping() ? Promise.resolve(false) : withdrawals.discover(payload),
+    );
+    let nextWithdrawalScanAt = 0;
     let after: string | undefined;
     let receiptsReconciled = false;
     let startupReconciled = false;
@@ -89,6 +109,11 @@ export async function runDepositWorker(): Promise<void> {
             if (!(await indexer.accountNext())) break;
           await indexer.observeHealth(signals);
         }
+        if (!stopping() && clock().getTime() >= nextWithdrawalScanAt) {
+          await withdrawals.repair(wakeups, stopping);
+          nextWithdrawalScanAt =
+            clock().getTime() + withdrawalQueueConfig.scanIntervalMs;
+        }
         signals.observe("RUNTIME_ADMISSION", false, {
           processKind: "DEPOSIT_WORKER",
         });
@@ -115,7 +140,15 @@ export async function runDepositWorker(): Promise<void> {
   } finally {
     process.off("SIGTERM", stop);
     process.off("SIGINT", stop);
-    await database.$disconnect();
+    try {
+      await consumer?.close();
+    } finally {
+      try {
+        await wakeups?.close();
+      } finally {
+        await database.$disconnect();
+      }
+    }
   }
 }
 if (

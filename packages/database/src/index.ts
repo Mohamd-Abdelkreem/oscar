@@ -26,6 +26,14 @@ export {
   FinancialProcessKind,
 } from "./generated/prisma/client.js";
 export type {
+  TreasuryPayoutKey,
+  WithdrawalAttempt,
+  WithdrawalDestination,
+  WithdrawalDestinationAudit,
+  WithdrawalPolicy,
+  WithdrawalQuote,
+  WithdrawalRequest,
+  WithdrawalAction,
   PrismaClient,
   RefreshToken,
   User,

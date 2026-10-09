@@ -58,6 +58,11 @@ const contextSchema = z
         (candidate) => typeof candidate === "function",
       )
       .optional(),
+    settlementSafety: z
+      .custom<NonNullable<LedgerContext["settlementSafety"]>>(
+        (candidate) => typeof candidate === "function",
+      )
+      .optional(),
   })
   .strict();
 
@@ -88,6 +93,9 @@ export const validateLedgerContext = (
     ...(context.releaseSafety === undefined
       ? {}
       : { releaseSafety: context.releaseSafety }),
+    ...(context.settlementSafety === undefined
+      ? {}
+      : { settlementSafety: context.settlementSafety }),
   };
 };
 
@@ -110,7 +118,7 @@ export const checkActorAccount = (
 const lockParticipants = async (
   transaction: Prisma.TransactionClient,
   context: LedgerContext,
-): Promise<User[]> => {
+): Promise<{ participantIds: string[]; actorAccounts: User[] }> => {
   const walletIds = [...new Set(context.walletIds)].sort();
   const owners = await transaction.wallet.findMany({
     where: { id: { in: walletIds } },
@@ -138,7 +146,12 @@ const lockParticipants = async (
   await transaction.$queryRaw(
     Prisma.sql`SELECT id FROM reservation_allocations WHERE wallet_id IN (${Prisma.join(walletIds.map((id) => Prisma.sql`${id}::uuid`))}) ORDER BY id FOR UPDATE`,
   );
-  return transaction.user.findMany({ where: { id: { in: accountIds } } });
+  // Process actors have no actor account; participant locks still serialize employee authority.
+  const actorAccounts =
+    context.actor.type === "PROCESS"
+      ? []
+      : await transaction.user.findMany({ where: { id: { in: accountIds } } });
+  return { participantIds: accountIds, actorAccounts };
 };
 
 export type LockedLedgerTransaction = {
@@ -160,8 +173,8 @@ const runLockedLedgerTransaction = async <T>(
       return await database.$transaction(
         async (transaction) => {
           await admission?.assertMutationAdmission(transaction);
-          const accounts = await lockParticipants(transaction, context);
-          checkActorAccount(context, accounts);
+          const participants = await lockParticipants(transaction, context);
+          checkActorAccount(context, participants.actorAccounts);
           let active = true;
           const assertActive = () => {
             if (!active) throw new LedgerError("LEDGER_INVALID_TRANSACTION");
@@ -175,9 +188,7 @@ const runLockedLedgerTransaction = async <T>(
             });
             if (
               walletRecord === null ||
-              !accounts.some(
-                (account) => account.id === walletRecord.ownerUserId,
-              )
+              !participants.participantIds.includes(walletRecord.ownerUserId)
             )
               throw new LedgerError("LEDGER_FORBIDDEN");
             return walletRecord;

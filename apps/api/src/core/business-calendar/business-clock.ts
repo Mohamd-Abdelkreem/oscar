@@ -160,6 +160,24 @@ export class BusinessClock {
     return this.extendDeadline(acceptedAt, INITIAL_WITHDRAWAL_COUNTED_HOURS);
   }
 
+  remainingCountedMilliseconds(observedAt: unknown, deadline: unknown): bigint {
+    let cursor = baghdadInstant(observedAt);
+    const end = baghdadInstant(deadline);
+    if (cursor >= end) return 0n;
+    let remaining = 0n;
+    while (cursor < end) {
+      if (!isWorkday(cursor)) {
+        cursor = nextWorkdayStart(cursor);
+        continue;
+      }
+      const next = cursor.plus({ days: 1 }).startOf("day");
+      const stop = next < end ? next : end;
+      remaining += BigInt(stop.toMillis() - cursor.toMillis());
+      cursor = stop;
+    }
+    return remaining;
+  }
+
   extendDeadline(existingDeadline: unknown, countedHours: unknown): string {
     let cursor = baghdadInstant(existingDeadline);
     const duration = countedHoursToMilliseconds(countedHours);

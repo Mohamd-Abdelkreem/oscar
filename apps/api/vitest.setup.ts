@@ -19,6 +19,8 @@ process.env["WEB_APP_URL"] = "http://localhost:3000";
 // Test-only mail destination; this is not a frontend route or production approval.
 process.env["ADMIN_INVITATION_ACCEPT_URL"] =
   "http://localhost:3000/test-only-invitation";
+process.env["WITHDRAWAL_ADDRESS_CONFIRM_URL"] =
+  "http://localhost:3000/employee/account";
 process.env["MAIL_FROM_ADDRESS"] = "no-reply@example.com";
 process.env["AUTH_LIMIT_LOGIN_PER_15_MIN"] = "100";
 process.env["AUTH_LIMIT_LOGIN_PER_15_MIN_ACCOUNT"] = "100";

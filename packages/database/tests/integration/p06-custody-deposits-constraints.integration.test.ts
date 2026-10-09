@@ -628,10 +628,22 @@ describe("P06 persisted custody and credit invariants", () => {
             [bootId],
           ),
         ).rejects.toMatchObject({ constraint: "ck_p06_admission_binding" });
-        await connection.query(
-          "UPDATE financial_runtime_admissions SET acknowledged_generation=1,acknowledged_at=now(),operator_identity='test-recovery',evidence_reference='clean-test-evidence' WHERE boot_id=$1",
-          [bootId],
-        );
+        // SQL authority accepts only the operator's current inventory stamp after P08.
+        // Cryptographic/archive verification before issuing that stamp is covered by the recovery CLI tests.
+        await connection.query("BEGIN");
+        try {
+          await connection.query(
+            "SELECT set_config('p08.verified_inventory',p08_recovery_fingerprint(),true)",
+          );
+          await connection.query(
+            "UPDATE financial_runtime_admissions SET acknowledged_generation=1,acknowledged_at=now(),operator_identity='test-recovery',evidence_reference='clean-test-evidence' WHERE boot_id=$1",
+            [bootId],
+          );
+          await connection.query("COMMIT");
+        } catch (error) {
+          await connection.query("ROLLBACK");
+          throw error;
+        }
       } finally {
         await connection.query("RESET ROLE");
         connection.release();

@@ -2,10 +2,18 @@ import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import { z } from "zod";
 import { CustodyStorageError } from "./protected-files.js";
 
+export const recoveryRecordTypeSchema = z.enum([
+  "KEY_ASSIGNMENT",
+  "SIGNED_ATTEMPT",
+  "BROADCAST_INTENT",
+  "TREASURY_KEY",
+  "PAYOUT_SIGNED_ATTEMPT",
+  "PAYOUT_BROADCAST_INTENT",
+]);
 export const recoveryEnvelopeSchema = z
   .object({
     format: z.literal(1),
-    type: z.enum(["KEY_ASSIGNMENT", "SIGNED_ATTEMPT", "BROADCAST_INTENT"]),
+    type: recoveryRecordTypeSchema,
     objectId: z.uuid(),
     version: z.number().int().min(1).max(2147483647),
     keyId: z.string().regex(/^[A-Za-z0-9._-]{1,64}$/u),

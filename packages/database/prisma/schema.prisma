@@ -7,6 +7,251 @@ datasource db {
   provider = "postgresql"
 }
 
+model TreasuryPayoutKey {
+  id                     String              @id @db.Uuid
+  network                TronNetwork
+  tokenContract          String              @map("token_contract") @db.VarChar(34)
+  source                 String              @db.VarChar(34)
+  envelopeId             String              @unique @map("envelope_id") @db.Uuid
+  envelopeDigest         String              @map("envelope_digest") @db.Char(64)
+  recoveryAckId          String              @map("recovery_ack_id") @db.Uuid
+  recoveryDigest         String              @map("recovery_digest") @db.Char(64)
+  recoveryAcknowledgedAt DateTime            @map("recovery_acknowledged_at") @db.Timestamptz(6)
+  operatorIdentity       String              @map("operator_identity") @db.VarChar(160)
+  reason                 String              @db.VarChar(500)
+  createdAt              DateTime            @map("created_at") @db.Timestamptz(6)
+  lastFinalBlockNumber   BigInt              @default(0) @map("last_final_block_number")
+  attempts               WithdrawalAttempt[]
+
+  @@unique([network, tokenContract, source])
+  @@map("treasury_payout_keys")
+}
+
+model WithdrawalAttempt {
+  id                      String            @id @db.Uuid
+  withdrawalId            String            @unique @map("withdrawal_id") @db.Uuid
+  employeeId              String            @map("employee_id") @db.Uuid
+  walletId                String            @map("wallet_id") @db.Uuid
+  treasuryKeyId           String            @map("treasury_key_id") @db.Uuid
+  network                 TronNetwork
+  tokenContract           String            @map("token_contract") @db.VarChar(34)
+  source                  String            @db.VarChar(34)
+  recipient               String            @db.VarChar(34)
+  addressVersion          Int               @map("address_version")
+  grossUnits              BigInt            @map("gross_units")
+  feeUnits                BigInt            @map("fee_units")
+  netUnits                BigInt            @map("net_units")
+  termsHash               String            @map("terms_hash") @db.Char(64)
+  intentHash              String            @map("intent_hash") @db.Char(64)
+  policySnapshot          Json              @map("policy_snapshot")
+  initialFloorNumber      BigInt            @map("initial_floor_number")
+  initialFloorId          String            @map("initial_floor_id") @db.Char(64)
+  transactionId           String?           @map("transaction_id") @db.Char(64)
+  unsignedRecordId        String?           @map("unsigned_record_id") @db.Uuid
+  unsignedDigest          String?           @map("unsigned_digest") @db.Char(64)
+  expiration              BigInt?
+  preparedAt              DateTime?         @map("prepared_at") @db.Timestamptz(6)
+  signedRecordId          String?           @map("signed_record_id") @db.Uuid
+  signedDigest            String?           @map("signed_digest") @db.Char(64)
+  signedAckId             String?           @map("signed_ack_id") @db.Uuid
+  signedAcknowledgedAt    DateTime?         @map("signed_acknowledged_at") @db.Timestamptz(6)
+  signedAt                DateTime?         @map("signed_at") @db.Timestamptz(6)
+  broadcastIntentId       String?           @map("broadcast_intent_id") @db.Uuid
+  broadcastAdmittedAt     DateTime?         @map("broadcast_admitted_at") @db.Timestamptz(6)
+  broadcastDigest         String?           @map("broadcast_digest") @db.Char(64)
+  broadcastAckId          String?           @map("broadcast_ack_id") @db.Uuid
+  broadcastAcknowledgedAt DateTime?         @map("broadcast_acknowledged_at") @db.Timestamptz(6)
+  finalEvidence           Json?             @map("final_evidence")
+  finalBlockNumber        BigInt?           @map("final_block_number")
+  finalBlockId            String?           @map("final_block_id") @db.Char(64)
+  finalizedAt             DateTime?         @map("finalized_at") @db.Timestamptz(6)
+  state                   String            @default("PREPARING") @db.VarChar(24)
+  version                 Int               @default(1)
+  nextCheckAt             DateTime          @map("next_check_at") @db.Timestamptz(6)
+  blocker                 String?           @db.VarChar(32)
+  createdAt               DateTime          @map("created_at") @db.Timestamptz(6)
+  request                 WithdrawalRequest @relation(fields: [withdrawalId, employeeId, walletId], references: [id, employeeId, walletId], onDelete: Restrict, onUpdate: Restrict)
+  key                     TreasuryPayoutKey @relation(fields: [treasuryKeyId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([withdrawalId, employeeId, walletId])
+  @@unique([network, transactionId])
+  @@index([state, nextCheckAt, id])
+  @@map("withdrawal_attempts")
+}
+
+model WithdrawalDestination {
+  id                     String                       @id @default(uuid()) @db.Uuid
+  employeeId             String                       @unique @map("employee_id") @db.Uuid
+  network                TronNetwork
+  address                String?                      @db.VarChar(34)
+  addressVersion         Int?                         @map("address_version")
+  confirmedAt            DateTime?                    @map("confirmed_at") @db.Timestamptz(6)
+  proofId                String?                      @unique @map("proof_id") @db.Uuid
+  proofHash              String?                      @unique @map("proof_hash") @db.Char(64)
+  pendingAddress         String?                      @map("pending_address") @db.VarChar(34)
+  proofGeneration        Int                          @default(0) @map("proof_generation")
+  issuedAt               DateTime?                    @map("issued_at") @db.Timestamptz(6)
+  expiresAt              DateTime?                    @map("expires_at") @db.Timestamptz(6)
+  nextIssuanceAt         DateTime?                    @map("next_issuance_at") @db.Timestamptz(6)
+  deliveryStatus         String                       @default("NOT_ATTEMPTED") @map("delivery_status") @db.VarChar(16)
+  deliveryAttemptedAt    DateTime?                    @map("delivery_attempted_at") @db.Timestamptz(6)
+  deliveryAcknowledgedAt DateTime?                    @map("delivery_acknowledged_at") @db.Timestamptz(6)
+  deliveryFailureCode    String?                      @map("delivery_failure_code") @db.VarChar(32)
+  version                Int                          @default(1)
+  updatedAt              DateTime                     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  employee               User                         @relation(fields: [employeeId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  audits                 WithdrawalDestinationAudit[]
+  quotes                 WithdrawalQuote[]
+  requests               WithdrawalRequest[]
+
+  @@unique([id, employeeId])
+  @@map("withdrawal_destinations")
+}
+
+model WithdrawalDestinationAudit {
+  id                          String                @id @default(uuid()) @db.Uuid
+  destinationId               String                @map("destination_id") @db.Uuid
+  actorUserId                 String                @map("actor_user_id") @db.Uuid
+  kind                        String                @db.VarChar(16)
+  proofId                     String                @map("proof_id") @db.Uuid
+  proofGeneration             Int                   @map("proof_generation")
+  network                     TronNetwork
+  address                     String                @db.VarChar(34)
+  occurredAt                  DateTime              @map("occurred_at") @db.Timestamptz(6)
+  committedDestinationVersion Int                   @map("committed_destination_version")
+  destination                 WithdrawalDestination @relation(fields: [destinationId, actorUserId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([destinationId, proofGeneration, kind])
+  @@unique([destinationId, committedDestinationVersion])
+  @@map("withdrawal_destination_audits")
+}
+
+model WithdrawalPolicy {
+  id                Int      @id @default(1)
+  minimumGrossUnits BigInt   @map("minimum_gross_units")
+  maximumGrossUnits BigInt   @map("maximum_gross_units")
+  freeFeeBps        Int      @map("free_fee_bps")
+  version           Int      @default(1)
+  updatedAt         DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedByUserId   String?  @map("updated_by_user_id") @db.Uuid
+  updatedBy         User?    @relation(fields: [updatedByUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("withdrawal_policy")
+}
+
+model WithdrawalQuote {
+  id                        String                @id @default(uuid()) @db.Uuid
+  employeeId                String                @map("employee_id") @db.Uuid
+  walletId                  String                @map("wallet_id") @db.Uuid
+  destinationId             String                @map("destination_id") @db.Uuid
+  addressVersion            Int                   @map("address_version")
+  network                   TronNetwork
+  recipient                 String                @db.VarChar(34)
+  policyVersion             Int                   @map("policy_version")
+  createdAt                 DateTime              @map("created_at") @db.Timestamptz(6)
+  expiresAt                 DateTime              @map("expires_at") @db.Timestamptz(6)
+  grossUnits                BigInt                @map("gross_units")
+  feeBps                    Int                   @map("fee_bps")
+  feeUnits                  BigInt                @map("fee_units")
+  netUnits                  BigInt                @map("net_units")
+  termsHash                 String                @map("terms_hash") @db.Char(64)
+  quotedTerms               Json                  @map("quoted_terms")
+  eligibilitySnapshot       Json                  @map("eligibility_snapshot")
+  availableNonReferralUnits BigInt                @map("available_non_referral_units")
+  availableReferralUnits    BigInt                @map("available_referral_units")
+  fundedNonReferralUnits    BigInt                @map("funded_non_referral_units")
+  fundedReferralUnits       BigInt                @map("funded_referral_units")
+  requiredTopUpUnits        BigInt                @map("required_top_up_units")
+  canAccept                 Boolean               @map("can_accept")
+  blockReason               String?               @map("block_reason") @db.VarChar(32)
+  previewDueAt              DateTime              @map("preview_due_at") @db.Timestamptz(6)
+  previewDispatchAt         DateTime              @map("preview_dispatch_at") @db.Timestamptz(6)
+  wallet                    Wallet                @relation(fields: [walletId, employeeId], references: [id, ownerUserId], onDelete: Restrict, onUpdate: Restrict)
+  destination               WithdrawalDestination @relation(fields: [destinationId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  request                   WithdrawalRequest?
+
+  @@unique([id, employeeId, walletId])
+  @@map("withdrawal_quotes")
+}
+
+model WithdrawalRequest {
+  id                    String                @id @default(uuid()) @db.Uuid
+  quoteId               String                @unique @map("quote_id") @db.Uuid
+  employeeId            String                @map("employee_id") @db.Uuid
+  walletId              String                @map("wallet_id") @db.Uuid
+  reservationId         String                @unique @map("reservation_id") @db.Uuid
+  destinationId         String                @map("destination_id") @db.Uuid
+  network               TronNetwork
+  recipient             String                @db.VarChar(34)
+  addressVersion        Int                   @map("address_version")
+  grossUnits            BigInt                @map("gross_units")
+  feeBps                Int                   @map("fee_bps")
+  feeUnits              BigInt                @map("fee_units")
+  netUnits              BigInt                @map("net_units")
+  acceptedTerms         Json                  @map("accepted_terms")
+  termsHash             String                @map("terms_hash") @db.Char(64)
+  eligibilitySnapshot   Json                  @map("eligibility_snapshot")
+  nonReferralUnits      BigInt                @map("non_referral_units")
+  referralUnits         BigInt                @map("referral_units")
+  acceptedAt            DateTime              @map("accepted_at") @db.Timestamptz(6)
+  originalDueAt         DateTime              @map("original_due_at") @db.Timestamptz(6)
+  schedulePolicy        Json                  @map("schedule_policy")
+  state                 String                @default("SCHEDULED") @db.VarChar(16)
+  version               Int                   @default(1)
+  dueAt                 DateTime              @map("due_at") @db.Timestamptz(6)
+  dispatchAt            DateTime              @map("dispatch_at") @db.Timestamptz(6)
+  scheduleVersion       Int                   @default(1) @map("schedule_version")
+  nextCheckAt           DateTime?             @map("next_check_at") @db.Timestamptz(6)
+  blocker               String?               @db.VarChar(32)
+  finalizedAt           DateTime?             @map("finalized_at") @db.Timestamptz(6)
+  releaseOperationId    String?               @unique @map("release_operation_id") @db.Uuid
+  quote                 WithdrawalQuote       @relation(fields: [quoteId, employeeId, walletId], references: [id, employeeId, walletId], onDelete: Restrict, onUpdate: Restrict)
+  reservation           ReservationAllocation @relation(fields: [reservationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  destination           WithdrawalDestination @relation(fields: [destinationId, employeeId], references: [id, employeeId], onDelete: Restrict, onUpdate: Restrict)
+  releaseOperation      FinancialOperation?   @relation("WithdrawalRelease", fields: [releaseOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  settlementOperationId String?               @unique @map("settlement_operation_id") @db.Uuid
+  settlementOperation   FinancialOperation?   @relation("WithdrawalSettlement", fields: [settlementOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  attempt               WithdrawalAttempt?
+  actions               WithdrawalAction[]
+
+  @@unique([quoteId, employeeId, walletId])
+  @@unique([reservationId, walletId])
+  @@unique([id, employeeId, walletId])
+  @@index([state, dispatchAt, nextCheckAt])
+  @@index([employeeId, acceptedAt(sort: Desc), id(sort: Desc)])
+  @@map("withdrawal_requests")
+}
+
+model WithdrawalAction {
+  id                    String              @id @default(uuid()) @db.Uuid
+  requestId             String              @map("request_id") @db.Uuid
+  actorUserId           String?             @map("actor_user_id") @db.Uuid
+  actorProcessId        String?             @map("actor_process_id") @db.VarChar(64)
+  actorScope            String              @map("actor_scope") @db.VarChar(72)
+  kind                  String              @db.VarChar(32)
+  requestKey            String?             @map("request_key") @db.VarChar(128)
+  intentHash            String              @map("intent_hash") @db.Char(64)
+  expectedVersion       Int                 @map("expected_version")
+  committedVersion      Int                 @map("committed_version")
+  occurredAt            DateTime            @map("occurred_at") @db.Timestamptz(6)
+  beforeState           String?             @map("before_state") @db.VarChar(16)
+  afterState            String              @map("after_state") @db.VarChar(16)
+  beforeDueAt           DateTime?           @map("before_due_at") @db.Timestamptz(6)
+  afterDueAt            DateTime            @map("after_due_at") @db.Timestamptz(6)
+  beforeScheduleVersion Int?                @map("before_schedule_version")
+  afterScheduleVersion  Int                 @map("after_schedule_version")
+  confirmed             Boolean             @default(false)
+  reason                String?             @db.VarChar(500)
+  financialOperationId  String?             @map("financial_operation_id") @db.Uuid
+  request               WithdrawalRequest   @relation(fields: [requestId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  actor                 User?               @relation(fields: [actorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  financialOperation    FinancialOperation? @relation(fields: [financialOperationId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([requestId, committedVersion])
+  @@unique([actorScope, kind, requestKey])
+  @@map("withdrawal_actions")
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -45,42 +290,45 @@ model User {
   withdrawalsBlocked         Boolean    @default(false) @map("withdrawals_blocked")
   accountVersion             Int        @default(0) @map("account_version")
 
-  refreshTokens           RefreshToken[]
-  wallet                  Wallet?
-  financialOperations     FinancialOperation[]       @relation("FinancialActor")
-  financialAudits         AuditRecord[]              @relation("AuditActor")
-  sponsor                 User?                      @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sponsoredUsers          User[]                     @relation("Sponsor")
-  authSessions            AuthSession[]
-  adminSetupState         AdminSetupState?
-  issuedInvitations       AdminInvitation[]          @relation("InvitationIssuer")
-  acceptedInvitations     AdminInvitation[]          @relation("InvitationAcceptedUser")
-  revokedInvitations      AdminInvitation[]          @relation("InvitationRevokedBy")
-  identityActorAudits     IdentityAuditRecord[]      @relation("IdentityActor")
-  identityTargetAudits    IdentityAuditRecord[]      @relation("IdentityTarget")
-  identityIssuerAudits    IdentityAuditRecord[]      @relation("IdentityIssuer")
-  updatedPackages         Package[]                  @relation("PackageEditor")
-  updatedReferralSettings ReferralSettings[]
-  configurationChanges    ConfigurationChange[]
-  purchaseQuotes          PurchaseQuote[]
-  purchases               Purchase[]
-  subscriptions           Subscription[]
-  referralDecisions       ReferralDecision[]
-  createdTasks            Task[]                     @relation("TaskCreator")
-  updatedTasks            Task[]                     @relation("TaskEditor")
-  createdTaskCodes        TaskCode[]                 @relation("TaskCodeCreator")
-  updatedTaskCodes        TaskCode[]                 @relation("TaskCodeEditor")
-  taskUnlocks             TaskUnlock[]
-  imageAssets             ImageAsset[]
-  taskSubmissions         TaskSubmission[]
-  submissionEvidence      SubmissionEvidence[]       @relation("EvidenceOwner")
-  acceptedEvidence        SubmissionEvidence[]       @relation("EvidenceAcceptor")
-  reviewedSubmissions     FinalReview[]              @relation("ReviewActor")
-  finalReviews            FinalReview[]              @relation("ReviewEmployee")
-  taskCommands            TaskCommandRecord[]
-  depositAssignments      DepositAddressAssignment[]
-  manualCredits           ManualCredit[]             @relation("ManualCreditEmployee")
-  issuedManualCredits     ManualCredit[]             @relation("ManualCreditActor")
+  refreshTokens             RefreshToken[]
+  wallet                    Wallet?
+  financialOperations       FinancialOperation[]       @relation("FinancialActor")
+  financialAudits           AuditRecord[]              @relation("AuditActor")
+  sponsor                   User?                      @relation("Sponsor", fields: [sponsorUserId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sponsoredUsers            User[]                     @relation("Sponsor")
+  authSessions              AuthSession[]
+  adminSetupState           AdminSetupState?
+  issuedInvitations         AdminInvitation[]          @relation("InvitationIssuer")
+  acceptedInvitations       AdminInvitation[]          @relation("InvitationAcceptedUser")
+  revokedInvitations        AdminInvitation[]          @relation("InvitationRevokedBy")
+  identityActorAudits       IdentityAuditRecord[]      @relation("IdentityActor")
+  identityTargetAudits      IdentityAuditRecord[]      @relation("IdentityTarget")
+  identityIssuerAudits      IdentityAuditRecord[]      @relation("IdentityIssuer")
+  updatedPackages           Package[]                  @relation("PackageEditor")
+  updatedReferralSettings   ReferralSettings[]
+  configurationChanges      ConfigurationChange[]
+  purchaseQuotes            PurchaseQuote[]
+  purchases                 Purchase[]
+  subscriptions             Subscription[]
+  referralDecisions         ReferralDecision[]
+  createdTasks              Task[]                     @relation("TaskCreator")
+  updatedTasks              Task[]                     @relation("TaskEditor")
+  createdTaskCodes          TaskCode[]                 @relation("TaskCodeCreator")
+  updatedTaskCodes          TaskCode[]                 @relation("TaskCodeEditor")
+  taskUnlocks               TaskUnlock[]
+  imageAssets               ImageAsset[]
+  taskSubmissions           TaskSubmission[]
+  submissionEvidence        SubmissionEvidence[]       @relation("EvidenceOwner")
+  acceptedEvidence          SubmissionEvidence[]       @relation("EvidenceAcceptor")
+  reviewedSubmissions       FinalReview[]              @relation("ReviewActor")
+  finalReviews              FinalReview[]              @relation("ReviewEmployee")
+  taskCommands              TaskCommandRecord[]
+  depositAssignments        DepositAddressAssignment[]
+  manualCredits             ManualCredit[]             @relation("ManualCreditEmployee")
+  issuedManualCredits       ManualCredit[]             @relation("ManualCreditActor")
+  withdrawalDestination     WithdrawalDestination?
+  updatedWithdrawalPolicies WithdrawalPolicy[]
+  withdrawalActions         WithdrawalAction[]
 
   @@index([status, role], map: "users_status_role_idx")
   @@index([sponsorUserId], map: "users_sponsor_idx")
@@ -193,6 +441,7 @@ enum FinancialOperationKind {
   RESERVE
   RELEASE
   CORRECTION
+  SETTLE
 
   @@map("financial_operation_kind")
 }
@@ -205,6 +454,7 @@ enum FinancialOrigin {
   WITHDRAWAL_RESERVATION
   RESERVATION_RELEASE
   ADMIN_ADJUSTMENT
+  WITHDRAWAL_SETTLEMENT
 
   @@map("financial_origin")
 }
@@ -226,6 +476,7 @@ enum FundSource {
 enum ReservationState {
   ACTIVE
   RELEASED
+  SETTLED
 
   @@map("reservation_state")
 }
@@ -247,6 +498,7 @@ model Wallet {
   depositAssignments DepositAddressAssignment[]
   depositReceipts    DepositReceipt[]
   manualCredits      ManualCredit[]
+  withdrawalQuotes   WithdrawalQuote[]
 
   @@unique([id, ownerUserId], map: "wallets_id_owner_key")
   @@map("wallets")
@@ -282,6 +534,10 @@ model FinancialOperation {
   depositReceipt          DepositReceipt?
   manualCredit            ManualCredit?          @relation("ManualCreditOperation")
   referencedManualCredits ManualCredit[]         @relation("ManualCreditReference")
+  releasedWithdrawals     WithdrawalRequest[]    @relation("WithdrawalRelease")
+  settledWithdrawals      WithdrawalRequest[]    @relation("WithdrawalSettlement")
+  settlementAllocation    ReservationAllocation? @relation("ReservationSettlement")
+  withdrawalActions       WithdrawalAction[]
 
   @@unique([id, walletId])
   @@unique([kind, businessNamespace, businessKey], map: "financial_operations_business_key")
@@ -321,22 +577,28 @@ model LedgerPosting {
 }
 
 model ReservationAllocation {
-  id                 String           @id @default(uuid()) @db.Uuid
-  walletId           String           @map("wallet_id") @db.Uuid
-  openingOperationId String           @unique @map("opening_operation_id") @db.Uuid
-  grossUnits         BigInt           @map("gross_units")
-  nonReferralUnits   BigInt           @map("non_referral_units")
-  referralUnits      BigInt           @map("referral_units")
-  state              ReservationState @default(ACTIVE)
-  releaseOperationId String?          @unique @map("release_operation_id") @db.Uuid
-  releasedAt         DateTime?        @map("released_at") @db.Timestamptz(6)
-  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  withdrawal         WithdrawalRequest?
+  id                 String             @id @default(uuid()) @db.Uuid
+  walletId           String             @map("wallet_id") @db.Uuid
+  openingOperationId String             @unique @map("opening_operation_id") @db.Uuid
+  grossUnits         BigInt             @map("gross_units")
+  nonReferralUnits   BigInt             @map("non_referral_units")
+  referralUnits      BigInt             @map("referral_units")
+  state              ReservationState   @default(ACTIVE)
+  releaseOperationId String?            @unique @map("release_operation_id") @db.Uuid
+  releasedAt         DateTime?          @map("released_at") @db.Timestamptz(6)
+  createdAt          DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  wallet           Wallet              @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  openingOperation FinancialOperation  @relation("ReservationOpening", fields: [openingOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
-  releaseOperation FinancialOperation? @relation("ReservationRelease", fields: [releaseOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  wallet                Wallet              @relation(fields: [walletId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  openingOperation      FinancialOperation  @relation("ReservationOpening", fields: [openingOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  releaseOperation      FinancialOperation? @relation("ReservationRelease", fields: [releaseOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
+  settlementOperationId String?             @unique @map("settlement_operation_id") @db.Uuid
+  settledAt             DateTime?           @map("settled_at") @db.Timestamptz(6)
+  settlementOperation   FinancialOperation? @relation("ReservationSettlement", fields: [settlementOperationId, walletId], references: [id, walletId], onDelete: Restrict, onUpdate: Restrict)
 
   @@unique([openingOperationId, walletId])
+  @@unique([id, walletId])
+  @@unique([settlementOperationId, walletId])
   @@unique([releaseOperationId, walletId])
   @@index([walletId, state], map: "reservation_allocations_wallet_state_idx")
   @@map("reservation_allocations")

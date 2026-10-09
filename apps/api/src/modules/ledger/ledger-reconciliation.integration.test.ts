@@ -11,6 +11,7 @@ import { afterAll, describe, expect, it } from "vitest";
 
 import { parseUsdtAmount } from "../../core/financial/money.js";
 import { LedgerService } from "./ledger.service.js";
+import { withPayoutFixture } from "../withdrawals/testing/withdrawal-payout-fixtures.js";
 import { fenceFinancialRuntime } from "../custody/runtime-control.js";
 import { LedgerError } from "./ledger.errors.js";
 import type {
@@ -186,6 +187,37 @@ afterAll(async () => {
 });
 
 describe("scoped read-only ledger reconciliation", () => {
+  it("reconciles the historical ACTIVE reserve outcome after its allocation is consumed by SETTLE", async () =>
+    withPayoutFixture(async (fixture) => {
+      const reserve =
+        await fixture.database.financialOperation.findUniqueOrThrow({
+          where: {
+            kind_businessNamespace_businessKey: {
+              kind: "RESERVE",
+              businessNamespace: "p08.withdrawal.reserve",
+              businessKey: fixture.request.quoteId,
+            },
+          },
+        });
+      await fixture.attempts().sign(fixture.request.id);
+      await fixture.attempts().broadcast(fixture.request.id);
+      await fixture.attempts().reconciliation.observe(fixture.request.id);
+      expect(
+        await fixture.database.financialOperation.findUniqueOrThrow({
+          where: { id: reserve.id },
+        }),
+      ).toEqual(reserve);
+      const service = new LedgerService(fixture.database, {
+        businessNamespaces: ["p08.withdrawal.settle"],
+        processIds: ["p08-payout"],
+      });
+      expect(
+        await service.reconcileWallet(fixture.request.walletId, {
+          actor: { type: "PROCESS", processId: "p08-payout" },
+          observe: async () => {},
+        }),
+      ).toMatchObject({ consistent: true, discrepancies: [] });
+    }));
   it("reconciles grant evidence and reports altered grant metadata without repair", async () =>
     withAdmittedFinancialDatabase(async (isolated) => {
       const employee = await createIdentityFixture(isolated);

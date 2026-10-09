@@ -3,6 +3,19 @@ import { describe, expect, it } from "vitest";
 import { buildOpenApiDocument } from "./openapi.js";
 
 const expectedPaths = [
+  "/withdrawals/me",
+  "/withdrawals/quotes",
+  "/withdrawals/quotes/{quoteId}/outcome",
+  "/withdrawals",
+  "/withdrawals/{withdrawalId}",
+  "/admin/withdrawals",
+  "/admin/withdrawals/{withdrawalId}",
+  "/admin/withdrawals/{withdrawalId}/extensions",
+  "/admin/withdrawals/{withdrawalId}/rejections",
+  "/withdrawals/me/destination",
+  "/withdrawals/me/destination/confirmations",
+  "/withdrawals/me/destination/resend",
+  "/withdrawals/me/destination/consume",
   "/admin/employees/manual-credit-targets",
   "/deposits/me/address",
   "/deposits/me/history",
@@ -84,6 +97,65 @@ const expectedPaths = [
 ] as const;
 
 describe("OpenAPI document", () => {
+  it("documents authenticated POST-only destination proof consumption and truthful pending delivery", () => {
+    const paths = buildOpenApiDocument().paths;
+    expect(paths?.["/withdrawals/me/destination"]?.get?.security).toEqual([
+      { BearerAuth: [] },
+    ]);
+    const consume = paths?.["/withdrawals/me/destination/consume"];
+    expect(consume?.post?.responses?.["409"]).toHaveProperty(
+      "description",
+      expect.stringContaining("WITHDRAWAL_PROOF_INVALID"),
+    );
+    expect(consume?.post?.responses).toHaveProperty("400");
+    expect(consume?.get).toBeUndefined();
+    expect(consume?.post?.security).toEqual([
+      { BearerAuth: [], CsrfHeader: [] },
+    ]);
+    expect(consume?.post?.requestBody).toHaveProperty(
+      ["content", "application/json", "schema", "required"],
+      ["token"],
+    );
+    expect(
+      paths?.["/withdrawals/me/destination/confirmations"]?.post?.responses?.[
+        "201"
+      ],
+    ).toBeDefined();
+    expect(
+      paths?.["/withdrawals/me/destination/resend"]?.post?.responses?.["409"],
+    ).toBeDefined();
+    expect(
+      paths?.["/withdrawals/me/destination/confirmations"]?.post?.description,
+    ).toContain("no P08 browser consumer");
+    expect(
+      paths?.["/withdrawals/quotes"]?.post?.responses?.["201"],
+    ).toBeDefined();
+  });
+  it("documents exact acceptance, replay status, request keys and bounded authorized history", () => {
+    const paths = buildOpenApiDocument().paths;
+    const accept = paths?.["/withdrawals"]?.post;
+    expect(accept?.security).toEqual([{ BearerAuth: [], CsrfHeader: [] }]);
+    expect(Object.keys(accept?.responses ?? {})).toEqual(
+      expect.arrayContaining(["200", "201", "409"]),
+    );
+    expect(
+      accept?.parameters?.some(
+        (parameter) =>
+          "name" in parameter &&
+          parameter.name === "Idempotency-Key" &&
+          parameter.required === false,
+      ),
+    ).toBe(true);
+    expect(
+      paths?.["/withdrawals/quotes/{quoteId}/outcome"]?.get?.responses?.["404"],
+    ).toBeDefined();
+    expect(
+      paths?.["/admin/withdrawals"]?.get?.parameters?.map((parameter) =>
+        "name" in parameter ? parameter.name : "ref",
+      ),
+    ).toEqual(["page", "limit", "state", "employeeId", "from", "to", "q"]);
+    expect(paths?.["/admin/withdrawals/{withdrawalId}"]?.post).toBeUndefined();
+  });
   it("documents the bounded minimal current-admin lookup and database availability error", () => {
     const lookup =
       buildOpenApiDocument().paths?.["/admin/employees/manual-credit-targets"]

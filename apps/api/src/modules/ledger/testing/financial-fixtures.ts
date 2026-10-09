@@ -60,7 +60,9 @@ export async function admitCleanDisposableFinancialBoot(
   }
   if (
     (await database.depositAddressAssignment.count()) !== 0 ||
-    (await database.transferAttempt.count()) !== 0
+    (await database.transferAttempt.count()) !== 0 ||
+    (await database.treasuryPayoutKey.count()) !== 0 ||
+    (await database.withdrawalAttempt.count()) !== 0
   ) {
     throw new Error(
       "Fixture admission cannot bypass custody/attempt recovery.",

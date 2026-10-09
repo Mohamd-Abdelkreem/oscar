@@ -36,6 +36,27 @@ const request = {
 const noWait = (): Promise<void> => Promise.resolve();
 
 describe("bounded Resend HTTP dispatch", () => {
+  it("rejects protected proof previews before writing or exposing the credential", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "withdrawal-preview-"));
+    const preview = vi.fn();
+    const protectedMail = {
+      ...request,
+      retainLocalPreview: false as const,
+      html: "private-proof-sentinel",
+    };
+    try {
+      await expect(
+        new ConsoleEmailDelivery(preview).send(protectedMail),
+      ).rejects.toMatchObject({ disposition: "REJECTED", attempts: 0 });
+      expect(preview).not.toHaveBeenCalled();
+      await expect(
+        createFileConsolePreview(directory)(protectedMail),
+      ).rejects.toMatchObject({ disposition: "REJECTED" });
+      expect(await readdir(directory)).toEqual([]);
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
   it.each([429, 500, 502, 503, 504])(
     "exhausts retryable status %i within three attempts without private response diagnostics",
     async (status) => {
