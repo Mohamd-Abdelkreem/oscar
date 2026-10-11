@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { DatabaseClient } from "@template/database";
 import { vi } from "vitest";
 import { setTimeout as delay } from "node:timers/promises";
+import { changeDispatchPause } from "../../custody/runtime-control.js";
 import {
   createFinancialAccount,
   financialRaceBarrier,
@@ -13,9 +14,22 @@ import {
 export {
   financialRaceBarrier as withdrawalRaceBarrier,
   fixedFinancialClock as fixedWithdrawalClock,
-  withAdmittedFinancialDatabase as withWithdrawalDatabase,
   withAdmittedIndependentFinancialClients as withWithdrawalRaceClients,
 };
+
+export function withWithdrawalDatabase<T>(
+  work: (database: DatabaseClient, url: string) => Promise<T>,
+) {
+  return withAdmittedFinancialDatabase(async (database, url) => {
+    // The wrapped fixture has independently admitted a validated clean disposable DB.
+    await changeDispatchPause(database, {
+      action: "RESUME",
+      operatorIdentity: "disposable-test-recovery",
+      reason: "Explicit isolated withdrawal request capability",
+    });
+    return work(database, url);
+  });
+}
 
 // The catalog change is confined to one disposable database; migrated guards stay intact.
 export async function withClockedWithdrawalDatabase<T>(
@@ -23,7 +37,7 @@ export async function withClockedWithdrawalDatabase<T>(
   work: (database: DatabaseClient, databaseUrl: string) => Promise<T>,
   options: { advancing?: boolean } = {},
 ): Promise<T> {
-  return withAdmittedFinancialDatabase(async (database, databaseUrl) => {
+  return withWithdrawalDatabase(async (database, databaseUrl) => {
     const name = new URL(databaseUrl).pathname.slice(1);
     if (!/^p02_identity_[0-9a-f]{32}$/u.test(name))
       throw new Error(

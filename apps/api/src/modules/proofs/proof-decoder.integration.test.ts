@@ -72,7 +72,7 @@ it("streams actual multipart rasters through emitted supervised decoders on Linu
   );
   const containerName = `oscar-p05-decoder-${randomUUID()}`;
   const bootstrap =
-    'mkdir -p /work/api /work/node_modules/@template/contracts && npm install --prefix /work --ignore-scripts --no-audit --no-fund sharp@0.35.5 @fastify/busboy@3.2.2 zod@4.4.3 >/dev/null && cp -r /api/. /work/api/ && cp -r /contracts/. /work/node_modules/@template/contracts/ && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/contracts/package.json && node --input-type=module';
+    'mkdir -p /work/api /work/node_modules/@template/contracts && npm install --prefix /work --prefer-offline --ignore-scripts --no-audit --no-fund sharp@0.35.5 @fastify/busboy@3.2.2 zod@4.4.3 >/dev/null && cp -r /api/. /work/api/ && cp -r /contracts/. /work/node_modules/@template/contracts/ && printf \'{"type":"module","exports":"./index.js"}\' > /work/node_modules/@template/contracts/package.json && node --input-type=module';
   const program = `
 import assert from 'node:assert/strict';
 import {mkdtemp, readdir, readFile, rm} from 'node:fs/promises';
@@ -179,6 +179,9 @@ try {
       `type=bind,source=${apiDist},target=/api,readonly`,
       "--mount",
       `type=bind,source=${contractsDist},target=/contracts,readonly`,
+      // Reuse public package tarballs, as in the other Linux proof fixtures.
+      "--mount",
+      "type=volume,source=oscar-p05-e2e-npm-cache,target=/root/.npm",
       "--entrypoint",
       "sh",
       "node:24.18.1-bookworm-slim",

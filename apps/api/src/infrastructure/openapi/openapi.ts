@@ -10,6 +10,10 @@ import {
   withdrawalAcceptBodySchema,
   withdrawalQuoteSchema,
   withdrawalRequestSchema,
+  adminWithdrawalRequestSchema,
+  adminWithdrawalHistorySchema,
+  adminWithdrawalActionOutcomeSchema,
+  adminWithdrawalActionOutcomeQuerySchema,
   withdrawalCommandResultSchema,
   withdrawalHistorySchema,
   withdrawalQuoteOutcomeSchema,
@@ -400,7 +404,7 @@ export const buildOpenApiDocument = () =>
         get: {
           summary: "Read own withdrawal status",
           description:
-            "Current USER session; no-store. Withdrawal-only restrictions permit reads. Execution readiness remains false in Group A.",
+            "Current USER session; no-store. Withdrawal-only restrictions permit reads. New-request execution readiness requires configured payout capability and admission for the current API boot and control generation, with financial writes unfenced and new dispatch unpaused. Readiness is separate from employee eligibility and does not establish signer liveness or immediate payment; accepted requests remain readable.",
           security: adminReadSecurity,
           responses: {
             "200": successResponse("Own status", withdrawalStatusSchema),
@@ -482,6 +486,7 @@ export const buildOpenApiDocument = () =>
             "409": errorResponse(
               "WITHDRAWAL_QUOTE_STALE, WITHDRAWAL_ACTIVE, LEDGER_IDENTITY_CONFLICT, LEDGER_UNRESOLVED or FINANCIAL_WRITES_FENCED",
             ),
+            "503": errorResponse("WITHDRAWAL_UNAVAILABLE"),
           },
         },
       },
@@ -505,7 +510,10 @@ export const buildOpenApiDocument = () =>
           security: adminReadSecurity,
           requestParams: { query: adminWithdrawalFilterSchema },
           responses: {
-            "200": successResponse("Filtered history", withdrawalHistorySchema),
+            "200": successResponse(
+              "Filtered history",
+              adminWithdrawalHistorySchema,
+            ),
             ...adminReadErrors,
           },
         },
@@ -519,9 +527,30 @@ export const buildOpenApiDocument = () =>
           responses: {
             "200": successResponse(
               "Safe request and actions",
-              withdrawalRequestSchema,
+              adminWithdrawalRequestSchema,
             ),
             ...adminReadErrors,
+          },
+        },
+      },
+      "/admin/withdrawals/{withdrawalId}/actions/outcome": {
+        get: {
+          summary: "Observe the original administrator withdrawal action",
+          description: `${adminAuthority} Read-only, no-store exact actor/kind/key/target/version observation independent of latest100 history; available under fence/pause. No financial or queue effects.`,
+          security: adminReadSecurity,
+          requestParams: {
+            path: withdrawalParamsSchema,
+            query: adminWithdrawalActionOutcomeQuerySchema,
+          },
+          responses: {
+            "200": successResponse(
+              "Exact original action disposition",
+              adminWithdrawalActionOutcomeSchema,
+            ),
+            ...adminReadErrors,
+            "409": errorResponse(
+              "LEDGER_IDENTITY_CONFLICT or WITHDRAWAL_VERSION_CONFLICT",
+            ),
           },
         },
       },

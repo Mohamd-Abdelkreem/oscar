@@ -18,7 +18,6 @@ import {
   INITIAL_BALANCE,
   INITIAL_DEPOSITS,
   INITIAL_TRANSACTIONS,
-  INITIAL_WITHDRAWALS,
 } from "../fixtures/wallet.fixtures";
 import type {
   DailyTask,
@@ -30,7 +29,6 @@ import type {
   TaskHistoryItem,
   TeamCommissionRecord,
   TeamMember,
-  WithdrawalRequest,
 } from "../types/employee.types";
 
 import { useEmployeeWalletActions } from "./actions/use-employee-wallet-actions";
@@ -43,18 +41,16 @@ export function EmployeeStateProvider({
 }: {
   readonly children: ReactNode;
 }) {
-  const [user, setUser] = useState<EmployeeUser>(INITIAL_USER);
+  const [user] = useState<EmployeeUser>(INITIAL_USER);
   const [currentPackageId] = useState<PackageId>("S1");
   const [packageExpiryDays] = useState(22);
-  const [balance, setBalance] = useState<FinancialBalance>(INITIAL_BALANCE);
+  const [balance] = useState<FinancialBalance>(INITIAL_BALANCE);
   const [task] = useState<DailyTask>(INITIAL_TASK);
   const [taskHistory] =
     useState<readonly TaskHistoryItem[]>(INITIAL_TASK_HISTORY);
-  const [withdrawals, setWithdrawals] =
-    useState<readonly WithdrawalRequest[]>(INITIAL_WITHDRAWALS);
   const [deposits, setDeposits] =
     useState<readonly DepositRecord[]>(INITIAL_DEPOSITS);
-  const [transactions, setTransactions] =
+  const [transactions] =
     useState<readonly LedgerTransaction[]>(INITIAL_TRANSACTIONS);
   const [teamMembers] = useState<readonly TeamMember[]>(INITIAL_TEAM_MEMBERS);
   const [teamCommissions] = useState<readonly TeamCommissionRecord[]>(
@@ -63,28 +59,7 @@ export function EmployeeStateProvider({
 
   const currentPackage =
     PACKAGES.find((pkg) => pkg.id === currentPackageId) ?? PACKAGES[1];
-  const pendingWithdrawal = withdrawals.find(
-    (withdrawal) => withdrawal.status === "pending",
-  );
-
-  const hasPendingWithdrawal = pendingWithdrawal !== undefined;
-  const {
-    setupWithdrawalAddress,
-    requestWithdrawal,
-    checkDepositStatus,
-    simulateRejectPendingWithdrawal,
-    simulateApprovePendingWithdrawal,
-  } = useEmployeeWalletActions({
-    user,
-    balance,
-    setUser,
-    setBalance,
-    setWithdrawals,
-    setDeposits,
-    setTransactions,
-    pendingWithdrawal,
-    hasPendingWithdrawal,
-  });
+  const { checkDepositStatus } = useEmployeeWalletActions({ setDeposits });
 
   const value = useMemo(
     () => ({
@@ -94,18 +69,11 @@ export function EmployeeStateProvider({
       balance,
       task,
       taskHistory,
-      withdrawals,
       deposits,
       transactions,
       teamMembers,
       teamCommissions,
-      setupWithdrawalAddress,
-      requestWithdrawal,
       checkDepositStatus,
-      simulateRejectPendingWithdrawal,
-      simulateApprovePendingWithdrawal,
-      hasPendingWithdrawal,
-      pendingWithdrawal,
     }),
     [
       user,
@@ -114,18 +82,11 @@ export function EmployeeStateProvider({
       balance,
       task,
       taskHistory,
-      withdrawals,
       deposits,
       transactions,
       teamMembers,
       teamCommissions,
-      setupWithdrawalAddress,
-      requestWithdrawal,
       checkDepositStatus,
-      simulateRejectPendingWithdrawal,
-      simulateApprovePendingWithdrawal,
-      hasPendingWithdrawal,
-      pendingWithdrawal,
     ],
   );
 

@@ -15,6 +15,15 @@ import { formatUsdtAmount } from "../../../core/financial/money.js";
 import { LedgerService } from "../../ledger/ledger.service.js";
 
 export const RESERVATION_NOW = new Date("2026-10-08T09:00:00Z");
+export const RESERVATION_CAPABILITY = Object.freeze({
+  network: "TRON_NILE" as const,
+  token: {
+    symbol: "USDT" as const,
+    contract: TronWeb.address.fromHex(`41${"11".repeat(20)}`),
+    decimals: 6 as const,
+  },
+  treasuryKeyId: "8f4be6e1-6b22-4c54-b9ec-9af1ba7bff15",
+});
 export async function reservationEmployee(
   database: DatabaseClient,
   options: {
@@ -99,12 +108,14 @@ export function reservationServices(
   const admission = financialFixtureAdmission(database);
   return {
     quotes: new WithdrawalQuoteService(database, {
+      capability: RESERVATION_CAPABILITY,
       clock,
       admission,
       network: "TRON_NILE",
       config,
     }),
     reservations: new WithdrawalReservationService(database, {
+      capability: RESERVATION_CAPABILITY,
       clock,
       admission,
       network: "TRON_NILE",

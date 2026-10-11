@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
-import { createDatabaseClient, type DatabaseClient } from "@template/database";
+import {
+  createDatabaseClient,
+  type DatabaseClient,
+  type TreasuryPayoutKey,
+} from "@template/database";
 import {
   acknowledgeFinancialBoot,
   changeDispatchPause,
@@ -50,16 +54,9 @@ export async function admitWithdrawalRuntimeFixture(
   return admission;
 }
 
-// Non-signing races use minimal Group B SQL authority; no private body or live key exists.
-export async function claimWithdrawalFixture(
-  clients: { runtime: DatabaseClient; owner: DatabaseClient },
-  admission: FinancialRuntimeAdmission,
-  requestId: string,
-  scheduleVersion: number,
-) {
-  const { runtime, owner } = clients;
+export async function createWithdrawalClaimKeyFixture(owner: DatabaseClient) {
   const createdAt = new Date();
-  const key = await owner.treasuryPayoutKey.create({
+  return owner.treasuryPayoutKey.create({
     data: {
       id: randomUUID(),
       network: "TRON_NILE",
@@ -75,6 +72,18 @@ export async function claimWithdrawalFixture(
       reason: "SQL claim race; no actual signing material",
     },
   });
+}
+
+// Non-signing races use minimal Group B SQL authority; no private body or live key exists.
+export async function claimWithdrawalFixture(
+  clients: { runtime: DatabaseClient; owner: DatabaseClient },
+  admission: FinancialRuntimeAdmission,
+  requestId: string,
+  scheduleVersion: number,
+  existingKey?: TreasuryPayoutKey,
+) {
+  const { runtime, owner } = clients;
+  const key = existingKey ?? (await createWithdrawalClaimKeyFixture(owner));
   const reference = await runtime.withdrawalRequest.findUniqueOrThrow({
     where: { id: requestId },
   });

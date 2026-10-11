@@ -729,6 +729,8 @@ test("US5-01 account shows persisted current identity across reload logout and A
         "/api/v1/users/me",
         "/api/v1/subscriptions/me",
         "/api/v1/wallet/me",
+        "/api/v1/withdrawals/me",
+        "/api/v1/withdrawals/me/destination",
       ].includes(path),
     ),
   ).toBe(true);

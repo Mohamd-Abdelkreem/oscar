@@ -4,28 +4,35 @@ import { CalendarClock, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AdminButton } from "../common/admin-button";
 import { AdminInput } from "../common/admin-input";
-import type { AdminWithdrawal } from "../../types/admin.types";
-import {
-  calculateRemainingWithdrawalTime,
-  computeExtendedDueAt,
-  formatBaghdadDateTime,
-} from "../../utils/time.utils";
+import { withdrawalExtensionBodySchema } from "@template/contracts";
+import type { AdminWithdrawalRequest } from "../../api/withdrawals.api";
+import { withdrawalInstant } from "../../utils/withdrawal-presentation";
+import { useManualCreditDialog } from "../../hooks/use-manual-credit-dialog";
 
 interface ExtendScheduleDialogProps {
   readonly isOpen: boolean;
-  readonly withdrawal: AdminWithdrawal | null;
-  readonly currentTimeMs: number;
+  readonly withdrawal: AdminWithdrawalRequest | null;
+  readonly disabled?: boolean;
+  readonly isLoading?: boolean;
+  readonly errorMessage?: string | null;
+  readonly retryOriginal?: boolean;
+  readonly reviewNewVersion?: boolean;
   readonly onConfirm: (
-    additionalHours: number,
+    additionalHours: string,
     reason: string,
-  ) => void | Promise<void>;
+    expectedVersion: number,
+  ) => unknown;
   readonly onClose: () => void;
 }
 
 export function ExtendScheduleDialog({
   isOpen,
   withdrawal,
-  currentTimeMs,
+  disabled = false,
+  isLoading = false,
+  errorMessage,
+  retryOriginal = false,
+  reviewNewVersion = false,
   onConfirm,
   onClose,
 }: ExtendScheduleDialogProps) {
@@ -34,101 +41,84 @@ export function ExtendScheduleDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const triggerElementRef = useRef<HTMLElement | null>(null);
+  const submitting = useRef(false);
+  const busy = isSubmitting || isLoading;
 
   const handleClose = useCallback(() => {
-    if (isSubmitting) return;
+    if (busy || submitting.current) return;
     setHoursInput("12");
     setReason("");
     setError(null);
     setIsSubmitting(false);
     onClose();
-  }, [isSubmitting, onClose]);
+  }, [busy, onClose]);
+  const dialogRef = useManualCreditDialog({
+    open: isOpen,
+    active: isOpen,
+    close: handleClose,
+  });
 
-  // Scroll lock & focus trapping
+  // The existing dialog hook owns focus containment and restoration.
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    triggerElementRef.current = document.activeElement as HTMLElement | null;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
     return () => {
       document.body.style.overflow = originalOverflow;
-      if (
-        triggerElementRef.current &&
-        typeof triggerElementRef.current.focus === "function"
-      ) {
-        triggerElementRef.current.focus();
-      }
     };
   }, [isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return undefined;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleClose();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, handleClose]);
-
   if (!isOpen || !withdrawal) return null;
 
-  const parsedHours = Number.parseInt(hoursInput, 10);
-  const isHoursValid = Number.isInteger(parsedHours) && parsedHours > 0;
-
-  const baseHours = withdrawal.originalDurationHours ?? 72;
-  const currentAdded = withdrawal.addedHours ?? 0;
-  const currentRemaining = calculateRemainingWithdrawalTime(
-    withdrawal.dueAt,
-    currentTimeMs,
-  );
-
-  let newDeadlineIso = withdrawal.dueAt;
-  let newCumulativeAdded = currentAdded;
-  let newRemainingText = currentRemaining.text;
-
-  if (isHoursValid) {
-    const ext = computeExtendedDueAt(withdrawal.dueAt, parsedHours);
-    if (ext.valid) {
-      newDeadlineIso = ext.newDueAtIso;
-      newCumulativeAdded = currentAdded + parsedHours;
-      const newRemaining = calculateRemainingWithdrawalTime(
-        newDeadlineIso,
-        currentTimeMs,
-      );
-      newRemainingText = newRemaining.text;
-    }
-  }
+  const parsed = withdrawalExtensionBodySchema.safeParse({
+    expectedVersion: withdrawal.version,
+    countedHours: hoursInput,
+    reason,
+    confirmed: true,
+  });
+  const isHoursValid =
+    withdrawalExtensionBodySchema.shape.countedHours.safeParse(
+      hoursInput,
+    ).success;
+  const baseHours = withdrawal.calendar.countedHours;
+  const currentRemaining = { text: withdrawal.remainingCountedHours };
 
   const handleConfirm = async () => {
-    if (isSubmitting) return;
+    if (busy || submitting.current || disabled) return;
 
     if (!isHoursValid) {
       setError("يرجى إدخال عدد ساعات إضافية صحيح وأكبر من الصفر.");
       return;
     }
 
-    if (!reason.trim()) {
+    if (!parsed.success) {
       setError("يرجى كتابة سبب زيادة الجدولة الإلزامي.");
       return;
     }
 
     setError(null);
+    submitting.current = true;
     setIsSubmitting(true);
 
     try {
-      await onConfirm(parsedHours, reason.trim());
-      handleClose();
+      const committed = await onConfirm(
+        hoursInput,
+        reason.trim(),
+        withdrawal.version,
+      );
+      if (committed === false) return;
+      setHoursInput("12");
+      setReason("");
+      onClose();
     } catch {
+      setError(
+        errorMessage ??
+          "تعذر تأكيد التمديد؛ احتُفظ بالمدخلات. راجع العملية الأصلية.",
+      );
+    } finally {
+      submitting.current = false;
       setIsSubmitting(false);
     }
   };
@@ -140,7 +130,7 @@ export function ExtendScheduleDialog({
       aria-labelledby="extend-dialog-title"
       className="admin-scope fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-xs"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !isSubmitting) {
+        if (e.target === e.currentTarget && !busy) {
           handleClose();
         }
       }}
@@ -167,7 +157,7 @@ export function ExtendScheduleDialog({
           <button
             type="button"
             onClick={handleClose}
-            disabled={isSubmitting}
+            disabled={busy}
             className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-2 focus-visible:outline-emerald-600"
             aria-label="إغلاق"
           >
@@ -179,10 +169,13 @@ export function ExtendScheduleDialog({
         <div className="flex-1 space-y-4 overflow-y-auto p-4 text-xs sm:p-5 sm:text-sm">
           {/* Affected Record Summary */}
           <div className="space-y-1.5 rounded-lg border border-slate-200 bg-slate-50 p-3.5">
+            <p dir="ltr" className="break-all">
+              {withdrawal.id} — v{withdrawal.version}
+            </p>
             <div className="flex items-center justify-between">
               <span className="font-semibold text-slate-500">الموظف:</span>
               <span className="font-bold text-slate-900">
-                {withdrawal.employeeName}
+                {withdrawal.employee.fullName}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -190,7 +183,7 @@ export function ExtendScheduleDialog({
                 المبلغ المطلوب:
               </span>
               <span className="font-mono font-bold text-slate-900" dir="ltr">
-                {withdrawal.amount.toFixed(2)} USDT
+                {withdrawal.gross} USDT
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -199,18 +192,12 @@ export function ExtendScheduleDialog({
               </span>
               <span className="font-bold text-slate-700">{baseHours} ساعة</span>
             </div>
-            {currentAdded > 0 && (
-              <div className="flex items-center justify-between font-bold text-amber-800">
-                <span>ساعات مضافة سابقاً:</span>
-                <span dir="ltr">+{currentAdded} ساعة</span>
-              </div>
-            )}
             <div className="mt-1.5 flex items-center justify-between border-t border-slate-200 pt-1.5">
               <span className="font-semibold text-slate-500">
                 موعد الاستحقاق الحالي:
               </span>
               <span className="font-mono text-slate-800" dir="ltr">
-                {formatBaghdadDateTime(withdrawal.dueAt)} (توقيت بغداد)
+                {withdrawalInstant(withdrawal.dueAt)} (توقيت بغداد)
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -234,9 +221,9 @@ export function ExtendScheduleDialog({
             </label>
             <AdminInput
               id="additional-hours"
-              type="number"
-              min={1}
-              step={1}
+              type="text"
+              inputMode="decimal"
+              disabled={busy}
               value={hoursInput}
               onChange={(e) => {
                 setHoursInput(e.target.value);
@@ -253,12 +240,13 @@ export function ExtendScheduleDialog({
                 <button
                   key={preset}
                   type="button"
+                  disabled={busy}
                   onClick={() => {
                     setHoursInput(String(preset));
                     if (error) setError(null);
                   }}
                   className={`rounded border px-2 py-0.5 text-xs font-bold transition-colors ${
-                    parsedHours === preset
+                    hoursInput === String(preset)
                       ? "border-amber-500 bg-amber-100 text-amber-900"
                       : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                   }`}
@@ -281,6 +269,8 @@ export function ExtendScheduleDialog({
             <textarea
               id="extend-reason"
               rows={2}
+              disabled={busy}
+              maxLength={500}
               value={reason}
               onChange={(e) => {
                 setReason(e.target.value);
@@ -291,35 +281,32 @@ export function ExtendScheduleDialog({
             />
           </div>
 
-          {/* Live Preview Card */}
+          {/* Reviewed duration; the server owns the resulting counted deadline. */}
           {isHoursValid && (
             <div className="space-y-1 rounded-lg border border-amber-200 bg-amber-50/70 p-3.5 text-xs">
               <span className="block border-b border-amber-200 pb-1 font-bold text-amber-900">
-                معاينة نتيجة التمديد بعد التأكيد:
+                مراجعة الساعات الإضافية:
               </span>
               <div className="flex justify-between text-slate-700">
-                <span>إجمالي الجدولة الكلية:</span>
-                <span className="font-mono font-bold">
-                  {baseHours + newCumulativeAdded} ساعة (الأساس {baseHours} س +
-                  تراكمي {newCumulativeAdded} س)
-                </span>
+                <span>المدة المضافة:</span>
+                <span className="font-mono font-bold">{hoursInput} ساعة</span>
               </div>
               <div className="flex justify-between text-slate-700">
-                <span>الموعد الجديد للاستحقاق:</span>
+                <span>الموعد الأصلي:</span>
                 <span className="font-mono font-bold" dir="ltr">
-                  {formatBaghdadDateTime(newDeadlineIso)}
+                  {withdrawalInstant(withdrawal.originalDueAt)}
                 </span>
               </div>
-              <div className="flex justify-between font-bold text-amber-950">
-                <span>الوقت المتبقي الجديد:</span>
-                <span>{newRemainingText}</span>
-              </div>
+              <p>
+                الموعد الجديد المحتسب يعود من الخادم بعد التأكيد؛ السبت والأحد
+                مستثنيان.
+              </p>
             </div>
           )}
 
-          {error && (
+          {(error || errorMessage) && (
             <p className="rounded border border-rose-200 bg-rose-50 p-2 text-xs font-bold text-rose-600">
-              {error}
+              {error || errorMessage}
             </p>
           )}
         </div>
@@ -330,20 +317,24 @@ export function ExtendScheduleDialog({
             variant="outline"
             size="default"
             onClick={handleClose}
-            disabled={isSubmitting}
+            disabled={busy}
           >
             إلغاء
           </AdminButton>
           <AdminButton
             variant="warning"
             size="default"
-            loading={isSubmitting}
-            disabled={isSubmitting || !isHoursValid}
+            loading={busy}
+            disabled={busy || disabled || !parsed.success}
             onClick={() => {
               void handleConfirm();
             }}
           >
-            تأكيد زيادة الجدولة
+            {reviewNewVersion
+              ? "مراجعة الإصدار الجديد"
+              : retryOriginal
+                ? "إعادة محاولة الإجراء الأصلي فقط"
+                : "تأكيد زيادة الجدولة"}
           </AdminButton>
         </div>
       </div>

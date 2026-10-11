@@ -1,4 +1,5 @@
 import { TronWeb } from "tronweb";
+import { z } from "zod";
 import {
   privateCredentialFile,
   requiredCustodySetting,
@@ -99,6 +100,19 @@ export function parseTronPublicEnvironment(environment: Environment) {
     }),
   });
 }
+
+export function parseTronPublicPayoutCapability(environment: Environment) {
+  const key = environment["TRON_PAYOUT_KEY_ID"]?.trim();
+  if (!key) return undefined;
+  const treasuryKeyId = z.uuid().parse(key);
+  return Object.freeze({
+    ...parseTronPublicEnvironment(environment),
+    treasuryKeyId,
+  });
+}
+export type TronPublicPayoutCapability = NonNullable<
+  ReturnType<typeof parseTronPublicPayoutCapability>
+>;
 
 export function parseTronWorkerEnvironment(
   environment: Environment,

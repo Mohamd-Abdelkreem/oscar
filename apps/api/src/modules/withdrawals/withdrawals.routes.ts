@@ -13,6 +13,7 @@ import {
   financialRequestKeySchema,
   withdrawalExtensionBodySchema,
   withdrawalRejectionBodySchema,
+  adminWithdrawalActionOutcomeQuerySchema,
 } from "@template/contracts";
 import { authorizeRoles } from "../../middlewares/authorization.middleware.js";
 import {
@@ -158,6 +159,15 @@ export function adminWithdrawalsRoutes(
     next();
   });
   router.use(authentication, authorizeRoles("ADMIN"));
+  router.get(
+    "/:withdrawalId/actions/outcome",
+    validationMiddleware({
+      params: withdrawalParamsSchema,
+      query: adminWithdrawalActionOutcomeQuerySchema,
+      body: emptyQuery.optional(),
+    }),
+    controller.adminActionOutcome,
+  );
   router.post(
     "/:withdrawalId/extensions",
     csrfMiddleware,

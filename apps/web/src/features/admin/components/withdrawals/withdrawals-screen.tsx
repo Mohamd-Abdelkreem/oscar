@@ -1,169 +1,175 @@
-"use client";
-
+﻿"use client";
 import { Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
+import { withdrawalStateSchema } from "@template/contracts";
+import { getApiError } from "@/services/api/safe-error";
+import { getSessionRuntime } from "@/services/api/session-runtime";
+import type { AdminWithdrawalRequest } from "../../api/withdrawals.api";
+import {
+  useAdminWithdrawalHistory,
+  useAdminWithdrawalDetail,
+} from "../../hooks/withdrawals.hooks";
+import { useWithdrawalAction } from "../../hooks/use-withdrawal-action";
+import {
+  canChangeWithdrawal,
+  withdrawalStates,
+} from "../../utils/withdrawal-presentation";
+import type { AdminWithdrawalIntent } from "../../utils/withdrawal-command-runtime";
 import { AdminConfirmDialog } from "../common/admin-confirm-dialog";
 import { AdminEmptyState } from "../common/admin-empty-state";
 import { AdminInput } from "../common/admin-input";
 import { AdminPageHeader } from "../common/admin-page-header";
 import { AdminPagination } from "../common/admin-pagination";
-import { AdminSelect, type AdminSelectOption } from "../common/admin-select";
+import { AdminSelect } from "../common/admin-select";
 import { AdminTableShell } from "../common/admin-table";
+import { AdminButton } from "../common/admin-button";
+import { TaskQueryState } from "../common/task-query-state";
 import { ExtendScheduleDialog } from "./extend-schedule-dialog";
-import { useAdminState } from "../../context/admin-state.context";
-import type { AdminWithdrawal } from "../../types/admin.types";
-
 import { WithdrawalRow } from "./withdrawal-row";
 
-const PAGE_SIZE = 10;
 export function WithdrawalsScreen() {
-  const {
-    withdrawals,
-    extendWithdrawalSchedule,
-    releaseWithdrawal,
-    rejectWithdrawal,
-    completeWithdrawal,
-  } = useAdminState();
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  // Shared screen-level clock (Requirement 3: updates every 30s + refreshes on tab visibility)
-  const [currentTimeMs, setCurrentTimeMs] = useState<number>(() => Date.now());
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTimeMs(Date.now());
-    }, 30_000);
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        setCurrentTimeMs(Date.now());
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, []);
-
-  // Dialog states
-  const [selectedWithdrawal, setSelectedWithdrawal] =
-    useState<AdminWithdrawal | null>(null);
-  const [extendModalOpen, setExtendModalOpen] = useState(false);
-  const [releaseModalOpen, setReleaseModalOpen] = useState(false);
-  const [rejectModalOpen, setRejectModalOpen] = useState(false);
-  const [completeConfirmOpen, setCompleteConfirmOpen] = useState(false);
-
-  const filteredWithdrawals = useMemo(() => {
-    return withdrawals.filter((w) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.trim().toLowerCase();
-        if (
-          !w.employeeName.toLowerCase().includes(q) &&
-          !w.employeeEmail.toLowerCase().includes(q) &&
-          !w.targetAddress.toLowerCase().includes(q) &&
-          !w.id.toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
-
-      if (statusFilter !== "all" && w.status !== statusFilter) {
-        return false;
-      }
-
+  const [searchQuery, setSearchQuery] = useState(""),
+    [statusFilter, setStatusFilter] = useState("all");
+  const stateFilter = withdrawalStateSchema.safeParse(statusFilter);
+  const history = useAdminWithdrawalHistory({
+    ...(searchQuery.trim() ? { q: searchQuery.trim() } : {}),
+    ...(stateFilter.success ? { state: stateFilter.data } : {}),
+  });
+  const command = useWithdrawalAction();
+  const page = history.displayData;
+  const scopeId = JSON.stringify([
+    history.scope.accountId,
+    history.scope.role,
+    history.scope.epoch,
+  ]);
+  const [selected, setSelected] = useState<{
+    row: AdminWithdrawalRequest;
+    kind: "EXTEND" | "REJECT";
+    scope: string;
+  } | null>(null);
+  const resolvedSelection =
+    selected !== null &&
+    command.outcome?.status === "COMMITTED" &&
+    command.outcome.withdrawalId === selected.row.id &&
+    command.outcome.expectedVersion === selected.row.version &&
+    command.outcome.kind === selected.kind;
+  const selection =
+    history.allowed &&
+    command.allowed &&
+    selected?.scope === scopeId &&
+    !resolvedSelection
+      ? selected
+      : null;
+  const detail = useAdminWithdrawalDetail(selection?.row.id ?? null);
+  const current = detail.data;
+  const retiredSelection =
+    selected !== null &&
+    (selected.scope !== scopeId ||
+      resolvedSelection ||
+      detail.error?.category === "denied" ||
+      (selection !== null &&
+        current !== undefined &&
+        !canChangeWithdrawal(current, selection.kind)));
+  if (retiredSelection) setSelected(null);
+  const visible = retiredSelection ? null : selection;
+  const [feedback, setFeedback] = useState<{
+    scope: string;
+    message: string;
+  } | null>(null);
+  const pending = command.state.state === "pending" || command.isPending;
+  const unresolved = command.retained !== null;
+  const reviewed =
+    visible &&
+    current &&
+    current.id === visible.row.id &&
+    current.version === visible.row.version &&
+    !detail.isError &&
+    !detail.isFetching &&
+    canChangeWithdrawal(current, visible.kind);
+  const retrying =
+    command.canRetry &&
+    command.retained?.target === visible?.row.id &&
+    command.retained?.kind === visible?.kind &&
+    command.retained?.expectedVersion === visible?.row.version;
+  const ready = Boolean(reviewed) && !pending && (!unresolved || retrying);
+  const canReviewNewVersion = Boolean(
+    visible &&
+    current &&
+    current.id === visible.row.id &&
+    current.version > visible.row.version &&
+    !detail.isError &&
+    !detail.isFetching &&
+    !pending &&
+    !unresolved &&
+    canChangeWithdrawal(current, visible.kind),
+  );
+  const open = (row: AdminWithdrawalRequest, kind: "EXTEND" | "REJECT") => {
+    const sameRetained =
+      command.canRetry &&
+      command.retained?.target === row.id &&
+      command.retained.kind === kind &&
+      command.retained.expectedVersion === row.version;
+    if (
+      history.allowed &&
+      !history.isDisplayStale &&
+      command.allowed &&
+      !pending &&
+      (!unresolved || sameRetained) &&
+      canChangeWithdrawal(row, kind)
+    )
+      setSelected({ row, kind, scope: scopeId });
+  };
+  const close = () => {
+    if (!pending) setSelected(null);
+  };
+  const submit = async (intent: AdminWithdrawalIntent) => {
+    if (canReviewNewVersion && visible && current) {
+      setSelected({ ...visible, row: current });
+      return false;
+    }
+    if (!ready || !visible || intent.target !== visible.row.id) return false;
+    const scope = history.scope;
+    try {
+      const saved = retrying
+        ? await command.retryOriginal(intent)
+        : await command.execute(intent);
+      if (!getSessionRuntime().isCurrentCheck(scope)) return false;
+      setFeedback({
+        scope: scopeId,
+        message:
+          saved.withdrawal.state === "REJECTED"
+            ? "تم رفض الطلب وإعادة المبلغ إلى مصادره الأصلية."
+            : "تم حفظ الموعد الجديد المحتسب من الخادم.",
+      });
+      setSelected(null);
       return true;
-    });
-  }, [withdrawals, searchQuery, statusFilter]);
-
-  const totalPages = Math.ceil(filteredWithdrawals.length / PAGE_SIZE) || 1;
-  const paginatedWithdrawals = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE;
-    return filteredWithdrawals.slice(start, start + PAGE_SIZE);
-  }, [filteredWithdrawals, currentPage]);
-
-  const handleExtendConfirm = (additionalHours: number, reason: string) => {
-    if (!selectedWithdrawal) return;
-    const res = extendWithdrawalSchedule(
-      selectedWithdrawal.id,
-      additionalHours,
-      reason,
-    );
-    setFeedback(res.message);
-    setSelectedWithdrawal(null);
-    setExtendModalOpen(false);
+    } catch (failure: unknown) {
+      if (getSessionRuntime().isCurrentCheck(scope))
+        setFeedback({ scope: scopeId, message: getApiError(failure).message });
+      throw failure;
+    }
   };
-
-  const handleReleaseConfirm = () => {
-    if (!selectedWithdrawal) return;
-    releaseWithdrawal(selectedWithdrawal.id);
-    setFeedback(
-      `تم فك تعليق طلب السحب ${selectedWithdrawal.id} واستئناف الجدولة بنجاح.`,
-    );
-    setSelectedWithdrawal(null);
-    setReleaseModalOpen(false);
-  };
-
-  const handleRejectConfirm = (reason?: string) => {
-    if (!selectedWithdrawal) return;
-    const res = rejectWithdrawal(selectedWithdrawal.id, reason ?? "");
-    setFeedback(res.message);
-    setSelectedWithdrawal(null);
-    setRejectModalOpen(false);
-  };
-
-  const handleCompleteConfirm = () => {
-    if (!selectedWithdrawal) return;
-    completeWithdrawal(selectedWithdrawal.id);
-    setFeedback(`تم إتمام تسوية طلب السحب ${selectedWithdrawal.id} بنجاح.`);
-    setSelectedWithdrawal(null);
-    setCompleteConfirmOpen(false);
-  };
-
-  const filterOptions: readonly AdminSelectOption[] = [
-    { value: "all", label: `كل حالات السحب (${String(withdrawals.length)})` },
-    {
-      value: "scheduled",
-      label: `المجدولة (${String(withdrawals.filter((w) => w.status === "scheduled").length)})`,
-    },
-    {
-      value: "held",
-      label: `المعلقة (${String(withdrawals.filter((w) => w.status === "held").length)})`,
-    },
-    {
-      value: "processing",
-      label: `قيد المعالجة (${String(withdrawals.filter((w) => w.status === "processing").length)})`,
-    },
-    {
-      value: "completed",
-      label: `المكتملة (${String(withdrawals.filter((w) => w.status === "completed").length)})`,
-    },
-    {
-      value: "rejected",
-      label: `المرفوضة (${String(withdrawals.filter((w) => w.status === "rejected").length)})`,
-    },
-  ];
-
+  const reviewError =
+    visible && !ready
+      ? pending
+        ? "جارٍ التحقق من العملية الأصلية."
+        : unresolved
+          ? "النتيجة غير محسومة؛ تُراجع العملية الأصلية فقط."
+          : "يلزم تحميل تفاصيل حالية مطابقة؛ راجع الإصدار الجديد ثم أكد الإجراء صراحةً."
+      : null;
   return (
     <div className="space-y-6">
       <AdminPageHeader
         title="إدارة طلبات السحب المالي"
-        description="متابعة طلبات سحب الأرباح (الحد الأدنى 16 USDT، الأقصى 500 USDT، الرسوم 21%)، زيادة الجدولة، والاعتماد النهائي"
+        description="متابعة طلبات السحب المجدولة للدفع التلقائي، وزيادة الجدولة أو الرفض الآمن قبل بدء الدفع"
         breadcrumbs={[{ label: "طلبات السحب" }]}
       />
-
-      {feedback && (
+      {history.allowed && feedback?.scope === scopeId && (
         <div
           className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-xs font-bold text-emerald-800"
           role="alert"
         >
-          <span>{feedback}</span>
+          <span>{feedback.message}</span>
           <button
             type="button"
             onClick={() => {
@@ -175,8 +181,31 @@ export function WithdrawalsScreen() {
           </button>
         </div>
       )}
-
-      {/* Filter and Search Bar: Standardized 44px Height Control Pair (Requirement 9) */}
+      {command.allowed && unresolved && (
+        <TaskQueryState
+          error="نتيجة الإجراء غير محسومة؛ لا يمكن إنشاء إجراء بديل. تحقق من العملية الأصلية."
+          retry={command.observation.refetch}
+        />
+      )}
+      {command.coordinationError && (
+        <TaskQueryState
+          error="تعذر حفظ هوية الاسترداد؛ الإجراءات معطلة."
+          retry={history.refetch}
+        />
+      )}
+      {command.outcome?.status === "COMMITTED" && (
+        <p role="status">
+          تم العثور على الإجراء الأصلي: {command.outcome.action.reason} —{" "}
+          {command.outcome.action.occurredAt} — المنفذ:{" "}
+          <bdi>{command.outcome.action.actorUserId}</bdi>
+        </p>
+      )}
+      {command.outcome?.status === "SUPERSEDED" && (
+        <p role="status">
+          تغير الطلب دون إثبات تنفيذ الإجراء الأصلي؛ راجع الإصدار الجديد قبل أي
+          إجراء.
+        </p>
+      )}
       <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-12 sm:items-center">
           <div className="sm:col-span-8">
@@ -184,215 +213,227 @@ export function WithdrawalsScreen() {
               type="text"
               icon={Search}
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
+              maxLength={200}
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                if (!pending) setSelected(null);
               }}
               placeholder="بحث بالموظف، البريد، أو عنوان المحفظة..."
               aria-label="بحث في طلبات السحب"
             />
           </div>
-
           <div className="sm:col-span-4">
             <AdminSelect
               value={statusFilter}
-              onValueChange={(val) => {
-                setStatusFilter(val);
-                setCurrentPage(1);
+              onValueChange={(next) => {
+                setStatusFilter(next);
+                if (!pending) setSelected(null);
               }}
-              options={filterOptions}
+              options={[
+                { value: "all", label: "كل حالات السحب" },
+                ...withdrawalStateSchema.options.map((state) => ({
+                  value: state,
+                  label: withdrawalStates[state].label,
+                })),
+              ]}
               aria-label="تصفية حسب حالة السحب"
             />
           </div>
         </div>
       </div>
-
-      {/* Withdrawals Table */}
-      <AdminTableShell
-        footer={
-          <AdminPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredWithdrawals.length}
-            pageSize={PAGE_SIZE}
-            onPageChange={setCurrentPage}
-          />
-        }
+      <AdminButton
+        variant="outline"
+        disabled={!history.canRefresh}
+        onClick={() => {
+          void history.refetch();
+        }}
       >
-        {filteredWithdrawals.length === 0 ? (
-          <AdminEmptyState
-            title="لا توجد طلبات سحب مطابقة"
-            description="لم يتم العثور على أي طلبات سحب تطابق معايير البحث الحالية."
-          />
-        ) : (
-          <table className="w-full text-right text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
-              <tr>
-                <th className="px-4 py-3">الموظف</th>
-                <th className="px-4 py-3">المبلغ المطلوب</th>
-                <th className="px-4 py-3">الرسوم (21%)</th>
-                <th className="px-4 py-3">الصافي المحول</th>
-                <th className="px-4 py-3">عنوان المحفظة</th>
-                <th className="px-4 py-3">الطلب / الاستحقاق</th>
-                <th className="px-4 py-3">الوقت المتبقي</th>
-                <th className="px-4 py-3">الحالة</th>
-                <th className="px-4 py-3 text-center">الإجراءات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {paginatedWithdrawals.map((wth) => (
-                <WithdrawalRow
-                  key={wth.id}
-                  wth={wth}
-                  currentTimeMs={currentTimeMs}
-                  onExtend={(withdrawal) => {
-                    setSelectedWithdrawal(withdrawal);
-                    setExtendModalOpen(true);
-                  }}
-                  onRelease={(withdrawal) => {
-                    setSelectedWithdrawal(withdrawal);
-                    setReleaseModalOpen(true);
-                  }}
-                  onComplete={(withdrawal) => {
-                    setSelectedWithdrawal(withdrawal);
-                    setCompleteConfirmOpen(true);
-                  }}
-                  onReject={(withdrawal) => {
-                    setSelectedWithdrawal(withdrawal);
-                    setRejectModalOpen(true);
-                  }}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
-      </AdminTableShell>
-
-      {/* Requirement 10: Schedule Extension Dialog */}
+        تحديث طلبات السحب
+      </AdminButton>
+      {page && history.isError && (
+        <TaskQueryState
+          error={history.error?.message ?? "تعذر قراءة طلبات السحب الحالية."}
+          retry={history.refetch}
+        />
+      )}
+      {(history.observationExhausted || history.isDisplayStale) && (
+        <p role="status">آخر بيانات معروفة؛ حدّث طلبات السحب قبل أي إجراء.</p>
+      )}
+      {!page ? (
+        <TaskQueryState
+          error={
+            history.isError || !history.allowed || history.observationExhausted
+              ? (history.error?.message ??
+                "تعذر قراءة طلبات السحب الحالية. تحقق من الصلاحية والاتصال.")
+              : undefined
+          }
+          retry={history.refetch}
+        />
+      ) : (
+        <AdminTableShell
+          footer={
+            <>
+              <p className="px-4 py-3 text-xs text-slate-500">
+                الصفحة {history.page} من {page.pagination.totalPages} —{" "}
+                {page.pagination.total} طلب مطابق
+              </p>
+              <AdminPagination
+                currentPage={history.page}
+                totalPages={page.pagination.totalPages}
+                totalItems={page.pagination.total}
+                pageSize={10}
+                onPageChange={(next) => {
+                  history.setPage(next);
+                  if (!pending) setSelected(null);
+                }}
+              />
+            </>
+          }
+        >
+          {page.items.length === 0 ? (
+            <AdminEmptyState
+              title="لا توجد طلبات سحب مطابقة"
+              description="لم يتم العثور على أي طلبات سحب تطابق معايير البحث الحالية."
+            />
+          ) : (
+            <table className="w-full text-right text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 font-bold text-slate-600">
+                <tr>
+                  {[
+                    "الموظف",
+                    "المبلغ المطلوب",
+                    "الرسوم المحفوظة",
+                    "الصافي المحول",
+                    "عنوان المحفظة",
+                    "الطلب / الاستحقاق",
+                    "الوقت المتبقي",
+                    "الحالة",
+                    "الإجراءات",
+                  ].map((label) => (
+                    <th key={label} className="px-4 py-3">
+                      {label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {page.items.map((row) => (
+                  <WithdrawalRow
+                    key={row.id}
+                    wth={row}
+                    disabled={
+                      pending ||
+                      (unresolved &&
+                        !(
+                          command.canRetry &&
+                          command.retained?.target === row.id
+                        )) ||
+                      !history.allowed ||
+                      history.isDisplayStale ||
+                      history.isFetching ||
+                      history.isError
+                    }
+                    retainedKind={
+                      command.retained?.target === row.id
+                        ? command.retained.kind
+                        : undefined
+                    }
+                    onExtend={(saved) => {
+                      open(saved, "EXTEND");
+                    }}
+                    onReject={(saved) => {
+                      open(saved, "REJECT");
+                    }}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
+        </AdminTableShell>
+      )}
       <ExtendScheduleDialog
-        isOpen={extendModalOpen}
-        withdrawal={selectedWithdrawal}
-        currentTimeMs={currentTimeMs}
-        onConfirm={handleExtendConfirm}
-        onClose={() => {
-          setExtendModalOpen(false);
-        }}
-      />
-
-      {/* Release Held Withdrawal Confirmation Dialog */}
-      <AdminConfirmDialog
-        isOpen={releaseModalOpen}
-        title="تأكيد فك تعليق طلب السحب"
-        description={
-          selectedWithdrawal ? (
-            <p>
-              سيتم فك تعليق طلب السحب بمبلغ{" "}
-              <strong className="font-mono">
-                {selectedWithdrawal.amount.toFixed(2)} USDT
-              </strong>{" "}
-              الخاص بالموظف <strong>{selectedWithdrawal.employeeName}</strong>{" "}
-              واستئناف معالجته المجدولة.
-            </p>
-          ) : null
+        key={`extend:${scopeId}:${selected?.row.id ?? "none"}`}
+        isOpen={visible?.kind === "EXTEND"}
+        withdrawal={
+          visible?.kind === "EXTEND"
+            ? current?.version === visible.row.version
+              ? current
+              : visible.row
+            : null
         }
-        recordInfo={
-          selectedWithdrawal
-            ? {
-                label: "طلب السحب",
-                value: `${selectedWithdrawal.amount.toFixed(2)} USDT - ${selectedWithdrawal.employeeName}`,
-                secondary: selectedWithdrawal.targetAddress,
-              }
-            : undefined
-        }
-        confirmLabel="تأكيد فك التعليق"
-        variant="primary"
-        onConfirm={handleReleaseConfirm}
-        onClose={() => {
-          setReleaseModalOpen(false);
+        disabled={!ready && !canReviewNewVersion}
+        isLoading={pending}
+        errorMessage={reviewError}
+        retryOriginal={retrying}
+        reviewNewVersion={canReviewNewVersion}
+        onConfirm={async (countedHours, reason, expectedVersion) => {
+          if (visible) {
+            const committed = await submit({
+              target: visible.row.id,
+              kind: "EXTEND",
+              body: { expectedVersion, countedHours, reason, confirmed: true },
+            });
+            return committed;
+          }
+          return false;
         }}
+        onClose={close}
       />
-
-      {/* Reject Modal */}
       <AdminConfirmDialog
-        isOpen={rejectModalOpen}
+        key={`reject:${scopeId}:${selected?.row.id ?? "none"}`}
+        isOpen={visible?.kind === "REJECT"}
         title="رفض طلب السحب وإلغاء الحجز المالي"
         description={
-          selectedWithdrawal ? (
+          visible ? (
             <div className="space-y-2">
               <p>
                 سيتم رفض طلب السحب بمبلغ{" "}
-                <strong className="font-mono">
-                  {selectedWithdrawal.amount.toFixed(2)} USDT
-                </strong>{" "}
-                الخاص بالموظف <strong>{selectedWithdrawal.employeeName}</strong>
+                <strong className="font-mono">{visible.row.gross} USDT</strong>{" "}
+                الخاص بالموظف{" "}
+                <strong>
+                  {current?.employee.fullName ?? visible.row.employee.fullName}
+                </strong>
                 .
               </p>
               <p className="text-slate-500">
-                ملاحظة أمان: سيتم تحرير المبلغ المحجوز تلقائياً وإعادته إلى
-                الرصيد المتاح للموظف فوراً، وتسجيل قيد عكسي في السجل المالي.
+                سيتم تحرير المبلغ إلى مصادره الأصلية مرة واحدة؛ رسوم محصلة: 0
+                USDT.
+              </p>
+              <p dir="ltr" className="break-all">
+                {visible.row.id} — v{visible.row.version} —{" "}
+                {visible.row.recipient}
               </p>
             </div>
           ) : null
         }
-        recordInfo={
-          selectedWithdrawal
-            ? {
-                label: "الموظف والمبلغ",
-                value: `${selectedWithdrawal.employeeName} — ${selectedWithdrawal.amount.toFixed(2)} USDT`,
-                secondary: selectedWithdrawal.targetAddress,
-              }
-            : undefined
+        confirmLabel={
+          canReviewNewVersion
+            ? "مراجعة الإصدار الجديد"
+            : retrying
+              ? "إعادة محاولة الإجراء الأصلي فقط"
+              : "تأكيد الرفض وتحرير الرصيد"
         }
-        confirmLabel="تأكيد الرفض وتحرير الرصيد"
         variant="destructive"
         requireReason
         reasonLabel="سبب رفض السحب الإلزامي"
         reasonPlaceholder="يرجى ذكر سبب الرفض لحفظه في سجل التدقيق..."
-        onConfirm={handleRejectConfirm}
-        onClose={() => {
-          setRejectModalOpen(false);
-        }}
-      />
-
-      {/* Complete Settlement Modal */}
-      <AdminConfirmDialog
-        isOpen={completeConfirmOpen}
-        title="إتمام تسوية طلب السحب"
-        description={
-          selectedWithdrawal ? (
-            <div className="space-y-2">
-              <p>
-                هل تؤكد إتمام تحويل وتسوية مبلغ{" "}
-                <strong className="font-mono text-emerald-800">
-                  {selectedWithdrawal.netAmount.toFixed(2)} USDT
-                </strong>{" "}
-                (الصافي بعد خصم الرسوم {selectedWithdrawal.fee.toFixed(2)} USDT)
-                إلى عنوان المحفظة:
-              </p>
-              <p
-                className="rounded bg-slate-100 p-2 font-mono font-bold break-all text-slate-800"
-                dir="ltr"
-              >
-                {selectedWithdrawal.targetAddress}
-              </p>
-            </div>
-          ) : null
+        isLoading={pending}
+        confirmDisabled={!ready && !canReviewNewVersion}
+        error={reviewError}
+        onConfirm={(reason) =>
+          visible
+            ? submit({
+                target: visible.row.id,
+                kind: "REJECT",
+                body: {
+                  expectedVersion: visible.row.version,
+                  reason: reason ?? "",
+                  confirmed: true,
+                },
+              })
+            : false
         }
-        recordInfo={
-          selectedWithdrawal
-            ? {
-                label: "الصافي المراد تحويله",
-                value: `${selectedWithdrawal.netAmount.toFixed(2)} USDT`,
-                secondary: selectedWithdrawal.targetAddress,
-              }
-            : undefined
-        }
-        confirmLabel="تأكيد اكتمال التحويل والتسوية"
-        variant="primary"
-        onConfirm={handleCompleteConfirm}
-        onClose={() => {
-          setCompleteConfirmOpen(false);
-        }}
+        onClose={close}
       />
     </div>
   );

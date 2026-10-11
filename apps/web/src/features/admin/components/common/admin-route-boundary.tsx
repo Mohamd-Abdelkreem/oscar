@@ -17,9 +17,10 @@ export function AdminRouteBoundary({
   return (
     <ProtectedRoute
       allowedRoles={["ADMIN"]}
-      preserveStateDuringCheck={/^\/admin\/tasks\/[0-9a-f-]+\/edit$/u.test(
-        pathname,
-      )}
+      preserveStateDuringCheck={
+        pathname === "/admin/withdrawals" ||
+        /^\/admin\/tasks\/[0-9a-f-]+\/edit$/u.test(pathname)
+      }
     >
       <AdminShell>{children}</AdminShell>
     </ProtectedRoute>

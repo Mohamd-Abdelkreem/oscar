@@ -1,9 +1,14 @@
 import {
   withdrawalDestinationSchema,
   withdrawalRequestSchema,
+  adminWithdrawalRequestSchema,
   type WithdrawalDestination as DestinationProjection,
 } from "@template/contracts";
-import type { WithdrawalDestination, Prisma } from "@template/database";
+import type {
+  WithdrawalDestination,
+  WithdrawalAction,
+  Prisma,
+} from "@template/database";
 import { z } from "zod";
 import { BusinessClock } from "../../core/business-calendar/business-clock.js";
 import { formatUsdtAmount } from "../../core/financial/money.js";
@@ -26,6 +31,50 @@ export const withdrawalReadInclude = {
 type SavedWithdrawal = Prisma.WithdrawalRequestGetPayload<{
   include: typeof withdrawalReadInclude;
 }>;
+export const adminWithdrawalReadInclude = {
+  ...withdrawalReadInclude,
+  destination: {
+    select: { employee: { select: { id: true, fullName: true, email: true } } },
+  },
+} satisfies Prisma.WithdrawalRequestInclude;
+type AdminSavedWithdrawal = Prisma.WithdrawalRequestGetPayload<{
+  include: typeof adminWithdrawalReadInclude;
+}>;
+
+export function mapAdminWithdrawalRequest(
+  request: AdminSavedWithdrawal,
+  now: Date,
+  mutationAdmitted: boolean,
+) {
+  const safe =
+    mutationAdmitted &&
+    request.state === "SCHEDULED" &&
+    request.attempt === null &&
+    request.version < 2147483647 &&
+    request.scheduleVersion < 2147483647;
+  return adminWithdrawalRequestSchema.parse({
+    ...mapWithdrawalRequest(request, now),
+    employee: request.destination.employee,
+    canExtend: safe,
+    canReject: safe,
+  });
+}
+
+export function mapObservedWithdrawalAction(action: WithdrawalAction) {
+  return {
+    id: action.id,
+    kind: action.kind,
+    actorUserId: action.actorUserId,
+    occurredAt: action.occurredAt.toISOString(),
+    reason: action.reason,
+    expectedVersion: action.expectedVersion,
+    committedVersion: action.committedVersion,
+    beforeDueAt: action.beforeDueAt?.toISOString() ?? null,
+    afterDueAt: action.afterDueAt.toISOString(),
+    beforeScheduleVersion: action.beforeScheduleVersion,
+    afterScheduleVersion: action.afterScheduleVersion,
+  };
+}
 
 export function mapWithdrawalRequest(request: SavedWithdrawal, now: Date) {
   const remaining = new BusinessClock(() => now).remainingCountedMilliseconds(

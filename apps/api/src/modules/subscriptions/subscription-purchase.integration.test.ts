@@ -32,6 +32,7 @@ import {
   RESERVATION_NOW,
 } from "../withdrawals/testing/withdrawal-reservation-fixtures.js";
 import { SubscriptionsService } from "./subscriptions.service.js";
+import { withWithdrawalDatabase } from "../withdrawals/testing/withdrawal-fixtures.js";
 import {
   activateSubscriptionFixture,
   fundSubscriptionFixture,
@@ -74,7 +75,7 @@ async function purchaseState(database: DatabaseClient) {
 
 describe("atomic full-price purchases", () => {
   it("spends only available referral-first sources after a real gross withdrawal reservation", async () =>
-    withSubscriptionDatabase(async (database) => {
+    withWithdrawalDatabase(async (database) => {
       const configured = await database.package.findUniqueOrThrow({
         where: { code: "S2" },
       });

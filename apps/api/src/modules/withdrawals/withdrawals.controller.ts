@@ -55,6 +55,21 @@ export class WithdrawalsController {
     );
   };
 
+  adminActionOutcome = async (request: Request, response: Response) => {
+    const params = withdrawalParamsSchema.parse(request.validated?.params);
+    return ResponseHelper.ok(
+      response,
+      await this.withdrawals.adminActionOutcome(
+        withdrawalSession(request),
+        params.withdrawalId,
+        request.validated?.query,
+      ),
+      "Withdrawal action outcome loaded.",
+      request.path,
+      request.requestId,
+    );
+  };
+
   createQuote = async (request: Request, response: Response) =>
     ResponseHelper.success(
       response,

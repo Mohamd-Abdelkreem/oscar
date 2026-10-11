@@ -52,7 +52,7 @@ const preExecutionAuthPaths = [
   /^\/admin\/(?:admins|invitations)(?:\/[^/]+(?:\/(?:status|reissue|revoke))?)?$/u,
 ];
 const privateReadPath =
-  /^\/(?:packages|subscriptions|wallet|referrals|tasks|task-submissions|task-commands|proofs|task-illustrations|deposits|admin\/(?:packages|finance|wallets|referrals|referral-settings|configuration-changes|tasks|task-codes|task-submissions|task-illustrations|deposits|employees\/manual-credit-targets))(?:\/|$)/u;
+  /^\/(?:packages|subscriptions|wallet|referrals|tasks|task-submissions|task-commands|proofs|task-illustrations|deposits|withdrawals|admin\/(?:packages|finance|wallets|referrals|referral-settings|configuration-changes|tasks|task-codes|task-submissions|task-illustrations|deposits|withdrawals|employees\/manual-credit-targets))(?:\/|$)/u;
 let accessToken: ValueState<string> = { kind: "missing" };
 let refreshPromise: Promise<ApiResponse<IdentityUserData>> | undefined;
 let subscribedRuntime: ReturnType<typeof getSessionRuntime> | undefined;
@@ -239,7 +239,14 @@ apiClient.interceptors.response.use(
     if (
       safe.statusCode === 403 &&
       !isPublicAuthRequest(config?.url ?? "") &&
-      !(read && privateReadPath.test(requestPath(config?.url ?? "")))
+      !(read && privateReadPath.test(requestPath(config?.url ?? ""))) &&
+      // The command owner retires the proven first-dispatch rejection before
+      // its onError revalidates authority. Other denials revalidate here.
+      !(
+        route === "/withdrawals" &&
+        config?.method?.toLowerCase() === "post" &&
+        safe.code === "WITHDRAWAL_BLOCKED"
+      )
     )
       runtime().beginCheck();
     if (

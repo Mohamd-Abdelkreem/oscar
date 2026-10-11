@@ -308,7 +308,13 @@ test("P04 superseded original edit releases uncertainty before a fresh current-v
     .getByRole("button", { name: "تأكيد حفظ الشروط المراجعة", exact: true })
     .click();
   await expect(page.getByRole("dialog")).toContainText("لم تتأكد نتيجة الحفظ");
+  await expect(
+    page
+      .getByRole("dialog")
+      .getByRole("button", { name: "إلغاء", exact: true }),
+  ).toBeEnabled();
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await editFutureTerms(request, "62");
   await page
     .getByRole("button", { name: "التحقق من الحفظ", exact: true })

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { TronPublicPayoutCapability } from "./core/config/tron.config.js";
 import { WithdrawalDestinationService } from "./modules/withdrawals/withdrawal-destination.service.js";
 import { WithdrawalsController } from "./modules/withdrawals/withdrawals.controller.js";
 import {
@@ -107,6 +108,7 @@ export const createApiRouter = (
     financialAdmission?: FinancialRuntimeAdmission;
     depositMetadata?: CustodyMetadata;
     withdrawalWakeups?: WithdrawalWakeupPublisher;
+    payoutCapability?: TronPublicPayoutCapability;
   } = {},
 ): Router => {
   const { proofs, financialAdmission } = runtime;
@@ -120,31 +122,31 @@ export const createApiRouter = (
     emailService,
     {
       clock: financialClock,
-      network: runtime.depositMetadata?.network,
+      network: runtime.payoutCapability?.network,
       ...(financialAdmission === undefined
         ? {}
         : { admission: financialAdmission }),
     },
   );
   const withdrawalController = new WithdrawalsController(
-    new WithdrawalsService(
-      database,
-      financialClock,
-      financialAdmission,
-      runtime.withdrawalWakeups,
-    ),
+    new WithdrawalsService(database, financialClock, financialAdmission, {
+      wakeups: runtime.withdrawalWakeups,
+      capability: runtime.payoutCapability,
+    }),
     withdrawalDestinations,
     new WithdrawalQuoteService(database, {
       clock: financialClock,
-      network: runtime.depositMetadata?.network,
+      capability: runtime.payoutCapability,
+      network: runtime.payoutCapability?.network,
       ...(financialAdmission === undefined
         ? {}
         : { admission: financialAdmission }),
     }),
     new WithdrawalReservationService(database, {
       clock: financialClock,
+      capability: runtime.payoutCapability,
       admission: financialAdmission,
-      network: runtime.depositMetadata?.network,
+      network: runtime.payoutCapability?.network,
       ...(runtime.withdrawalWakeups === undefined
         ? {}
         : { wakeups: runtime.withdrawalWakeups }),
@@ -329,7 +331,12 @@ export const createApiRouter = (
 
   router.use(
     walletsRoutes(
-      new WalletsController(new WalletsService(database, financialClock)),
+      new WalletsController(
+        new WalletsService(database, financialClock, {
+          capability: runtime.payoutCapability,
+          admission: financialAdmission,
+        }),
+      ),
       authenticationMiddleware,
     ),
   );

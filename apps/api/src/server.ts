@@ -10,7 +10,10 @@ import { logger } from "./infrastructure/logger/logger.js";
 import { parseProofsEnvironment } from "./core/config/proofs.config.js";
 import { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 import { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
-import { parseTronPublicEnvironment } from "./core/config/tron.config.js";
+import {
+  parseTronPublicEnvironment,
+  parseTronPublicPayoutCapability,
+} from "./core/config/tron.config.js";
 import { assertApiDatabaseAuthority } from "./modules/custody/api-database-authority.js";
 import { parseWithdrawalQueueEnvironment } from "./core/config/withdrawal.config.js";
 import { WithdrawalWakeups } from "./infrastructure/queue/withdrawal-wakeups.js";
@@ -32,6 +35,7 @@ const depositMetadata = process.env["TRON_NETWORK"]?.trim()
   ? parseTronPublicEnvironment(process.env)
   : undefined;
 let withdrawalWakeups: WithdrawalWakeups | undefined;
+const payoutCapability = parseTronPublicPayoutCapability(process.env);
 
 let server: Server | undefined;
 let isShuttingDown = false;
@@ -99,6 +103,7 @@ const startServer = async (): Promise<void> => {
       financialAdmission,
       withdrawalWakeups,
       ...(depositMetadata === undefined ? {} : { depositMetadata }),
+      ...(payoutCapability === undefined ? {} : { payoutCapability }),
     });
 
     server = app.listen(appConfig.port, appConfig.host, (error?: Error) => {

@@ -76,6 +76,9 @@ const knownFields = new Set([
   "reference",
   "reference.kind",
   "reference.value",
+  "gross",
+  "address",
+  "countedHours",
 ]);
 const financialCodes = new Set([
   "CONFIGURATION_STALE",
@@ -125,6 +128,22 @@ const depositCodes = new Set([
   "FINANCIAL_AMOUNT_OVERFLOW",
   "FINANCIAL_WRITES_FENCED",
 ]);
+const withdrawalCodes = new Set([
+  "WITHDRAWAL_VERSION_CONFLICT",
+  "WITHDRAWAL_STATE_CONFLICT",
+  "WITHDRAWAL_AMOUNT_INVALID",
+  "WITHDRAWAL_QUOTE_STALE",
+  "WITHDRAWAL_ACTIVE",
+  "WITHDRAWAL_DESTINATION_REQUIRED",
+  "WITHDRAWAL_ADDRESS_INVALID",
+  "WITHDRAWAL_PROOF_INVALID",
+  "WITHDRAWAL_DESTINATION_FIXED",
+  "WITHDRAWAL_DESTINATION_STALE",
+  "WITHDRAWAL_BLOCKED",
+  "WITHDRAWAL_UNAVAILABLE",
+  "WITHDRAWAL_UNRESOLVED",
+  "WITHDRAWAL_INTERNAL",
+]);
 
 export const getApiError = (failure: unknown): ApiError => {
   if (failure instanceof ApiFailure) return failure;
@@ -158,7 +177,10 @@ export const getApiError = (failure: unknown): ApiError => {
     financialEnvelope.data.statusCode === status &&
     (financialCodes.has(financialEnvelope.data.code) ||
       taskCodes.has(financialEnvelope.data.code) ||
-      depositCodes.has(financialEnvelope.data.code)) &&
+      depositCodes.has(financialEnvelope.data.code) ||
+      (withdrawalCodes.has(financialEnvelope.data.code) &&
+        /^\/(?:admin\/)?withdrawals(?:\/|$)/u.test(failure.config?.url ?? "") &&
+        financialEnvelope.data.path.endsWith(failure.config?.url ?? ""))) &&
     (financialEnvelope.data.code !== "CONFIGURATION_SUPERSEDED" ||
       originalConfigurationPatch)
       ? financialEnvelope.data.code

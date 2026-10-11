@@ -113,8 +113,56 @@ afterEach(() => {
 });
 
 describe("transport boundary", () => {
-  it.each(["/deposits/me/address", "/admin/deposits/manual-credits"])(
-    "never refreshes or replays deposit POST %s after authentication or reply loss",
+  it.each([true, false])(
+    "defers only validated withdrawal rejection to its command owner: valid=%s",
+    async (valid) => {
+      const runtime = getSessionRuntime();
+      runtime.admitIdentity(runtime.scope(), { id: account.id, role: "USER" });
+      const scope = runtime.scope();
+      let sends = 0;
+      apiClient.defaults.adapter = (config) => {
+        sends++;
+        const data = {
+          success: false,
+          statusCode: 403,
+          code: "WITHDRAWAL_BLOCKED",
+          message: "PRIVATE",
+          requestId: "test",
+          timestamp: "2026-10-01T00:00:00.000Z",
+          path: valid ? "/api/v1/withdrawals" : "/api/v1/another-resource",
+        };
+        throw new AxiosError(
+          "PRIVATE",
+          "ERR_BAD_REQUEST",
+          config,
+          undefined,
+          reply(config, data, 403),
+        );
+      };
+      await expect(
+        apiClient.post("/withdrawals", {
+          quoteId: account.id,
+          confirmed: true,
+        }),
+      ).rejects.toMatchObject({
+        code: valid ? "WITHDRAWAL_BLOCKED" : "HTTP_ERROR",
+      });
+      expect(runtime.isCurrentCheck(scope)).toBe(valid);
+      expect(sends).toBe(1);
+    },
+  );
+  it.each([
+    "/deposits/me/address",
+    "/admin/deposits/manual-credits",
+    "/withdrawals/me/destination/confirmations",
+    "/withdrawals/me/destination/resend",
+    "/withdrawals/me/destination/consume",
+    "/withdrawals/quotes",
+    "/withdrawals",
+    "/admin/withdrawals/id/extensions",
+    "/admin/withdrawals/id/rejections",
+  ])(
+    "never refreshes or replays financial POST %s after authentication or reply loss",
     async (url) => {
       for (const status of [401, 0]) {
         let sends = 0;
@@ -124,9 +172,13 @@ describe("transport boundary", () => {
             ? denied(config)
             : new AxiosError("PRIVATE", "ERR_NETWORK", config);
         };
-        await expect(apiClient.post(url, {})).rejects.toMatchObject({
+        const failure: unknown = await apiClient
+          .post(url, { proof: "PRIVATE_PROOF" })
+          .catch((error: unknown) => error);
+        expect(failure).toMatchObject({
           category: status === 401 ? "denied" : "uncertain",
         });
+        expect(JSON.stringify(failure)).not.toContain("PRIVATE_PROOF");
         expect(sends).toBe(1);
       }
     },
@@ -142,6 +194,12 @@ describe("transport boundary", () => {
     "/admin/deposits",
     "/admin/deposits/manual-credits/00000000-0000-4000-8000-000000000001",
     "/admin/employees/manual-credit-targets",
+    "/withdrawals/me",
+    "/withdrawals",
+    "/withdrawals/id",
+    "/withdrawals/quotes/id/outcome",
+    "/admin/withdrawals",
+    "/admin/withdrawals/id/actions/outcome",
   ])(
     "leaves private denial revalidation to the read owner for %s",
     async (url) => {

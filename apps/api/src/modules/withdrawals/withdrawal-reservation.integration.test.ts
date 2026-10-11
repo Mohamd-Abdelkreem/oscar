@@ -5,6 +5,7 @@ import {
   reservationServices,
   reservationState,
   RESERVATION_NOW,
+  RESERVATION_CAPABILITY,
   closeReservationFixture,
 } from "./testing/withdrawal-reservation-fixtures.js";
 import { fundSubscriptionFixture } from "../subscriptions/testing/subscription-fixtures.js";
@@ -12,6 +13,8 @@ import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.
 import { withWithdrawalRole } from "./testing/withdrawal-authority-fixtures.js";
 import { readWithdrawalFacts } from "./withdrawal-quote.service.js";
 import { createIdentityFixture } from "../auth/testing/identity-fixtures.js";
+import { changeDispatchPause } from "../custody/runtime-control.js";
+import { WithdrawalReservationService } from "./withdrawal-reservation.service.js";
 
 describe("accepted gross withdrawal reservation", () => {
   it("replays the original closed request without restoring an active reservation", async () =>
@@ -78,6 +81,7 @@ describe("accepted gross withdrawal reservation", () => {
           clock: () => RESERVATION_NOW,
           admission: financialFixtureAdmission(database),
           network: "TRON_MAINNET",
+          capability: { ...RESERVATION_CAPABILITY, network: "TRON_MAINNET" },
         }).accept(owner.identity, { quoteId: quote.quoteId, confirmed: true }),
       ).rejects.toMatchObject({ code: "WITHDRAWAL_QUOTE_STALE" });
       const unset = await createIdentityFixture(database, {
@@ -151,6 +155,7 @@ describe("accepted gross withdrawal reservation", () => {
           const { WithdrawalReservationService } =
             await import("./withdrawal-reservation.service.js");
           const options = {
+            capability: RESERVATION_CAPABILITY,
             network: "TRON_NILE" as const,
             clock: () => RESERVATION_NOW,
             admission: financialFixtureAdmission(database),
@@ -161,6 +166,7 @@ describe("accepted gross withdrawal reservation", () => {
           ).create(owner.identity, { gross: "100" });
           const saved = await new WithdrawalReservationService(runtime, {
             clock: options.clock,
+            capability: options.capability,
             admission: options.admission,
             network: options.network,
           }).accept(owner.identity, {
@@ -390,6 +396,26 @@ describe("accepted gross withdrawal reservation", () => {
           replayed: true,
           withdrawal: { id: accepted.withdrawal.id },
         });
+      await changeDispatchPause(database, {
+        action: "PAUSE",
+        operatorIdentity: "test-recovery",
+        reason: "Observe original reserved winner",
+      });
+      const disabled = new WithdrawalReservationService(database, {
+        clock: () => RESERVATION_NOW,
+        network: undefined,
+        admission: financialFixtureAdmission(database),
+      });
+      expect(
+        await disabled.accept(
+          owner.identity,
+          { quoteId: quote.quoteId, confirmed: true },
+          "accepted-key",
+        ),
+      ).toMatchObject({
+        replayed: true,
+        withdrawal: { id: accepted.withdrawal.id },
+      });
       const state = await reservationState(database, owner.user.id);
       expect(state.wallet).toMatchObject({
         availableNonReferralUnits: 0n,

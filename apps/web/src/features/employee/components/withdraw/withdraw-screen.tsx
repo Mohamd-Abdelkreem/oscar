@@ -7,7 +7,7 @@ export function EmployeeWithdrawScreen() {
     <div className="flex flex-1 flex-col">
       <PageHeader
         title="طلب سحب الأرباح"
-        subtitle="سحب فوري إلى محفظة TRON (TRC20) المعتمدة"
+        subtitle="سحب تلقائي مجدول إلى محفظة TRON (TRC20) المؤكدة"
         showBackButton={true}
         backHref="/employee/wallet"
       />
@@ -16,7 +16,6 @@ export function EmployeeWithdrawScreen() {
         {/* Withdrawal Request Form & Address setup */}
         <WithdrawalForm />
 
-        {/* Pending Request / 72h Status & History */}
         <WithdrawalStatusCard />
       </div>
     </div>

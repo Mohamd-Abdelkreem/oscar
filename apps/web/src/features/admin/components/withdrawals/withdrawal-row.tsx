@@ -1,156 +1,226 @@
-"use client";
-
-import { CalendarPlus, CheckCircle2, Play, XCircle } from "lucide-react";
+﻿"use client";
+import { useState } from "react";
+import { CalendarPlus, XCircle } from "lucide-react";
 import Link from "next/link";
+import type { AdminWithdrawalRequest } from "../../api/withdrawals.api";
+import { useAdminWithdrawalDetail } from "../../hooks/withdrawals.hooks";
+import {
+  withdrawalStates,
+  withdrawalInstant,
+  withdrawalRate,
+  withdrawalActions,
+  withdrawalBlockers,
+  canChangeWithdrawal,
+} from "../../utils/withdrawal-presentation";
 import { AdminBadge } from "../common/admin-badge";
 import { AdminButton } from "../common/admin-button";
-import type {
-  AdminWithdrawal,
-  AdminWithdrawalStatus,
-} from "../../types/admin.types";
-import {
-  calculateRemainingWithdrawalTime,
-  formatBaghdadDateTime,
-} from "../../utils/time.utils";
+import { TaskQueryState } from "../common/task-query-state";
 
-const WITHDRAWAL_STATUS_LABELS: Record<
-  AdminWithdrawalStatus,
-  { label: string; variant: "success" | "warning" | "danger" | "info" }
-> = {
-  scheduled: { label: "مجدول", variant: "warning" },
-  held: { label: "معلق بقرار إداري", variant: "danger" },
-  processing: { label: "قيد التحويل والتنفيذ", variant: "info" },
-  completed: { label: "مكتمل ومسوى", variant: "success" },
-  rejected: { label: "مرفوض ومحرر", variant: "danger" },
-};
+function WithdrawalDetails({ target }: { readonly target: string }) {
+  const detail = useAdminWithdrawalDetail(target),
+    row = detail.displayData;
+  if (!row)
+    return (
+      <TaskQueryState
+        error={
+          detail.isError || detail.observationExhausted
+            ? (detail.error?.message ??
+              "تعذر قراءة التفاصيل الحالية. لا يمكن تنفيذ إجراء.")
+            : undefined
+        }
+        retry={detail.refetch}
+      />
+    );
+  return (
+    <div className="space-y-1 pt-2 break-all">
+      {(detail.observationExhausted || detail.isDisplayStale) && (
+        <p role="status">هذه آخر بيانات معروفة؛ حدّث التفاصيل قبل أي إجراء.</p>
+      )}
+      <p>
+        {row.employee.fullName} — <bdi>{row.employee.email}</bdi>
+      </p>
+      <p>
+        معرف الطلب: <bdi>{row.id}</bdi> — إصدار {row.version} /{" "}
+        {row.scheduleVersion}
+      </p>
+      <p>
+        المستلم الثابت: <bdi>{row.recipient}</bdi> — <bdi>{row.network}</bdi>
+      </p>
+      <p>الموعد الأصلي: {withdrawalInstant(row.originalDueAt)} (بغداد)</p>
+      <p>الموعد الحالي: {withdrawalInstant(row.dueAt)} (بغداد)</p>
+      <p>أقرب إرسال: {withdrawalInstant(row.dispatchAt)} (بغداد)</p>
+      <p>لقطة الخادم: {withdrawalInstant(row.serverNow)} (بغداد)</p>
+      <p>
+        الساعات المحتسبة المتبقية: <bdi>{row.remainingCountedHours}</bdi> —{" "}
+        <bdi>{row.remainingCountedMilliseconds}</bdi> ms
+      </p>
+      <p>
+        غير إحالي: <bdi>{row.sourceAllocation.nonReferral}</bdi> USDT — إحالات:{" "}
+        <bdi>{row.sourceAllocation.referral}</bdi> USDT
+      </p>
+      <p>
+        العضوية المحفوظة: {row.effectiveMembership} — رسوم:{" "}
+        {withdrawalRate(row.feeBps)}
+      </p>
+      <p>
+        أساس الرسوم: {row.feeBasis} — إصدار السياسة: {row.policyVersion} — إصدار
+        العنوان: {row.addressVersion}
+      </p>
+      {row.subscriptionExpiresAt && (
+        <p>
+          انتهاء العضوية المحفوظ: {withdrawalInstant(row.subscriptionExpiresAt)}{" "}
+          (بغداد)
+        </p>
+      )}
+      {row.finalizedAt && (
+        <p>
+          وقت النتيجة النهائية: {withdrawalInstant(row.finalizedAt)} (بغداد)
+        </p>
+      )}
+      {row.transactionId && (
+        <p>
+          معرف المعاملة: <bdi>{row.transactionId}</bdi>
+        </p>
+      )}
+      {row.blocker && <p>{withdrawalBlockers[row.blocker]}</p>}
+      {row.release ? (
+        <p>
+          أُعيد {row.release.gross} USDT إلى المصادر الأصلية؛ رسوم محصلة:{" "}
+          {row.release.chargedFee} USDT.
+        </p>
+      ) : row.settlement ? (
+        <p>
+          دفع مؤكد: {row.settlement.net} USDT — رسوم محصلة: {row.settlement.fee}{" "}
+          USDT.
+        </p>
+      ) : (
+        <p>يبقى المبلغ محجوزاً؛ صفر لا يعني اكتمال الدفع.</p>
+      )}
+      <p>آخر الإجراءات المحفوظة (حتى 100 إجراء):</p>
+      {row.actions.map((action) => (
+        <p key={action.id}>
+          {withdrawalActions[action.kind]} —{" "}
+          {withdrawalInstant(action.occurredAt)} (بغداد) — المنفذ:{" "}
+          <bdi>{action.actorUserId ?? "النظام"}</bdi> — {action.reason} — إصدار{" "}
+          {action.committedVersion} / {action.scheduleVersion}
+        </p>
+      ))}
+      <AdminButton
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          void detail.refetch();
+        }}
+      >
+        تحديث التفاصيل
+      </AdminButton>
+    </div>
+  );
+}
 export function WithdrawalRow({
   wth,
-  currentTimeMs,
+  disabled,
+  retainedKind,
   onExtend,
-  onRelease,
-  onComplete,
   onReject,
 }: {
-  readonly wth: AdminWithdrawal;
-  readonly currentTimeMs: number;
-  readonly onExtend: (withdrawal: AdminWithdrawal) => void;
-  readonly onRelease: (withdrawal: AdminWithdrawal) => void;
-  readonly onComplete: (withdrawal: AdminWithdrawal) => void;
-  readonly onReject: (withdrawal: AdminWithdrawal) => void;
+  readonly wth: AdminWithdrawalRequest;
+  readonly disabled: boolean;
+  readonly retainedKind?: "EXTEND" | "REJECT" | undefined;
+  readonly onExtend: (row: AdminWithdrawalRequest) => void;
+  readonly onReject: (row: AdminWithdrawalRequest) => void;
 }) {
-  const statusMeta = WITHDRAWAL_STATUS_LABELS[wth.status];
-  const baseDuration = wth.originalDurationHours ?? 72;
-  const totalScheduleHours = baseDuration + (wth.addedHours ?? 0);
-
-  // Requirement 3: calculate countdown strictly from max(0, dueAt - currentTime)
-  const isScheduled = wth.status === "scheduled";
-  const remaining = isScheduled
-    ? calculateRemainingWithdrawalTime(wth.dueAt, currentTimeMs)
-    : null;
-
+  const [expanded, setExpanded] = useState(false);
+  const status = withdrawalStates[wth.state];
   return (
-    <tr key={wth.id} className="hover:bg-slate-50/70">
+    <tr className="hover:bg-slate-50/70">
       <td className="px-4 py-3">
         <div className="space-y-0.5">
           <Link
-            href={`/admin/employees/${wth.employeeId}`}
+            href={`/admin/employees/${wth.employee.id}`}
             className="block font-bold text-slate-900 hover:text-emerald-700 hover:underline"
           >
-            {wth.employeeName}
+            {wth.employee.fullName}
           </Link>
           <bdi dir="ltr" className="block text-[11px] text-slate-500">
-            {wth.employeeEmail}
+            {wth.employee.email}
           </bdi>
         </div>
       </td>
-
       <td
         className="px-4 py-3 font-mono text-sm font-bold whitespace-nowrap text-slate-900"
         dir="ltr"
       >
-        {wth.amount.toFixed(2)} USDT
+        {wth.gross} USDT
       </td>
-
       <td
         className="px-4 py-3 font-mono whitespace-nowrap text-slate-500"
         dir="ltr"
       >
-        {wth.fee.toFixed(2)} USDT
+        {wth.fee} USDT ({withdrawalRate(wth.feeBps)})
       </td>
-
       <td
         className="px-4 py-3 font-mono text-sm font-bold whitespace-nowrap text-emerald-700"
         dir="ltr"
       >
-        {wth.netAmount.toFixed(2)} USDT
+        {wth.net} USDT
       </td>
-
       <td
         className="max-w-[9rem] truncate px-4 py-3 font-mono text-[11px] text-slate-600"
         dir="ltr"
-        title={wth.targetAddress}
+        title={wth.recipient}
       >
-        {wth.targetAddress}
+        {wth.recipient}
       </td>
-
       <td className="px-4 py-3 whitespace-nowrap text-slate-500">
         <div className="space-y-0.5">
           <div className="font-mono text-[11px]">
-            طلب: <bdi dir="ltr">{formatBaghdadDateTime(wth.requestedAt)}</bdi>
+            طلب: <bdi>{withdrawalInstant(wth.acceptedAt)}</bdi>
           </div>
           <div className="font-mono text-[11px] font-semibold text-slate-600">
-            استحقاق: <bdi dir="ltr">{formatBaghdadDateTime(wth.dueAt)}</bdi>
+            استحقاق: <bdi>{withdrawalInstant(wth.dueAt)}</bdi>
           </div>
         </div>
+        <details
+          className={expanded ? "w-72 whitespace-normal" : "whitespace-normal"}
+          onToggle={(event) => {
+            setExpanded(event.currentTarget.open);
+          }}
+        >
+          <summary className="cursor-pointer font-semibold text-slate-700">
+            تفاصيل الطلب
+          </summary>
+          {expanded && <WithdrawalDetails target={wth.id} />}
+        </details>
       </td>
-
-      {/* Requirement 3: Visible Remaining Time Column */}
       <td className="px-4 py-3 whitespace-nowrap">
-        {isScheduled && remaining ? (
-          remaining.isDue ? (
-            <span className="inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-700">
-              {remaining.text}
-            </span>
-          ) : (
-            <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900">
-              {remaining.text}
-            </span>
-          )
-        ) : (
-          <span className="text-sm font-bold text-slate-400">—</span>
-        )}
+        <span className="inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-bold text-amber-900">
+          <bdi>{wth.remainingCountedHours}</bdi> ساعة محتسبة
+        </span>
       </td>
-
       <td className="px-4 py-3 whitespace-nowrap">
-        <AdminBadge variant={statusMeta.variant} size="sm" dot>
-          {statusMeta.label}
-          {isScheduled && ` (${String(totalScheduleHours)} ساعة)`}
+        <AdminBadge
+          variant={
+            wth.state === "COMPLETED"
+              ? "success"
+              : wth.release
+                ? "danger"
+                : "warning"
+          }
+          size="sm"
+          dot
+        >
+          {status.label}
         </AdminBadge>
-
-        {wth.addedHours !== undefined && wth.addedHours > 0 && (
-          <p className="mt-0.5 text-[10px] font-bold text-amber-800">
-            تم تمديده (+{wth.addedHours} س)
-          </p>
-        )}
-
-        {wth.holdReason && (
-          <p
-            className="mt-1 max-w-[12rem] truncate text-[10px] text-rose-600"
-            title={wth.holdReason}
-          >
-            {wth.holdReason}
-          </p>
-        )}
       </td>
-
       <td className="px-4 py-3 text-center whitespace-nowrap">
         <div className="flex flex-wrap items-center justify-center gap-1.5">
-          {/* Requirement 10: Schedule Extension Action (Replaces Hold) */}
-          {isScheduled && (
+          {canChangeWithdrawal(wth, "EXTEND") && (
             <AdminButton
               variant="warning"
               size="sm"
               icon={CalendarPlus}
+              disabled={disabled || retainedKind === "REJECT"}
               onClick={() => {
                 onExtend(wth);
               }}
@@ -159,45 +229,12 @@ export function WithdrawalRow({
               زيادة الجدولة
             </AdminButton>
           )}
-
-          {/* Legacy release action (for retained held rows) */}
-          {wth.status === "held" && (
-            <AdminButton
-              variant="success"
-              size="sm"
-              icon={Play}
-              onClick={() => {
-                onRelease(wth);
-              }}
-              title="فك تعليق الطلب واستئناف الجدولة"
-            >
-              فك التعليق
-            </AdminButton>
-          )}
-
-          {/* Complete action */}
-          {(wth.status === "scheduled" || wth.status === "processing") && (
-            <AdminButton
-              variant="primary"
-              size="sm"
-              icon={CheckCircle2}
-              onClick={() => {
-                onComplete(wth);
-              }}
-              title="إتمام تسوية السحب وخصم الرصيد المحجوز"
-            >
-              إتمام
-            </AdminButton>
-          )}
-
-          {/* Reject action */}
-          {(wth.status === "scheduled" ||
-            wth.status === "held" ||
-            wth.status === "processing") && (
+          {canChangeWithdrawal(wth, "REJECT") && (
             <AdminButton
               variant="destructive"
               size="sm"
               icon={XCircle}
+              disabled={disabled || retainedKind === "EXTEND"}
               onClick={() => {
                 onReject(wth);
               }}

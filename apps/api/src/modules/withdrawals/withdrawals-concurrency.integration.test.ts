@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { setTimeout as delay } from "node:timers/promises";
+import { WithdrawalsService } from "./withdrawals.service.js";
+import { changeDispatchPause } from "../custody/runtime-control.js";
 import {
   withWithdrawalDatabase,
   withWithdrawalRaceClients,
@@ -13,8 +16,164 @@ import { RESERVATION_NOW } from "./testing/withdrawal-reservation-fixtures.js";
 import { PurchaseQuoteService } from "../subscriptions/purchase-quote.service.js";
 import { SubscriptionPurchaseService } from "../subscriptions/subscription-purchase.service.js";
 import { financialFixtureAdmission } from "../ledger/testing/financial-fixtures.js";
+import type { DatabaseClient } from "@template/database";
+
+async function waitBlocked(database: DatabaseClient, count: number) {
+  const deadline = performance.now() + 5000;
+  while (performance.now() < deadline) {
+    const [row] = await database.$queryRaw<
+      { count: bigint }[]
+    >`SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND cardinality(pg_blocking_pids(pid)) > 0`;
+    if (row !== undefined && row.count >= BigInt(count)) return;
+    await delay(10);
+  }
+  throw new Error("Withdrawal race did not overlap at database locks");
+}
 
 describe("independent withdrawal devices", () => {
+  it("observes a committed acceptance after waiting across quote expiry", async () =>
+    withWithdrawalDatabase(async (database, url) => {
+      const owner = await reservationEmployee(database);
+      let now = RESERVATION_NOW;
+      const quote = await reservationServices(
+        database,
+        () => now,
+        60,
+      ).quotes.create(owner.identity, { gross: "100" });
+      const pending: Promise<unknown>[] = [];
+      await database.$executeRawUnsafe(
+        "CREATE FUNCTION p09_acceptance_gate() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(74079); RETURN NEW; END $$",
+      );
+      await database.$executeRawUnsafe(
+        "CREATE TRIGGER p09_acceptance_gate BEFORE INSERT ON withdrawal_requests FOR EACH ROW EXECUTE FUNCTION p09_acceptance_gate()",
+      );
+      try {
+        await withWithdrawalRaceClients(url, async (writer, observer) => {
+          await database.$transaction(
+            async (transaction) => {
+              await transaction.$queryRaw`SELECT pg_advisory_xact_lock(74079)::text`;
+              pending.push(
+                reservationServices(writer, () => now).reservations.accept(
+                  owner.identity,
+                  { quoteId: quote.quoteId, confirmed: true },
+                ),
+              );
+              void pending[0]?.catch(() => {});
+              await waitBlocked(database, 1);
+              pending.push(
+                new WithdrawalsService(observer, () => now).outcome(
+                  owner.identity,
+                  quote.quoteId,
+                ),
+              );
+              void pending[1]?.catch(() => {});
+              await waitBlocked(database, 2);
+              pending.push(
+                changeDispatchPause(database, {
+                  action: "PAUSE",
+                  operatorIdentity: "test-recovery",
+                  reason: "Acceptance wins admission",
+                }),
+              );
+              void pending[2]?.catch(() => {});
+              await waitBlocked(database, 3);
+              now = new Date(new Date(quote.quoteExpiresAt).getTime() + 1);
+            },
+            { timeout: 10000 },
+          );
+          const [accepted, observed] = await Promise.all(pending);
+          expect(accepted).toMatchObject({ replayed: false });
+          expect(observed).toMatchObject({
+            status: "COMMITTED",
+            quoteId: quote.quoteId,
+          });
+        });
+        const state = await reservationState(database, owner.user.id);
+        expect([
+          state.requests.length,
+          state.allocations.length,
+          state.operations.length,
+        ]).toEqual([1, 1, 1]);
+        expect(state.wallet.reservedNonReferralUnits).toBe(100000000n);
+        expect(
+          await database.financialRuntimeControl.findUniqueOrThrow({
+            where: { id: 1 },
+          }),
+        ).toMatchObject({ newDispatchPaused: true });
+      } finally {
+        await Promise.allSettled(pending);
+        await database.$executeRawUnsafe(
+          "DROP TRIGGER p09_acceptance_gate ON withdrawal_requests",
+        );
+        await database.$executeRawUnsafe("DROP FUNCTION p09_acceptance_gate()");
+      }
+    }));
+
+  it("does not reserve when an overlapping dispatch pause wins admission", async () =>
+    withWithdrawalDatabase(async (database, url) => {
+      const owner = await reservationEmployee(database);
+      const quote = await reservationServices(database).quotes.create(
+        owner.identity,
+        { gross: "100" },
+      );
+      const pending: Promise<unknown>[] = [];
+      await database.$executeRawUnsafe(
+        "CREATE FUNCTION p09_pause_gate() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN PERFORM pg_advisory_xact_lock(74080); RETURN NEW; END $$",
+      );
+      await database.$executeRawUnsafe(
+        "CREATE TRIGGER p09_pause_gate BEFORE UPDATE ON financial_runtime_control FOR EACH ROW EXECUTE FUNCTION p09_pause_gate()",
+      );
+      try {
+        await withWithdrawalRaceClients(url, async (writer, operator) => {
+          await database.$transaction(
+            async (transaction) => {
+              await transaction.$queryRaw`SELECT pg_advisory_xact_lock(74080)::text`;
+              pending.push(
+                changeDispatchPause(operator, {
+                  action: "PAUSE",
+                  operatorIdentity: "test-recovery",
+                  reason: "Pause wins admission",
+                }),
+              );
+              void pending[0]?.catch(() => {});
+              await waitBlocked(database, 1);
+              pending.push(
+                reservationServices(writer).reservations.accept(
+                  owner.identity,
+                  {
+                    quoteId: quote.quoteId,
+                    confirmed: true,
+                  },
+                ),
+              );
+              void pending[1]?.catch(() => {});
+              await waitBlocked(database, 2);
+            },
+            { timeout: 10000 },
+          );
+          await pending[0];
+          await expect(pending[1]).rejects.toMatchObject({
+            code: "WITHDRAWAL_UNAVAILABLE",
+          });
+        });
+      } finally {
+        await Promise.allSettled(pending);
+        await database.$executeRawUnsafe(
+          "DROP TRIGGER p09_pause_gate ON financial_runtime_control",
+        );
+        await database.$executeRawUnsafe("DROP FUNCTION p09_pause_gate()");
+      }
+      const state = await reservationState(database, owner.user.id);
+      expect([
+        state.requests.length,
+        state.allocations.length,
+        state.operations.length,
+      ]).toEqual([0, 0, 0]);
+      expect(state.wallet).toMatchObject({
+        availableNonReferralUnits: 100000000n,
+        reservedNonReferralUnits: 0n,
+      });
+    }));
   it("chooses one entire purchase or withdrawal when independently reviewed intents compete for funds", async () =>
     withWithdrawalDatabase(async (database, url) => {
       const owner = await reservationEmployee(database);

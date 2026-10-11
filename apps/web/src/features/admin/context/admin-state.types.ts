@@ -65,24 +65,6 @@ export interface AdminStateContextValue {
     reason: string,
   ) => { success: boolean; message: string };
 
-  // Withdrawal actions
-  readonly holdWithdrawal: (withdrawalId: string, reason: string) => void;
-  readonly releaseWithdrawal: (withdrawalId: string) => void;
-  readonly extendWithdrawalSchedule: (
-    withdrawalId: string,
-    additionalHours: number,
-    reason: string,
-  ) => {
-    success: boolean;
-    message: string;
-    withdrawal?: AdminWithdrawal | undefined;
-  };
-  readonly rejectWithdrawal: (
-    withdrawalId: string,
-    reason: string,
-  ) => { success: boolean; message: string };
-  readonly completeWithdrawal: (withdrawalId: string) => void;
-
   // Settings actions
   readonly updateSettings: (newSettings: Partial<AdminSystemSettings>) => void;
 

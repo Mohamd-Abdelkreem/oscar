@@ -414,6 +414,35 @@ describe("safe scheduled withdrawal administration", () => {
                     where: { id: saved.walletId },
                   });
                   expect(saved.recipient).toBe(accepted.withdrawal.recipient);
+                  const reads = new WithdrawalsService(
+                    api,
+                    () => new Date(),
+                    apiAdmission,
+                  );
+                  expect(
+                    await reads.detail(identity, saved.id, true),
+                  ).toMatchObject({
+                    employee: {
+                      id: employee.user.id,
+                      email: employee.user.email,
+                    },
+                    canExtend: saved.state === "SCHEDULED",
+                    canReject: saved.state === "SCHEDULED",
+                  });
+                  if (operation === "EXTEND" || operation === "REJECT") {
+                    expect(
+                      await reads.adminActionOutcome(identity, saved.id, {
+                        kind: operation,
+                        requestKey:
+                          operation === "EXTEND"
+                            ? "race-extension"
+                            : "race-rejection",
+                        expectedVersion: 1,
+                      }),
+                    ).toMatchObject({
+                      status: claimed.value ? "SUPERSEDED" : "COMMITTED",
+                    });
+                  }
                   if (claimed.value) {
                     expect(saved.state).toBe("SIGNING");
                     expect(allocation.state).toBe("ACTIVE");

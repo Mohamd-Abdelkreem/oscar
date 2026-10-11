@@ -453,6 +453,10 @@ export {
   adminWithdrawalFilterSchema,
   withdrawalQuoteOutcomeSchema,
   withdrawalStatusSchema,
+  adminWithdrawalRequestSchema,
+  adminWithdrawalHistorySchema,
+  adminWithdrawalActionOutcomeQuerySchema,
+  adminWithdrawalActionOutcomeSchema,
 } from "./withdrawals/withdrawal.schema.ts";
 export type {
   WithdrawalDestination,

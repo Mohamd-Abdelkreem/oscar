@@ -10,6 +10,7 @@ const expectedPaths = [
   "/withdrawals/{withdrawalId}",
   "/admin/withdrawals",
   "/admin/withdrawals/{withdrawalId}",
+  "/admin/withdrawals/{withdrawalId}/actions/outcome",
   "/admin/withdrawals/{withdrawalId}/extensions",
   "/admin/withdrawals/{withdrawalId}/rejections",
   "/withdrawals/me/destination",
@@ -97,6 +98,56 @@ const expectedPaths = [
 ] as const;
 
 describe("OpenAPI document", () => {
+  it("documents private keyed admin observation and separate readiness/identity projections", () => {
+    const paths = buildOpenApiDocument().paths;
+    const observe =
+      paths?.["/admin/withdrawals/{withdrawalId}/actions/outcome"];
+    expect(observe?.post).toBeUndefined();
+    expect(observe?.get?.security).toEqual([{ BearerAuth: [] }]);
+    expect(
+      observe?.get?.parameters?.map((parameter) =>
+        "name" in parameter ? parameter.name : "ref",
+      ),
+    ).toEqual(["withdrawalId", "kind", "requestKey", "expectedVersion"]);
+    expect(observe?.get?.responses).toHaveProperty("409");
+    expect(paths?.["/withdrawals/me"]?.get?.responses?.["200"]).toHaveProperty(
+      [
+        "content",
+        "application/json",
+        "schema",
+        "properties",
+        "data",
+        "properties",
+        "withdrawalExecutionReady",
+        "type",
+      ],
+      "boolean",
+    );
+    expect(paths?.["/withdrawals/me"]?.get?.responses?.["200"]).toHaveProperty(
+      [
+        "content",
+        "application/json",
+        "schema",
+        "properties",
+        "data",
+        "required",
+      ],
+      expect.arrayContaining(["network"]),
+    );
+    expect(
+      paths?.["/admin/withdrawals/{withdrawalId}"]?.get?.responses?.["200"],
+    ).toHaveProperty(
+      [
+        "content",
+        "application/json",
+        "schema",
+        "properties",
+        "data",
+        "required",
+      ],
+      expect.arrayContaining(["employee", "canExtend", "canReject"]),
+    );
+  });
   it("documents authenticated POST-only destination proof consumption and truthful pending delivery", () => {
     const paths = buildOpenApiDocument().paths;
     expect(paths?.["/withdrawals/me/destination"]?.get?.security).toEqual([
@@ -136,8 +187,16 @@ describe("OpenAPI document", () => {
     const accept = paths?.["/withdrawals"]?.post;
     expect(accept?.security).toEqual([{ BearerAuth: [], CsrfHeader: [] }]);
     expect(Object.keys(accept?.responses ?? {})).toEqual(
-      expect.arrayContaining(["200", "201", "409"]),
+      expect.arrayContaining(["200", "201", "409", "503"]),
     );
+    expect(accept?.responses?.["503"]).toEqual({
+      description: "WITHDRAWAL_UNAVAILABLE",
+      content: {
+        "application/json": {
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" },
+        },
+      },
+    });
     expect(
       accept?.parameters?.some(
         (parameter) =>

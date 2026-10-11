@@ -23,11 +23,16 @@ import {
   mapAdminLedgerDetail,
 } from "./wallets.mapper.js";
 import { readHistory, readWalletTotals } from "./wallet-history.query.js";
+import {
+  withdrawalExecutionReady,
+  type WithdrawalCapabilityContext,
+} from "../withdrawals/withdrawal-readiness.js";
 
 export class WalletsService {
   constructor(
     private readonly database: DatabaseClient,
     private readonly clock: () => Date = () => new Date(),
+    private readonly withdrawalCapability: WithdrawalCapabilityContext = {},
   ) {}
   private observe<T>(
     identity: SubscriptionIdentity,
@@ -50,7 +55,11 @@ export class WalletsService {
         select: walletOwnerSelect,
       });
       if (owner === null) throw new NotFoundException();
-      return mapWallet(owner, now);
+      return mapWallet(
+        owner,
+        now,
+        await withdrawalExecutionReady(transaction, this.withdrawalCapability),
+      );
     });
   }
   employeeWallet(identity: SubscriptionIdentity, employeeId: string) {
@@ -61,7 +70,14 @@ export class WalletsService {
       });
       if (owner === null) throw new NotFoundException();
       return adminWalletViewSchema.parse({
-        ...mapWallet(owner, now),
+        ...mapWallet(
+          owner,
+          now,
+          await withdrawalExecutionReady(
+            transaction,
+            this.withdrawalCapability,
+          ),
+        ),
         employee: {
           id: owner.id,
           fullName: owner.fullName,

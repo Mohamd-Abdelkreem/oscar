@@ -46,7 +46,6 @@ import type {
 import { useEmployeeRestrictionActions } from "./actions/use-employee-restriction-actions";
 import { useEmployeeAccountActions } from "./actions/use-employee-account-actions";
 import { useDepositActions } from "./actions/use-deposit-actions";
-import { useWithdrawalActions } from "./actions/use-withdrawal-actions";
 import { useSettingsActions } from "./actions/use-settings-actions";
 import type { AdminStateContextValue } from "./admin-state.types";
 import { generateId, getNowTimestamp } from "../utils/admin-records";
@@ -69,8 +68,7 @@ export function AdminStateProvider({
   const [submissions] = useState<readonly AdminSubmission[]>(SEED_SUBMISSIONS);
   const [deposits, setDeposits] =
     useState<readonly AdminDeposit[]>(SEED_DEPOSITS);
-  const [withdrawals, setWithdrawals] =
-    useState<readonly AdminWithdrawal[]>(SEED_WITHDRAWALS);
+  const [withdrawals] = useState<readonly AdminWithdrawal[]>(SEED_WITHDRAWALS);
   const [financeTransactions, setFinanceTransactions] = useState<
     readonly AdminFinanceTransaction[]
   >(SEED_FINANCE_TRANSACTIONS);
@@ -128,19 +126,6 @@ export function AdminStateProvider({
     addAuditLog,
   });
   const {
-    holdWithdrawal,
-    releaseWithdrawal,
-    rejectWithdrawal,
-    completeWithdrawal,
-    extendWithdrawalSchedule,
-  } = useWithdrawalActions({
-    withdrawals,
-    setEmployees,
-    setWithdrawals,
-    setFinanceTransactions,
-    addAuditLog,
-  });
-  const {
     updateSettings,
     createAdminAccount,
     toggleAdminStatus,
@@ -180,12 +165,6 @@ export function AdminStateProvider({
 
       manualCreditDeposit,
 
-      holdWithdrawal,
-      releaseWithdrawal,
-      extendWithdrawalSchedule,
-      rejectWithdrawal,
-      completeWithdrawal,
-
       updateSettings,
 
       createAdminAccount,
@@ -214,11 +193,6 @@ export function AdminStateProvider({
       updateEmployeeWithdrawalAddress,
       deleteEmployeeAccount,
       manualCreditDeposit,
-      holdWithdrawal,
-      releaseWithdrawal,
-      extendWithdrawalSchedule,
-      rejectWithdrawal,
-      completeWithdrawal,
       updateSettings,
       createAdminAccount,
       updateAdminAccount,

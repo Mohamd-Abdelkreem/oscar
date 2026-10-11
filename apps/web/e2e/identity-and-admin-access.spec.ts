@@ -764,6 +764,11 @@ test("US1-03 partial restrictions allow sign-in but a later real ban retires acc
   await signIn(page);
   await expect(page).toHaveURL("/employee");
   await expect(privateNavigation(page)).toBeVisible();
+  // Revocation must follow the real login, rather than the frozen fixture startup time.
+  await scenario.command({
+    command: "p04-clock",
+    instant: new Date(Date.now() + 1_000).toISOString(),
+  });
   await change({ status: "BANNED" });
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(page).toHaveURL(/\/employee\/auth\/login/u);

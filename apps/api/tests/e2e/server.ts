@@ -19,6 +19,7 @@ import {
 import type { DatabaseClient } from "@template/database";
 import type { P04FinanceScenario } from "./p04-finance.js";
 import type { P07DepositScenario } from "./p07-deposits.js";
+import type { P09WithdrawalScenario } from "./p09-withdrawals.js";
 
 import {
   controlRequestSchema,
@@ -47,6 +48,7 @@ Object.assign(process.env, {
   API_PREFIX: "/api/v1",
   CORS_ORIGINS: "http://127.0.0.1:3103",
   WEB_APP_URL: "http://127.0.0.1:3103",
+  WITHDRAWAL_ADDRESS_CONFIRM_URL: "http://127.0.0.1:3103/employee/account",
   ADMIN_INVITATION_ACCEPT_URL:
     "http://127.0.0.1:3103/admin/auth/accept-invitation",
   EMAIL_PROVIDER: "resend",
@@ -72,6 +74,7 @@ let database: DatabaseClient | undefined;
 let server: Server | undefined;
 let financial: P04FinanceScenario | undefined;
 let deposits: P07DepositScenario | undefined;
+let withdrawals: P09WithdrawalScenario | undefined;
 let taskScenario: P05TaskScenario | undefined;
 let proofs: ProofsRuntime | undefined;
 let decoderBarrier: P05DecoderBarrier | undefined;
@@ -122,6 +125,21 @@ const control = async (
   if (database === undefined) throw new Error("HARNESS_NOT_READY");
   const finance = financial;
   if (finance === undefined) throw new Error("HARNESS_NOT_READY");
+  if (
+    request.command === "p09-fixtures" ||
+    request.command === "p09-claim-fixture" ||
+    request.command === "p09-state" ||
+    request.command === "p09-clock"
+  ) {
+    if (withdrawals === undefined) throw new Error("HARNESS_NOT_READY");
+    if (request.command === "p09-fixtures")
+      return withdrawals.fixtures(request);
+    if (request.command === "p09-claim-fixture")
+      return withdrawals.claimFixture(request.withdrawalId);
+    if (request.command === "p09-clock")
+      return withdrawals.setClock(request.instant);
+    return withdrawals.state(request.email);
+  }
   if (
     request.command === "p07-fixtures" ||
     request.command === "p07-ready" ||
@@ -435,6 +453,26 @@ const start = async () => {
   deposits = new P07DepositScenario(database, admission);
   const { P04FinanceScenario } = await import("./p04-finance.js");
   financial = new P04FinanceScenario(database, admission);
+  const { parseTronPublicPayoutCapability } =
+    await import("../../src/core/config/tron.config.js");
+  const payoutCapability = parseTronPublicPayoutCapability({
+    TRON_NETWORK: p07Metadata.network,
+    TRON_TOKEN_CONTRACT: p07Metadata.token.contract,
+    TRON_PAYOUT_KEY_ID: "00000000-0000-4000-8000-000000000009",
+  });
+  if (payoutCapability === undefined)
+    throw new Error("P09_PUBLIC_CAPABILITY_REQUIRED");
+  const { P09WithdrawalScenario } = await import("./p09-withdrawals.js");
+  const financeClock = financial;
+  withdrawals = new P09WithdrawalScenario(database, {
+    databaseUrl,
+    admission,
+    capability: payoutCapability,
+    clock: financeClock.clock,
+    setServiceClock: (instant) => {
+      financeClock.setClock(instant);
+    },
+  });
   const { P05TaskScenario } = await import("./p05-tasks.js");
   taskScenario = new P05TaskScenario(database, financial.clock, admission);
   if (nativeBridge) {
@@ -522,6 +560,7 @@ const start = async () => {
     financialClock: financial.clock,
     financialAdmission: admission,
     depositMetadata: p07Metadata,
+    payoutCapability,
     ...(proofs ? { proofs } : {}),
   });
   await new Promise<void>((ready, reject) => {

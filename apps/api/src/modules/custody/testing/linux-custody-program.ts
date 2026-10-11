@@ -16,11 +16,11 @@ const fixtures = JSON.parse(await readFile('/primary/fixtures.json', 'utf8'));
 let stage = 'setup';
 function invoke(path, input, environment) {
   const child = spawn('node', [path], { env: environment, stdio: ['pipe', 'pipe', 'pipe'] });
-  let output = ''; let diagnostics=''; let bytes = 0;
-  child.stdout.on('data', chunk => { bytes += chunk.length; if (bytes > 262144) child.kill(); else output += chunk.toString(); });
-  child.stderr.on('data', chunk=>{ bytes+=chunk.length; if(bytes>262144)child.kill();else diagnostics+=chunk.toString(); });
-  const timer = setTimeout(() => child.kill('SIGKILL'), 30000);
-  const done = new Promise((resolve, reject) => { child.once('error', reject); child.once('close', code => { clearTimeout(timer); resolve({ code, output, diagnostics }); }); });
+  let output = ''; let diagnostics=''; let bytes = 0; let termination = 'exit';
+  child.stdout.on('data', chunk => { bytes += chunk.length; if (bytes > 262144) { termination='output-limit'; child.kill(); } else output += chunk.toString(); });
+  child.stderr.on('data', chunk=>{ bytes+=chunk.length; if(bytes>262144){ termination='output-limit'; child.kill(); }else diagnostics+=chunk.toString(); });
+  const timer = setTimeout(() => { termination='deadline'; child.kill('SIGKILL'); }, 30000);
+  const done = new Promise((resolve, reject) => { child.once('error', reject); child.once('close', (code, signal) => { clearTimeout(timer); resolve({ code, signal, termination, output, diagnostics }); }); });
   child.stdin.end(JSON.stringify(input));
   return done;
 }
@@ -200,10 +200,13 @@ async function main() {
     for (const row of assignments) { const envelope = await keys.read(row.keyRecordId, row.keyVersion); const payload = keys.decrypt(envelope); assert.equal(payload.address === row.address && payload.employeeId === row.employeeId && envelopeDigest(envelope) === row.keyEnvelopeDigest, true); }
     const control = await operatorDb.financialRuntimeControl.findUniqueOrThrow({ where: { id: 1 } }); assert.equal(control.financialWritesFenced, true);
     stage = 'missing-escrow-denied';
-    const denied = await invoke('/opt/oscar/apps/api/dist/modules/custody/recovery.cli.js', { operation: 'RESTORE', evidence }, { ...base, DATABASE_URL: fixtures.operatorUrl, CUSTODY_RECOVERY_KEY_FILE: '/primary/absent.key' }); assert.equal(denied.code, 1);
+    const denied = await invoke('/opt/oscar/apps/api/dist/modules/custody/recovery.cli.js', { operation: 'RESTORE', evidence }, { ...base, DATABASE_URL: fixtures.operatorUrl, CUSTODY_RECOVERY_KEY_FILE: '/primary/absent.key' });
+    // Preserve denial semantics while distinguishing a bounded harness kill from an unexpected CLI exit.
+    if (denied.code !== 1) throw Object.assign(new Error('Missing escrow denial failed'), {code: denied.termination === 'deadline' ? 'CUSTODY_TEST_CHILD_TIMEOUT' : 'CUSTODY_TEST_UNEXPECTED_EXIT', child: {exit: denied.code, signal: denied.signal, termination: denied.termination}});
+    assert.equal(denied.code, 1);
     stage = 'fence-without-escrow'; const emergency = await invoke('/opt/oscar/apps/api/dist/modules/custody/recovery.cli.js', { operation: 'FENCE', reason: 'Missing escrow must not prevent an emergency fence' }, { ...base, DATABASE_URL: fixtures.operatorUrl, CUSTODY_RECOVERY_KEY_FILE: '/primary/absent.key', CUSTODY_STORAGE_ROOT: '/primary/absent-directory' }); assert.equal(emergency.code, 0); assert.equal(JSON.parse(emergency.output).state, 'FENCED');
     process.stdout.write(JSON.stringify({ state: 'RESTORED_FENCED', assignments: assignments.length, originalBindingsRetained: true, missingEscrowDenied: true }));
   } finally { await operatorDb.$disconnect(); }
 }
-main().catch(failure => { const code = typeof failure?.code === 'string' && /^(?:CUSTODY_[A-Z_]+|RECOVERY_[A-Z_]+|P[0-9]{4})$/.test(failure.code) ? failure.code : 'SAFE_FAILURE'; process.stderr.write('CUSTODY_LINUX_ACCEPTANCE_FAILED:' + stage + ':' + code); process.exitCode = 1; });
+main().catch(failure => { const code = typeof failure?.code === 'string' && /^(?:CUSTODY_[A-Z_]+|RECOVERY_[A-Z_]+|P[0-9]{4})$/.test(failure.code) ? failure.code : 'SAFE_FAILURE'; const child = failure?.child; const detail = child && (child.exit === null || Number.isInteger(child.exit)) && (child.signal === null || /^SIG[A-Z]+$/.test(child.signal)) && ['exit','deadline','output-limit'].includes(child.termination) ? ':' + JSON.stringify(child) : ''; process.stderr.write('CUSTODY_LINUX_ACCEPTANCE_FAILED:' + stage + ':' + code + detail); process.exitCode = 1; });
 `;

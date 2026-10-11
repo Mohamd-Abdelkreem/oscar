@@ -253,7 +253,7 @@ describe("repairable withdrawal wakeups", () => {
                 database,
                 () => new Date(),
                 financialFixtureAdmission(database),
-                producer,
+                { wakeups: producer },
               ).extend(
                 { userId: admin.user.id, sessionId: admin.session.id },
                 accepted.withdrawal.id,

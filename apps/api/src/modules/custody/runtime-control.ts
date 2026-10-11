@@ -43,16 +43,14 @@ type LockedControl = {
 };
 async function sharedControl(
   transaction: Prisma.TransactionClient,
-): Promise<LockedControl> {
+): Promise<LockedControl | undefined> {
   await transaction.$executeRaw(
     Prisma.sql`SELECT pg_advisory_xact_lock_shared(${ADMISSION_LOCK}::bigint)`,
   );
   const rows = await transaction.$queryRaw<LockedControl[]>(
     Prisma.sql`SELECT generation,financial_writes_fenced,new_dispatch_paused FROM financial_runtime_control WHERE id=1 FOR SHARE`,
   );
-  const control = rows[0];
-  if (control === undefined || control.financial_writes_fenced) fenced();
-  return control;
+  return rows[0];
 }
 
 // Only entrypoints construct this object; no restored/client/job/environment UUID is accepted.
@@ -79,6 +77,17 @@ export class FinancialRuntimeAdmission {
     await this.admittedControl(transaction);
   }
 
+  async readApiAdmission(transaction: Prisma.TransactionClient) {
+    if (this.processKind !== "API")
+      return { mutationAdmitted: false, newRequestsAdmitted: false };
+    const control = await this.currentControl(transaction);
+    return {
+      mutationAdmitted: control !== undefined,
+      newRequestsAdmitted:
+        control !== undefined && !control.new_dispatch_paused,
+    };
+  }
+
   async assertDispatchAdmission(
     transaction: Prisma.TransactionClient,
   ): Promise<void> {
@@ -95,8 +104,18 @@ export class FinancialRuntimeAdmission {
   private async admittedControl(
     transaction: Prisma.TransactionClient,
   ): Promise<LockedControl> {
-    if (!this.registered) fenced();
+    const control = await this.currentControl(transaction);
+    if (control === undefined) fenced();
+    return control;
+  }
+
+  private async currentControl(
+    transaction: Prisma.TransactionClient,
+  ): Promise<LockedControl | undefined> {
+    if (!this.registered) return undefined;
     const control = await sharedControl(transaction);
+    if (control === undefined || control.financial_writes_fenced)
+      return undefined;
     const rows = await transaction.$queryRaw<
       {
         acknowledged_generation: bigint | null;
@@ -111,7 +130,7 @@ export class FinancialRuntimeAdmission {
       boot.process_kind !== this.processKind ||
       boot.acknowledged_generation !== control.generation
     )
-      fenced();
+      return undefined;
     return control;
   }
 }

@@ -42,13 +42,43 @@ import {
   reservationEmployee,
   reservationServices,
   RESERVATION_NOW,
+  RESERVATION_CAPABILITY,
 } from "../withdrawals/testing/withdrawal-reservation-fixtures.js";
+import { withWithdrawalDatabase } from "../withdrawals/testing/withdrawal-fixtures.js";
+import { changeDispatchPause } from "../custody/runtime-control.js";
 import {
   depositIdentity,
   manualGrant,
 } from "../deposits/testing/deposit-http-fixtures.js";
 
 describe("source-aware wallet projections", () => {
+  it("projects current execution admission independently from available funds", async () =>
+    withWithdrawalDatabase(async (database) => {
+      const owner = await reservationEmployee(database, {
+        nonReferral: "10",
+        referral: "30",
+      });
+      const wallets = new WalletsService(database, () => RESERVATION_NOW, {
+        capability: RESERVATION_CAPABILITY,
+        admission: financialFixtureAdmission(database),
+      });
+      expect(await wallets.wallet(owner.identity)).toMatchObject({
+        withdrawalExecutionReady: true,
+        withdrawalFunds: { total: "10", lockedReferral: "30" },
+      });
+      await changeDispatchPause(database, {
+        action: "PAUSE",
+        operatorIdentity: "test-recovery",
+        reason: "Pause wallet admission",
+      });
+      expect(await wallets.wallet(owner.identity)).toMatchObject({
+        withdrawalExecutionReady: false,
+        withdrawalFunds: { total: "10", lockedReferral: "30" },
+      });
+      expect(
+        await database.financialOperation.count({ where: { kind: "RESERVE" } }),
+      ).toBe(0);
+    }));
   it("shows and searches a full original settlement through actual API grants without exposing private authority", async () =>
     withPayoutFixture(async (fixture) => {
       await fixture.attempts().sign(fixture.request.id);
@@ -124,7 +154,7 @@ describe("source-aware wallet projections", () => {
       );
     }));
   it("exposes accepted gross reservation provenance without making it spendable or enabling execution", async () =>
-    withSubscriptionDatabase(async (database) => {
+    withWithdrawalDatabase(async (database) => {
       const owner = await reservationEmployee(database, {
         paid: true,
         nonReferral: "70",

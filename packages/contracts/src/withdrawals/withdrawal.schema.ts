@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { employeeFinancialIdentitySchema } from "../account/account.schema.ts";
 import {
   tronNetworkSchema,
   tronPublicAddressSchema,
@@ -454,6 +455,103 @@ export const withdrawalCommandResultSchema = z
 export const withdrawalHistorySchema = financialPageSchema(
   withdrawalRequestSchema,
 );
+export const adminWithdrawalRequestSchema = withdrawalRequestSchema
+  .safeExtend({
+    employee: employeeFinancialIdentitySchema,
+    canExtend: z.boolean(),
+    canReject: z.boolean(),
+  })
+  .refine(
+    (request) =>
+      (!request.canExtend && !request.canReject) ||
+      (request.state === "SCHEDULED" &&
+        request.version < 2147483647 &&
+        request.scheduleVersion < 2147483647),
+    "Only supported safely scheduled requests offer actions.",
+  );
+export const adminWithdrawalHistorySchema = financialPageSchema(
+  adminWithdrawalRequestSchema,
+);
+export const adminWithdrawalActionOutcomeQuerySchema = z
+  .object({
+    kind: z.enum(["EXTEND", "REJECT"]),
+    requestKey: financialRequestKeySchema,
+    expectedVersion: z.union([
+      expectedConfigurationVersionSchema,
+      z
+        .string()
+        .regex(/^[1-9]\d{0,9}$/u)
+        .transform(Number)
+        .pipe(expectedConfigurationVersionSchema),
+    ]),
+  })
+  .strict();
+const observedAdminActionSchema = z
+  .object({
+    id: z.uuid(),
+    kind: z.enum(["EXTEND", "REJECT"]),
+    actorUserId: z.uuid(),
+    occurredAt: financialInstantSchema,
+    reason: z.string().trim().min(1).max(500),
+    expectedVersion: expectedConfigurationVersionSchema,
+    committedVersion: configurationVersionSchema,
+    beforeDueAt: financialInstantSchema,
+    afterDueAt: financialInstantSchema,
+    beforeScheduleVersion: configurationVersionSchema,
+    afterScheduleVersion: configurationVersionSchema,
+  })
+  .strict();
+const adminOutcomeShape = {
+  kind: z.enum(["EXTEND", "REJECT"]),
+  requestKey: financialRequestKeySchema,
+  withdrawalId: z.uuid(),
+  expectedVersion: expectedConfigurationVersionSchema,
+  ...serverNowShape,
+  withdrawal: adminWithdrawalRequestSchema,
+};
+export const adminWithdrawalActionOutcomeSchema = z
+  .discriminatedUnion("status", [
+    z
+      .object({
+        ...adminOutcomeShape,
+        status: z.literal("COMMITTED"),
+        action: observedAdminActionSchema,
+      })
+      .strict(),
+    z
+      .object({ ...adminOutcomeShape, status: z.literal("NOT_OBSERVED") })
+      .strict(),
+    z
+      .object({ ...adminOutcomeShape, status: z.literal("SUPERSEDED") })
+      .strict(),
+  ])
+  .refine((outcome) => {
+    if (
+      outcome.withdrawalId !== outcome.withdrawal.id ||
+      outcome.serverNow !== outcome.withdrawal.serverNow
+    )
+      return false;
+    if (outcome.status === "NOT_OBSERVED")
+      return outcome.withdrawal.version === outcome.expectedVersion;
+    if (outcome.status === "SUPERSEDED")
+      return outcome.withdrawal.version > outcome.expectedVersion;
+    const action = outcome.action;
+    return (
+      action.kind === outcome.kind &&
+      action.expectedVersion === outcome.expectedVersion &&
+      action.committedVersion === action.expectedVersion + 1 &&
+      action.committedVersion <= outcome.withdrawal.version &&
+      action.occurredAt <= outcome.serverNow &&
+      action.beforeDueAt <= action.afterDueAt &&
+      action.afterDueAt <= outcome.withdrawal.dueAt &&
+      action.afterScheduleVersion <= outcome.withdrawal.scheduleVersion &&
+      (action.kind === "EXTEND"
+        ? action.afterScheduleVersion === action.beforeScheduleVersion + 1 &&
+          action.afterDueAt > action.beforeDueAt
+        : action.afterScheduleVersion === action.beforeScheduleVersion &&
+          action.afterDueAt === action.beforeDueAt)
+    );
+  }, "Observed action identity and saved versions must agree.");
 export const withdrawalFilterSchema = z
   .object({ ...boundedPageQueryShape, state: withdrawalStateSchema.optional() })
   .strict()
@@ -521,7 +619,8 @@ export const withdrawalQuoteOutcomeSchema = z.discriminatedUnion("status", [
 export const withdrawalStatusSchema = z
   .object({
     ...serverNowShape,
-    withdrawalExecutionReady: z.literal(false),
+    withdrawalExecutionReady: z.boolean(),
+    network: tronNetworkSchema.nullable(),
     destination: withdrawalDestinationSchema,
     activeWithdrawal: withdrawalRequestSchema.nullable(),
     withdrawalsBlocked: z.boolean(),

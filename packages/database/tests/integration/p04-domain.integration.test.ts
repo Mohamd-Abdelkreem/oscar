@@ -69,7 +69,7 @@ async function cloneRecord(
 }
 
 describe("P04 persisted domain guards", () => {
-  it("seeds exact five stable tiers/rates without employee purchase history", async () => {
+  it("seeds exact five stable tiers/rates", async () => {
     const catalog = await database.package.findMany({
       orderBy: { tierOrder: "asc" },
     });
@@ -99,7 +99,6 @@ describe("P04 persisted domain guards", () => {
       level4Bps: 200,
       level5Bps: 200,
     });
-    expect(await database.purchase.count()).toBe(0);
   });
 
   it("rejects forged funding, malformed snapshots/rates and foreign observed terms", async () => {
@@ -891,6 +890,7 @@ it("deploys forward over populated P01-P04 history, rejects malformed retained r
         referralUnits: 3000000n,
         nonReferralUnits: 2000000n,
       },
+      select: { id: true },
     });
     await client.auditRecord.create({
       data: {
@@ -925,7 +925,21 @@ it("deploys forward over populated P01-P04 history, rejects malformed retained r
       refresh: await active.refreshToken.findMany(),
       operations: await active.financialOperation.findMany(),
       postings: await active.ledgerPosting.findMany({ orderBy: { id: "asc" } }),
-      allocations: await active.reservationAllocation.findMany(),
+      // The fixture predates P08 settlement columns; compare its complete historical shape.
+      allocations: await active.reservationAllocation.findMany({
+        select: {
+          id: true,
+          walletId: true,
+          openingOperationId: true,
+          grossUnits: true,
+          nonReferralUnits: true,
+          referralUnits: true,
+          state: true,
+          releaseOperationId: true,
+          releasedAt: true,
+          createdAt: true,
+        },
+      }),
       audits: await active.auditRecord.findMany(),
       aliases: await active.requestIdentity.findMany(),
     });
@@ -938,6 +952,8 @@ it("deploys forward over populated P01-P04 history, rejects malformed retained r
     );
     await deploy(isolatedUrl.toString(), config);
     expect(await snapshot(client)).toEqual(before);
+    // This fresh database owns the no-invented-history assertion, independent of suite order.
+    expect(await client.purchase.count()).toBe(0);
     const fixture = await purchaseFixture(client, employee);
     const purchase = await client.purchase.create({
       data: fixture.purchaseData,
@@ -1046,6 +1062,11 @@ it("deploys forward over populated P01-P04 history, rejects malformed retained r
     const beforeForward = await snapshot(client);
     await deploy(isolatedUrl.toString());
     expect(await snapshot(client)).toEqual(beforeForward);
+    expect(
+      await client.reservationAllocation.findMany({
+        select: { settlementOperationId: true, settledAt: true },
+      }),
+    ).toEqual([{ settlementOperationId: null, settledAt: null }]);
     expect(await history()).toEqual(savedHistory);
     expect(await client.task.count()).toBe(0);
     expect(await client.taskSubmission.count()).toBe(0);

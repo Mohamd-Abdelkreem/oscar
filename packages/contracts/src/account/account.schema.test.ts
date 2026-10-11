@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ACCOUNT_RESPONSE_FIELD_ALLOWLIST,
+  employeeFinancialIdentitySchema,
   safeUserSchema,
   authUserDataSchema,
   authSessionDataSchema,
@@ -23,6 +24,17 @@ const safeUser = {
 };
 
 describe("safe account contracts", () => {
+  it("shares only the existing safe financial identity", () => {
+    const identity = {
+      id: safeUser.id,
+      fullName: safeUser.fullName,
+      email: safeUser.email,
+    };
+    expect(employeeFinancialIdentitySchema.parse(identity)).toEqual(identity);
+    expect(employeeFinancialIdentitySchema.safeParse(safeUser).success).toBe(
+      false,
+    );
+  });
   it("preserves frozen legacy fixture assignments and response allowlists", () => {
     const legacy: SafeUser = { ...safeUser, role: "USER", status: "ACTIVE" };
     const account: AuthUserData = { user: legacy };

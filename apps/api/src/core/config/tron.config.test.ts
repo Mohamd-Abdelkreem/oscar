@@ -9,6 +9,7 @@ import {
   parseTronSignerEnvironment,
   parseTronTestnetEnvironment,
   parseTronPayoutEnvironment,
+  parseTronPublicPayoutCapability,
 } from "./tron.config.js";
 
 const root = mkdtempSync(join(tmpdir(), "p06-provider-config-"));
@@ -38,6 +39,30 @@ afterAll(() => {
 });
 
 describe("explicit bounded TRON configuration", () => {
+  it("parses optional public payout capability without protected configuration", () => {
+    expect(parseTronPublicPayoutCapability({})).toBeUndefined();
+    expect(
+      parseTronPublicPayoutCapability({ TRON_NETWORK: "TRON_NILE" }),
+    ).toBeUndefined();
+    const publicOnly = {
+      TRON_NETWORK: environment.TRON_NETWORK,
+      TRON_TOKEN_CONTRACT: environment.TRON_TOKEN_CONTRACT,
+      TRON_PAYOUT_KEY_ID: "8f4be6e1-6b22-4c54-b9ec-9af1ba7bff15",
+    };
+    expect(parseTronPublicPayoutCapability(publicOnly)).toEqual({
+      ...parseTronPublicEnvironment(publicOnly),
+      treasuryKeyId: publicOnly.TRON_PAYOUT_KEY_ID,
+    });
+    for (const patch of [
+      { TRON_PAYOUT_KEY_ID: "bad" },
+      { TRON_NETWORK: undefined },
+      { TRON_NETWORK: "OTHER" },
+      { TRON_TOKEN_CONTRACT: "bad" },
+    ])
+      expect(() =>
+        parseTronPublicPayoutCapability({ ...publicOnly, ...patch }),
+      ).toThrow();
+  });
   it("requires a separate immutable payout key and independent positive bounded payout caps", () => {
     const payout = {
       ...environment,

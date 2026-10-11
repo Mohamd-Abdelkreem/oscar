@@ -7,7 +7,10 @@ import {
   screen,
   waitFor,
 } from "@testing-library/react";
-import { identityUserSchema } from "@template/contracts";
+import {
+  identityUserSchema,
+  withdrawalDestinationSchema,
+} from "@template/contracts";
 import {
   AxiosError,
   AxiosHeaders,
@@ -22,13 +25,22 @@ import {
 } from "@/services/api/api-client";
 import { getSessionRuntime } from "@/services/api/session-runtime";
 import { EmployeeAccountScreen } from "./account-screen";
+import { WithdrawalDestinationBoundary } from "../withdraw/withdrawal-destination-boundary";
+import {
+  destination,
+  pendingDestination,
+  withdrawalStatus,
+} from "@/test/p09-withdrawals";
 import {
   wallet as persistedWallet,
   membership as persistedMembership,
   purchase,
 } from "@/test/p04-network";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ back: vi.fn() }) }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: vi.fn() }),
+  usePathname: () => "/employee/account",
+}));
 
 const employee = (suffix = "1") =>
   identityUserSchema.parse({
@@ -87,6 +99,7 @@ afterEach(async () => {
   getSessionRuntime().dispose();
   clearAccessToken();
   localStorage.clear();
+  history.replaceState(null, "", "/");
 });
 const open = () =>
   render(
@@ -162,10 +175,158 @@ it("displays only current A then B read-only identity and leaves later domains u
   expect(screen.queryByRole("heading", { name: old.fullName })).toBeNull();
   expect(
     requests.every((path) =>
-      ["/users/me", "/subscriptions/me", "/wallet/me"].includes(path),
+      [
+        "/users/me",
+        "/subscriptions/me",
+        "/wallet/me",
+        "/withdrawals/me",
+        "/withdrawals/me/destination",
+      ].includes(path),
     ),
   ).toBe(true);
 });
+
+it.each([false, true])(
+  "reviews inline and resolves confirmation with delayed precommit reply loss=%s without replay",
+  async (lost) => {
+    let consumed = false,
+      writes = 0;
+    history.replaceState(
+      null,
+      "",
+      `/employee/account#withdrawal-confirmation=${"a".repeat(43)}`,
+    );
+    apiClient.defaults.adapter = (config) =>
+      Promise.resolve().then(() => {
+        if (config.url === "/users/me")
+          return reply(config, { user: employee() });
+        if (config.url === "/wallet/me") return reply(config, persistedWallet);
+        if (config.url === "/subscriptions/me")
+          return reply(config, persistedMembership);
+        if (config.method === "post") {
+          writes++;
+          if (lost) throw new AxiosError("lost", "ERR_NETWORK", config);
+          consumed = true;
+        }
+        const saved = consumed ? destination : pendingDestination;
+        return reply(
+          config,
+          config.url === "/withdrawals/me"
+            ? { ...withdrawalStatus, destination: saved }
+            : saved,
+        );
+      });
+    render(
+      <QueryClientProvider client={client}>
+        <WithdrawalDestinationBoundary>
+          <EmployeeAccountScreen />
+        </WithdrawalDestinationBoundary>
+      </QueryClientProvider>,
+    );
+    const confirm = await screen.findByRole("button", {
+      name: "تأكيد عنوان السحب",
+    });
+    await waitFor(() => {
+      expect(confirm).toBeEnabled();
+    });
+    expect(location.hash).toBe("");
+    expect(writes).toBe(0);
+    expect(screen.getByText(/عنوان بانتظار تأكيد البريد/u)).toHaveTextContent(
+      destination.address,
+    );
+    fireEvent.click(confirm);
+    if (lost) {
+      await screen.findByText(/نتيجة التأكيد غير مؤكدة/u);
+      expect(screen.queryByText(/افتح أحدث رابط بريد/u)).toBeNull();
+      consumed = true;
+    }
+    await screen.findByText("تم تأكيد عنوان السحب.", {}, { timeout: 15_000 });
+    expect(screen.queryByText(/افتح أحدث رابط بريد/u)).toBeNull();
+    expect(screen.queryByText(/نتيجة التأكيد غير مؤكدة/u)).toBeNull();
+    expect(writes).toBe(1);
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: "طلب تغيير العنوان" }),
+    ).toBeDisabled();
+  },
+  20_000,
+);
+
+it.each(["expired", "superseded"] as const)(
+  "replaces uncertain confirmation with latest-link guidance after later %s proof evidence",
+  async (disposition) => {
+    const proof = "a".repeat(43);
+    let saved = withdrawalDestinationSchema.parse(pendingDestination);
+    let writes = 0;
+    history.replaceState(
+      null,
+      "",
+      `/employee/account#withdrawal-confirmation=${proof}`,
+    );
+    apiClient.defaults.adapter = (config) =>
+      Promise.resolve().then(() => {
+        if (config.url === "/users/me")
+          return reply(config, { user: employee() });
+        if (config.url === "/wallet/me") return reply(config, persistedWallet);
+        if (config.url === "/subscriptions/me")
+          return reply(config, persistedMembership);
+        if (config.method === "post") {
+          writes++;
+          throw new AxiosError("lost", "ERR_NETWORK", config);
+        }
+        return reply(
+          config,
+          config.url === "/withdrawals/me"
+            ? { ...withdrawalStatus, destination: saved }
+            : saved,
+        );
+      });
+    render(
+      <QueryClientProvider client={client}>
+        <WithdrawalDestinationBoundary>
+          <EmployeeAccountScreen />
+        </WithdrawalDestinationBoundary>
+      </QueryClientProvider>,
+    );
+    const confirm = await screen.findByRole("button", {
+      name: "تأكيد عنوان السحب",
+    });
+    await waitFor(() => {
+      expect(confirm).toBeEnabled();
+    });
+    fireEvent.click(confirm);
+    await screen.findByText(/نتيجة التأكيد غير مؤكدة/u);
+    saved = withdrawalDestinationSchema.parse({
+      ...pendingDestination,
+      ...(disposition === "expired"
+        ? { proofStatus: "EXPIRED", serverNow: pendingDestination.expiresAt }
+        : { version: pendingDestination.version + 1 }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "إعادة التحقق من التأكيد" }),
+    );
+    await screen.findByText(/افتح أحدث رابط بريد/u);
+    expect(screen.queryByText(/نتيجة التأكيد غير مؤكدة/u)).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "إعادة التحقق من التأكيد" }),
+    ).toBeNull();
+    expect(screen.queryByText("تم تأكيد عنوان السحب.")).toBeNull();
+    expect(writes).toBe(1);
+    expect(saved.state).toBe("PENDING");
+    expect(location.hash).toBe("");
+    expect(JSON.stringify(localStorage)).not.toContain(proof);
+    expect(JSON.stringify(sessionStorage)).not.toContain(proof);
+    expect(
+      JSON.stringify(
+        client
+          .getQueryCache()
+          .getAll()
+          .map((q) => q.state),
+      ),
+    ).not.toContain(proof);
+    expect(client.getMutationCache().getAll()).toHaveLength(0);
+  },
+);
 
 it("waits for identity, exposes safe failed-read retry and never supplies a fixture", async () => {
   let complete!: (response: AxiosResponse<unknown>) => void;

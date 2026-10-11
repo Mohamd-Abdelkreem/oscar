@@ -2,6 +2,10 @@ import { createHash } from "node:crypto";
 import type { TronNetworkName } from "../../core/config/tron.config.js";
 import { z } from "zod";
 import {
+  withdrawalExecutionReady,
+  type WithdrawalCapabilityContext,
+} from "./withdrawal-readiness.js";
+import {
   withdrawalQuoteBodySchema,
   withdrawalQuoteSchema,
 } from "@template/contracts";
@@ -143,7 +147,7 @@ export class WithdrawalQuoteService {
   private readonly config: WithdrawalConfig;
   constructor(
     private readonly database: DatabaseClient,
-    private readonly options: {
+    private readonly options: WithdrawalCapabilityContext & {
       clock?: () => Date;
       admission?: FinancialRuntimeAdmission;
       network: TronNetworkName | undefined;
@@ -179,6 +183,8 @@ export class WithdrawalQuoteService {
         await transaction.$queryRaw`SELECT id FROM withdrawal_destinations WHERE employee_id=${identity.userId}::uuid FOR SHARE`;
         const now = this.clock();
         await readSessionAuthority(transaction, identity, now, "USER");
+        if (!(await withdrawalExecutionReady(transaction, this.options)))
+          throw new WithdrawalError("WITHDRAWAL_UNAVAILABLE");
         const facts = await readWithdrawalFacts(
           transaction,
           identity.userId,

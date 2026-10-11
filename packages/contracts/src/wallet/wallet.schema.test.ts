@@ -70,6 +70,18 @@ const finance = {
   },
 };
 describe("source-aware wallet and finance boundaries", () => {
+  it("accepts admitted capability independently of employee eligibility", () => {
+    expect(
+      walletViewSchema.parse({ ...walletView, withdrawalExecutionReady: true })
+        .withdrawalFunds,
+    ).toEqual(walletView.withdrawalFunds);
+    expect(
+      walletViewSchema.safeParse({
+        ...walletView,
+        withdrawalExecutionReady: "true",
+      }).success,
+    ).toBe(false);
+  });
   it("keeps original withdrawal sources in reserve/release history and denies premature settlement", () => {
     for (const kind of ["RESERVE", "RELEASE"]) {
       const row = {
@@ -108,7 +120,7 @@ describe("source-aware wallet and finance boundaries", () => {
     );
     for (const patch of [
       { purchaseEligibleAmount: "45" },
-      { withdrawalExecutionReady: true },
+      { withdrawalExecutionReady: "true" },
       {
         withdrawalFunds: {
           ...walletView.withdrawalFunds,

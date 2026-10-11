@@ -1080,12 +1080,19 @@ test("P05 real stale versions foreign proof denial late preview and pending rete
       await previewGate;
       await route.fulfill({ response }).catch(() => {});
     });
-    await trigger.click();
-    await expect.poll(() => previewStarted).toBe(true);
-    await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    releasePreview();
-    await page.unrouteAll({ behavior: "wait" });
+    try {
+      await trigger.click();
+      await expect.poll(() => previewStarted).toBe(true);
+      // The image request can start before the dialog's keyboard effect runs.
+      await expect(
+        page.getByRole("dialog").locator('[tabindex="-1"]'),
+      ).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    } finally {
+      releasePreview();
+      await page.unrouteAll({ behavior: "wait" });
+    }
     await expect(trigger).toBeFocused();
     await employeeSignIn(employee, "employee@p05.test");
     await employee.goto("/employee/tasks");

@@ -136,7 +136,7 @@ export const test = base.extend<
           /\b(?:P03_(?:BUILD_FAILED|WEB_START_FAILED|API_START_FAILED|API_FAILED|IPC_TIMEOUT|API_EXITED)|P05_FIXTURE_(?:DATABASE|MIGRATION|SNAPSHOT|LINUX_LAUNCH|DEPENDENCIES|API_BOOT))\b/u,
         )?.[0];
         const location = error.stack?.match(
-          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals|tasks-codes-and-review|support-smoke|deposits)\.spec\.ts:(\d+):(\d+)/u,
+          /(?:identity-and-admin-access|auth-account|ui-preservation|packages-and-subscriptions|wallet-and-ledger|referrals|tasks-codes-and-review|support-smoke|deposits|withdrawals)\.spec\.ts:(\d+):(\d+)/u,
         );
         error.message =
           infrastructureCode ??

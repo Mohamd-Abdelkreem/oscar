@@ -16,6 +16,9 @@ import {
   withdrawalStateSchema,
   withdrawalStatusSchema,
   withdrawalSettlementTermsSchema,
+  adminWithdrawalRequestSchema,
+  adminWithdrawalActionOutcomeSchema,
+  adminWithdrawalActionOutcomeQuerySchema,
 } from "./withdrawal.schema.ts";
 
 const id = "8f4be6e1-6b22-4c54-b9ec-9af1ba7bff15";
@@ -91,6 +94,109 @@ const request = {
   release: null,
 };
 describe("withdrawal wire boundaries", () => {
+  it("keeps admin identity and action availability out of employee projections", () => {
+    const admin = {
+      ...request,
+      employee: { id, fullName: "Employee", email: "employee@example.test" },
+      canExtend: true,
+      canReject: true,
+    };
+    expect(adminWithdrawalRequestSchema.parse(admin).employee.id).toBe(id);
+    expect(withdrawalRequestSchema.safeParse(admin).success).toBe(false);
+    for (const patch of [
+      { net: "1" },
+      { employee: { ...admin.employee, role: "ADMIN" } },
+      { state: "UNKNOWN" },
+      { version: 2147483647 },
+      { scheduleVersion: 2147483647 },
+    ]) {
+      expect(
+        adminWithdrawalRequestSchema.safeParse({ ...admin, ...patch }).success,
+      ).toBe(false);
+    }
+  });
+  it("binds exact keyed admin outcomes to original target and version", () => {
+    const withdrawal = {
+      ...request,
+      version: 2,
+      scheduleVersion: 2,
+      dueAt: "2026-10-13T10:00:00.000Z",
+      dispatchAt: "2026-10-13T10:00:00.000Z",
+      employee: { id, fullName: "Employee", email: "employee@example.test" },
+      canExtend: true,
+      canReject: true,
+    };
+    const outcome = {
+      status: "SUPERSEDED",
+      kind: "EXTEND",
+      requestKey: "p09-observation",
+      withdrawalId: id,
+      expectedVersion: 1,
+      serverNow: now,
+      withdrawal,
+    };
+    expect(adminWithdrawalActionOutcomeSchema.safeParse(outcome).success).toBe(
+      true,
+    );
+    const committed = {
+      ...outcome,
+      status: "COMMITTED",
+      action: {
+        id,
+        kind: "EXTEND",
+        actorUserId: id,
+        occurredAt: now,
+        reason: "Reviewed extension",
+        expectedVersion: 1,
+        committedVersion: 2,
+        beforeDueAt: request.dueAt,
+        afterDueAt: withdrawal.dueAt,
+        beforeScheduleVersion: 1,
+        afterScheduleVersion: 2,
+      },
+    };
+    expect(
+      adminWithdrawalActionOutcomeSchema.safeParse(committed).success,
+    ).toBe(true);
+    for (const action of [
+      { ...committed.action, kind: "REJECT" },
+      { ...committed.action, expectedVersion: 2 },
+      { ...committed.action, committedVersion: 3 },
+      { ...committed.action, afterScheduleVersion: 1 },
+      { ...committed.action, afterScheduleVersion: 3 },
+      { ...committed.action, afterDueAt: request.dueAt },
+      { ...committed.action, privateKey: "sentinel" },
+    ])
+      expect(
+        adminWithdrawalActionOutcomeSchema.safeParse({ ...committed, action })
+          .success,
+      ).toBe(false);
+    for (const patch of [
+      { status: "NOT_OBSERVED" },
+      { expectedVersion: 3 },
+      { withdrawalId: "63b2e122-72c3-4845-98a8-802a32bf1234" },
+      { secret: "private" },
+    ])
+      expect(
+        adminWithdrawalActionOutcomeSchema.safeParse({ ...outcome, ...patch })
+          .success,
+      ).toBe(false);
+    expect(
+      adminWithdrawalActionOutcomeQuerySchema.parse({
+        kind: "EXTEND",
+        requestKey: "p09-observation",
+        expectedVersion: "1",
+      }).expectedVersion,
+    ).toBe(1);
+    expect(
+      adminWithdrawalActionOutcomeQuerySchema.safeParse({
+        kind: "EXTEND",
+        requestKey: "p09-observation",
+        expectedVersion: "1",
+        actorUserId: id,
+      }).success,
+    ).toBe(false);
+  });
   it.each([
     { gross: "not-money" },
     { fee: "not-money" },
@@ -454,7 +560,7 @@ describe("withdrawal wire boundaries", () => {
       ).toBe(false);
     },
   );
-  it("retains future active public states while readiness stays literally false", () => {
+  it("retains active public states independently from boolean execution readiness", () => {
     for (const state of [
       "SCHEDULED",
       "SIGNING",
@@ -469,17 +575,28 @@ describe("withdrawal wire boundaries", () => {
     const status = {
       serverNow: now,
       withdrawalExecutionReady: false,
+      network: null,
       destination: { state: "UNSET", serverNow: now },
       activeWithdrawal: null,
       withdrawalsBlocked: false,
     };
     expect(withdrawalStatusSchema.safeParse(status).success).toBe(true);
+    for (const patch of [
+      { network: undefined },
+      { network: "OTHER" },
+      { withdrawalExecutionReady: "true" },
+      { treasuryKeyId: id },
+    ])
+      expect(
+        withdrawalStatusSchema.safeParse({ ...status, ...patch }).success,
+      ).toBe(false);
     expect(
       withdrawalStatusSchema.safeParse({
         ...status,
         withdrawalExecutionReady: true,
+        network: "TRON_NILE",
       }).success,
-    ).toBe(false);
+    ).toBe(true);
     for (const patch of [
       { privateKey: "sentinel" },
       { signedPayload: {} },

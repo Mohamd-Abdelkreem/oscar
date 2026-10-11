@@ -5,7 +5,60 @@ import {
   walletComponentsSchema,
   tronPublicAddressSchema,
   depositTransactionIdSchema,
+  withdrawalStateSchema,
 } from "@template/contracts";
+
+export const p09EmailSchema = z.enum(["employee@p09.test", "other@p09.test"]);
+export const p09FixturesSchema = z.strictObject({
+  employeeId: z.uuid(),
+  otherId: z.uuid(),
+});
+export const p09StateSchema = z.strictObject({
+  employeeId: z.uuid(),
+  serverNow: financialInstantSchema,
+  wallet: walletComponentsSchema,
+  executionReady: z.boolean(),
+  destination: z
+    .strictObject({
+      version: z.number().int().positive(),
+      confirmed: z.boolean(),
+      proofIssued: z.boolean(),
+    })
+    .nullable(),
+  quotes: z.number().int().nonnegative(),
+  actions: z.number().int().nonnegative(),
+  operations: z.number().int().nonnegative(),
+  postings: z.number().int().nonnegative(),
+  withdrawalAttempts: z.number().int().nonnegative(),
+  transferAttempts: z.number().int().nonnegative(),
+  requests: z
+    .array(
+      z.strictObject({
+        id: z.uuid(),
+        quoteId: z.uuid(),
+        version: z.number().int().positive(),
+        state: withdrawalStateSchema,
+        gross: usdtAmountSchema,
+        fee: usdtAmountSchema,
+        net: usdtAmountSchema,
+        reservationId: z.uuid(),
+        nonReferral: usdtAmountSchema,
+        referral: usdtAmountSchema,
+      }),
+    )
+    .max(100),
+  reservations: z
+    .array(
+      z.strictObject({
+        id: z.uuid(),
+        state: z.enum(["ACTIVE", "RELEASED", "SETTLED"]),
+        gross: usdtAmountSchema,
+        nonReferral: usdtAmountSchema,
+        referral: usdtAmountSchema,
+      }),
+    )
+    .max(100),
+});
 
 export const p07EmailSchema = z.enum([
   "employee@p03.test",
@@ -95,6 +148,27 @@ export const p05FixturesSchema = z.strictObject({
   publicationDate: z.iso.date(),
 });
 export const controlRequestSchema = z.discriminatedUnion("command", [
+  z.strictObject({
+    id: z.number().int().positive(),
+    command: z.literal("p09-claim-fixture"),
+    withdrawalId: z.uuid(),
+  }),
+  z.strictObject({
+    id: z.number().int().positive(),
+    command: z.literal("p09-fixtures"),
+    referral: usdtAmountSchema.optional(),
+    nonReferral: usdtAmountSchema.optional(),
+  }),
+  z.strictObject({
+    id: z.number().int().positive(),
+    command: z.literal("p09-state"),
+    email: p09EmailSchema,
+  }),
+  z.strictObject({
+    id: z.number().int().positive(),
+    command: z.literal("p09-clock"),
+    instant: financialInstantSchema,
+  }),
   z.strictObject({
     id: z.number().int().min(1),
     command: z.literal("p07-fixtures"),
@@ -273,6 +347,8 @@ export const controlReplySchema = z
       p05FixturesSchema,
       p07FixturesSchema,
       p07StateSchema,
+      p09FixturesSchema,
+      p09StateSchema,
       z
         .object({ buyerId: z.uuid(), rootId: z.uuid(), otherId: z.uuid() })
         .strict(),

@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { PACKAGES } from "./fixtures/package.fixtures";
-import {
-  calculateExpectedTotalIncome,
-  getWithdrawalAmounts,
-} from "./utils/financial-calculations";
+import { calculateExpectedTotalIncome } from "./utils/financial-calculations";
 
 describe("employee financial calculations", () => {
   it("preserves the five approved paid positions and their full-term income", () => {
@@ -70,14 +67,4 @@ describe("employee financial calculations", () => {
       },
     ]);
   });
-
-  it.each([
-    [100, { fee: 21, netAmount: 79 }],
-    [99.99, { fee: 21, netAmount: 78.99 }],
-  ])(
-    "rounds the withdrawal fee and net amount for %s USDT",
-    (amount, expected) => {
-      expect(getWithdrawalAmounts(amount)).toEqual(expected);
-    },
-  );
 });

@@ -23,6 +23,13 @@ import { PageHeader } from "@/features/employee/components/navigation/page-heade
 
 import { useMembership } from "../../hooks/packages.hooks";
 import { useWallet } from "../../hooks/wallet.hooks";
+import {
+  useEmployeeWithdrawalDestination,
+  useEmployeeWithdrawalStatus,
+  useWithdrawalDestinationCommand,
+} from "../../hooks/withdrawals.hooks";
+import { WithdrawalDestinationDetails } from "../withdraw/withdrawal-destination-details";
+import { CopyAction } from "../common/copy-action";
 import { MoneyAmount } from "../common/money-amount";
 import { FinancialFeedback } from "../common/financial-feedback";
 import { SavedSubscriptionDetails } from "../packages/saved-subscription-details";
@@ -32,6 +39,9 @@ export function EmployeeAccountScreen() {
   const membership = useMembership();
   const wallet = useWallet();
   const logout = useLogout();
+  const destination = useEmployeeWithdrawalDestination();
+  const withdrawalStatus = useEmployeeWithdrawalStatus();
+  const destinationCommand = useWithdrawalDestinationCommand();
   const account = session.data?.user;
   const checking = session.isPending || session.isFetching;
   const user =
@@ -212,16 +222,69 @@ export function EmployeeAccountScreen() {
             </div>
 
             <div className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-3">
-              <span className="text-xs text-slate-500">غير متاح حالياً</span>
-              <button
-                type="button"
-                disabled
-                aria-label="نسخ عنوان السحب"
-                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-emerald-600"
-              >
-                <Copy size={18} aria-hidden="true" />
-              </button>
+              {destination.displayData?.state === "CONFIRMED" ? (
+                <>
+                  <bdi
+                    dir="ltr"
+                    className="font-mono text-xs font-semibold break-all text-slate-900 select-all"
+                  >
+                    {destination.displayData.address}
+                  </bdi>
+                  <CopyAction
+                    value={destination.displayData.address}
+                    variant="icon"
+                  />
+                </>
+              ) : (
+                <span className="text-xs text-slate-500">غير متاح حالياً</span>
+              )}
+              {destination.displayData?.state !== "CONFIRMED" && (
+                <button
+                  type="button"
+                  disabled
+                  aria-label="نسخ عنوان السحب"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md border border-slate-200 bg-white p-2 text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-emerald-600"
+                >
+                  <Copy size={18} aria-hidden="true" />
+                </button>
+              )}
             </div>
+            <FinancialFeedback
+              pending={
+                (!destination.displayData &&
+                  destination.isPending &&
+                  !destination.observationExhausted) ||
+                (!withdrawalStatus.displayData &&
+                  withdrawalStatus.isPending &&
+                  !withdrawalStatus.observationExhausted)
+              }
+              error={destination.error ?? withdrawalStatus.error}
+              retry={() =>
+                Promise.all([destination.refetch(), withdrawalStatus.refetch()])
+              }
+            />
+            <WithdrawalDestinationDetails
+              current={
+                destination.data !== undefined &&
+                withdrawalStatus.data !== undefined
+              }
+              stale={
+                destination.isDisplayStale ||
+                withdrawalStatus.isDisplayStale ||
+                destination.observationExhausted ||
+                withdrawalStatus.observationExhausted
+              }
+              refresh={() =>
+                Promise.all([
+                  destination.refetch(),
+                  withdrawalStatus.refetch(),
+                  destinationCommand.observation.refetch(),
+                ])
+              }
+              destination={destination.displayData}
+              network={withdrawalStatus.displayData?.network}
+              command={destinationCommand}
+            />
           </div>
         </div>
 

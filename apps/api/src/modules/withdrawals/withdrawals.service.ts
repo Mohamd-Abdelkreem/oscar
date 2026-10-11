@@ -1,4 +1,6 @@
 import { Prisma, type DatabaseClient } from "@template/database";
+import type { TronPublicPayoutCapability } from "../../core/config/tron.config.js";
+import { withdrawalExecutionReady } from "./withdrawal-readiness.js";
 import {
   withdrawalHistorySchema,
   withdrawalFilterSchema,
@@ -9,6 +11,9 @@ import {
   withdrawalRejectionBodySchema,
   withdrawalCommandResultSchema,
   financialRequestKeySchema,
+  adminWithdrawalHistorySchema,
+  adminWithdrawalActionOutcomeQuerySchema,
+  adminWithdrawalActionOutcomeSchema,
 } from "@template/contracts";
 import { NotFoundException } from "../../core/errors/index.js";
 import { buildPaginationMeta } from "../../core/pagination/pagination.js";
@@ -20,6 +25,9 @@ import {
   mapWithdrawalDestination,
   mapWithdrawalRequest,
   withdrawalReadInclude,
+  adminWithdrawalReadInclude,
+  mapAdminWithdrawalRequest,
+  mapObservedWithdrawalAction,
 } from "./withdrawals.mapper.js";
 import {
   mapWithdrawalQuote,
@@ -49,7 +57,10 @@ export class WithdrawalsService {
     private readonly database: DatabaseClient,
     private readonly clock: () => Date,
     private readonly admission?: FinancialRuntimeAdmission,
-    private readonly wakeups?: WithdrawalWakeupPublisher,
+    private readonly runtime: {
+      wakeups?: WithdrawalWakeupPublisher | undefined;
+      capability?: TronPublicPayoutCapability | undefined;
+    } = {},
   ) {}
 
   extend(
@@ -240,7 +251,7 @@ export class WithdrawalsService {
       },
     );
     if (outcome.withdrawal.state === "SCHEDULED")
-      await publishWithdrawalWakeup(this.wakeups, outcome.withdrawal);
+      await publishWithdrawalWakeup(this.runtime.wakeups, outcome.withdrawal);
     return outcome;
   }
 
@@ -263,13 +274,16 @@ export class WithdrawalsService {
     identity: WithdrawalIdentity,
     role: "USER" | "ADMIN",
     work: (transaction: Prisma.TransactionClient, now: Date) => Promise<T>,
+    isolationLevel: Prisma.TransactionIsolationLevel = Prisma
+      .TransactionIsolationLevel.RepeatableRead,
   ) {
     return runIdentityTransaction(
       this.database,
       {
         userIds: [identity.userId],
-        adminPopulation: role === "ADMIN",
-        isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead,
+        // Reads lock the acting identity; only administrator population writes need its singleton guard.
+        adminPopulation: false,
+        isolationLevel,
       },
       async (transaction) => {
         const now = this.clock();
@@ -296,7 +310,11 @@ export class WithdrawalsService {
       });
       return withdrawalStatusSchema.parse({
         serverNow: now.toISOString(),
-        withdrawalExecutionReady: false,
+        withdrawalExecutionReady: await withdrawalExecutionReady(transaction, {
+          capability: this.runtime.capability,
+          admission: this.admission,
+        }),
+        network: this.runtime.capability?.network ?? null,
         withdrawalsBlocked: employee.withdrawalsBlocked,
         destination: mapWithdrawalDestination(destination, now),
         activeWithdrawal:
@@ -306,29 +324,95 @@ export class WithdrawalsService {
   }
 
   outcome(identity: WithdrawalIdentity, quoteId: string) {
-    return this.read(identity, "USER", async (transaction, now) => {
-      const quote = await transaction.withdrawalQuote.findFirst({
-        where: { id: quoteId, employeeId: identity.userId },
-      });
-      if (quote === null) throw new NotFoundException();
+    return this.read(
+      identity,
+      "USER",
+      async (transaction, now) => {
+        const quote = await transaction.withdrawalQuote.findFirst({
+          where: { id: quoteId, employeeId: identity.userId },
+        });
+        if (quote === null) throw new NotFoundException();
+        const request = await transaction.withdrawalRequest.findUnique({
+          where: { quoteId },
+          include: withdrawalReadInclude,
+        });
+        return withdrawalQuoteOutcomeSchema.parse(
+          request === null
+            ? {
+                status:
+                  now >= quote.expiresAt
+                    ? "EXPIRED_UNCOMMITTED"
+                    : "NOT_OBSERVED",
+                quoteId,
+                quote: mapWithdrawalQuote(quote, now),
+                serverNow: now.toISOString(),
+              }
+            : {
+                status: "COMMITTED",
+                quoteId,
+                withdrawal: mapWithdrawalRequest(request, now),
+                serverNow: now.toISOString(),
+              },
+        );
+        // Identity locks serialize acceptance; refresh the snapshot after a waited lock.
+      },
+      Prisma.TransactionIsolationLevel.ReadCommitted,
+    );
+  }
+
+  adminActionOutcome(
+    identity: WithdrawalIdentity,
+    withdrawalId: string,
+    rawQuery: unknown,
+  ) {
+    const query = adminWithdrawalActionOutcomeQuerySchema.parse(rawQuery);
+    return this.read(identity, "ADMIN", async (transaction, now) => {
       const request = await transaction.withdrawalRequest.findUnique({
-        where: { quoteId },
-        include: withdrawalReadInclude,
+        where: { id: withdrawalId },
+        include: adminWithdrawalReadInclude,
       });
-      return withdrawalQuoteOutcomeSchema.parse(
-        request === null
+      if (request === null) throw new NotFoundException();
+      const action = await transaction.withdrawalAction.findUnique({
+        where: {
+          actorScope_kind_requestKey: {
+            actorScope: `user:${identity.userId}`,
+            kind: query.kind,
+            requestKey: query.requestKey,
+          },
+        },
+      });
+      if (
+        action !== null &&
+        (action.requestId !== withdrawalId ||
+          action.expectedVersion !== query.expectedVersion)
+      )
+        throw new LedgerError("LEDGER_IDENTITY_CONFLICT");
+      if (request.version < query.expectedVersion)
+        throw new WithdrawalError("WITHDRAWAL_VERSION_CONFLICT");
+      const admission = await this.admission?.readApiAdmission(transaction);
+      const common = {
+        ...query,
+        withdrawalId,
+        serverNow: now.toISOString(),
+        withdrawal: mapAdminWithdrawalRequest(
+          request,
+          now,
+          admission?.mutationAdmitted ?? false,
+        ),
+      };
+      return adminWithdrawalActionOutcomeSchema.parse(
+        action === null
           ? {
+              ...common,
               status:
-                now >= quote.expiresAt ? "EXPIRED_UNCOMMITTED" : "NOT_OBSERVED",
-              quoteId,
-              quote: mapWithdrawalQuote(quote, now),
-              serverNow: now.toISOString(),
+                request.version === query.expectedVersion
+                  ? "NOT_OBSERVED"
+                  : "SUPERSEDED",
             }
           : {
+              ...common,
               status: "COMMITTED",
-              quoteId,
-              withdrawal: mapWithdrawalRequest(request, now),
-              serverNow: now.toISOString(),
+              action: mapObservedWithdrawalAction(action),
             },
       );
     });
@@ -339,10 +423,23 @@ export class WithdrawalsService {
       identity,
       admin ? "ADMIN" : "USER",
       async (transaction, now) => {
+        if (admin) {
+          const request = await transaction.withdrawalRequest.findUnique({
+            where: { id: withdrawalId },
+            include: adminWithdrawalReadInclude,
+          });
+          if (request === null) throw new NotFoundException();
+          const admission = await this.admission?.readApiAdmission(transaction);
+          return mapAdminWithdrawalRequest(
+            request,
+            now,
+            admission?.mutationAdmitted ?? false,
+          );
+        }
         const request = await transaction.withdrawalRequest.findFirst({
           where: {
             id: withdrawalId,
-            ...(admin ? {} : { employeeId: identity.userId }),
+            employeeId: identity.userId,
           },
           include: withdrawalReadInclude,
         });
@@ -400,6 +497,31 @@ export class WithdrawalsService {
               }),
         };
         const total = await transaction.withdrawalRequest.count({ where });
+        const pagination = buildPaginationMeta({
+          page: filter.page,
+          limit: filter.limit,
+          total,
+        });
+        if (admin) {
+          const requests = await transaction.withdrawalRequest.findMany({
+            where,
+            orderBy: [{ acceptedAt: "desc" }, { id: "desc" }],
+            skip: (filter.page - 1) * filter.limit,
+            take: filter.limit,
+            include: adminWithdrawalReadInclude,
+          });
+          const admission = await this.admission?.readApiAdmission(transaction);
+          return adminWithdrawalHistorySchema.parse({
+            items: requests.map((request) =>
+              mapAdminWithdrawalRequest(
+                request,
+                now,
+                admission?.mutationAdmitted ?? false,
+              ),
+            ),
+            pagination,
+          });
+        }
         const requests = await transaction.withdrawalRequest.findMany({
           where,
           orderBy: [{ acceptedAt: "desc" }, { id: "desc" }],
@@ -409,11 +531,7 @@ export class WithdrawalsService {
         });
         return withdrawalHistorySchema.parse({
           items: requests.map((request) => mapWithdrawalRequest(request, now)),
-          pagination: buildPaginationMeta({
-            page: filter.page,
-            limit: filter.limit,
-            total,
-          }),
+          pagination,
         });
       },
     );

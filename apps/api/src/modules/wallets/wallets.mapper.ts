@@ -45,7 +45,11 @@ export const walletOwnerSelect = {
   },
 } as const satisfies Prisma.UserSelect;
 type WalletOwner = Prisma.UserGetPayload<{ select: typeof walletOwnerSelect }>;
-export function mapWallet(owner: WalletOwner, now: Date) {
+export function mapWallet(
+  owner: WalletOwner,
+  now: Date,
+  executionReady = false,
+) {
   const wallet = owner.wallet;
   if (wallet === null) throw new Error("Employee wallet is missing.");
   const subscription = owner.subscriptions[0] ?? null;
@@ -82,7 +86,7 @@ export function mapWallet(owner: WalletOwner, now: Date) {
         owner.status !== "ACTIVE" || owner.emailVerifiedAt === null,
       withdrawalsBlocked: owner.withdrawalsBlocked,
     },
-    withdrawalExecutionReady: false,
+    withdrawalExecutionReady: executionReady,
   });
 }
 export const operationViewSelect = {

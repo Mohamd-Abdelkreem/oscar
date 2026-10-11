@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { employeeFinancialIdentitySchema } from "../account/account.schema.ts";
 
 import {
   aggregateUsdtAmountSchema,
@@ -25,13 +26,8 @@ import {
 import { membershipSchema } from "../subscriptions/subscription.schema.ts";
 import { withdrawalSettlementTermsSchema } from "../withdrawals/withdrawal.schema.ts";
 
-export const employeeFinancialIdentitySchema = z
-  .object({
-    id: z.uuid(),
-    fullName: nonEmptyBoundedString(150),
-    email: z.email().max(320),
-  })
-  .strict();
+export { employeeFinancialIdentitySchema } from "../account/account.schema.ts";
+
 const units = (amount: string): bigint => {
   const sign = amount.startsWith("-") ? -1n : 1n;
   return sign * canonicalAmountUnits(sign < 0n ? amount.slice(1) : amount);
@@ -57,7 +53,7 @@ const walletViewShape = {
       withdrawalsBlocked: z.boolean(),
     })
     .strict(),
-  withdrawalExecutionReady: z.literal(false),
+  withdrawalExecutionReady: z.boolean(),
 };
 const validWalletView = (
   view: z.infer<z.ZodObject<typeof walletViewShape>>,

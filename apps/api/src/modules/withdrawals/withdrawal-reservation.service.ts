@@ -1,5 +1,9 @@
 import { randomUUID } from "node:crypto";
 import {
+  withdrawalExecutionReady,
+  type WithdrawalCapabilityContext,
+} from "./withdrawal-readiness.js";
+import {
   financialRequestKeySchema,
   withdrawalAcceptBodySchema,
   withdrawalCommandResultSchema,
@@ -37,7 +41,7 @@ export class WithdrawalReservationService {
   private readonly network: TronNetworkName | undefined;
   constructor(
     private readonly database: DatabaseClient,
-    private readonly options: {
+    private readonly options: WithdrawalCapabilityContext & {
       clock: () => Date;
       admission: FinancialRuntimeAdmission | undefined;
       network: TronNetworkName | undefined;
@@ -159,6 +163,8 @@ export class WithdrawalReservationService {
         }
         if (employee.withdrawalsBlocked)
           throw new WithdrawalError("WITHDRAWAL_BLOCKED");
+        if (!(await withdrawalExecutionReady(transaction, this.options)))
+          throw new WithdrawalError("WITHDRAWAL_UNAVAILABLE");
         if (now >= quote.expiresAt || now < quote.createdAt || !quote.canAccept)
           throw new WithdrawalError("WITHDRAWAL_QUOTE_STALE");
         if (this.network !== quote.network)

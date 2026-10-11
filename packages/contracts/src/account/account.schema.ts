@@ -3,6 +3,13 @@ import { z } from "zod";
 import { nonEmptyBoundedString } from "../http/http.schema.ts";
 
 export const userRoleSchema = z.enum(["USER", "ADMIN"]);
+export const employeeFinancialIdentitySchema = z
+  .object({
+    id: z.uuid(),
+    fullName: nonEmptyBoundedString(150),
+    email: z.email().max(320),
+  })
+  .strict();
 export const userStatusSchema = z.enum([
   "PENDING_VERIFICATION",
   "ACTIVE",

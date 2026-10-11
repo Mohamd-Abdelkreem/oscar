@@ -28,6 +28,7 @@ import type { ProofsRuntime } from "./modules/proofs/proofs.runtime.js";
 import type { FinancialRuntimeAdmission } from "./modules/custody/runtime-control.js";
 import type { CustodyMetadata } from "./modules/custody/custody.service.js";
 import type { WithdrawalWakeupPublisher } from "./infrastructure/queue/withdrawal-wakeups.js";
+import type { TronPublicPayoutCapability } from "./core/config/tron.config.js";
 
 type AppDependencies = Readonly<{
   database: DatabaseClient;
@@ -38,6 +39,7 @@ type AppDependencies = Readonly<{
   financialAdmission?: FinancialRuntimeAdmission;
   depositMetadata?: CustodyMetadata;
   withdrawalWakeups?: WithdrawalWakeupPublisher;
+  payoutCapability?: TronPublicPayoutCapability;
 }>;
 
 const buildCorsOriginValidator = (): CorsOptions["origin"] => {
@@ -62,6 +64,7 @@ export const createApp = ({
   financialAdmission,
   depositMetadata,
   withdrawalWakeups,
+  payoutCapability,
 }: AppDependencies): Application => {
   const app = express();
 
@@ -93,6 +96,7 @@ export const createApp = ({
       ...(proofs === undefined ? {} : { proofs }),
       ...(financialAdmission === undefined ? {} : { financialAdmission }),
       ...(depositMetadata === undefined ? {} : { depositMetadata }),
+      ...(payoutCapability === undefined ? {} : { payoutCapability }),
       ...(withdrawalWakeups === undefined ? {} : { withdrawalWakeups }),
     }),
   );

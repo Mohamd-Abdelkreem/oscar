@@ -6,6 +6,7 @@ import {
   useEffectEvent,
   useRef,
   useId,
+  type RefObject,
   type ReactNode,
 } from "react";
 
@@ -15,6 +16,7 @@ interface ConfirmationSheetProps {
   readonly title: string;
   readonly description?: string | undefined;
   readonly children: ReactNode;
+  readonly returnFocusRef?: RefObject<HTMLElement | null>;
 }
 
 export function ConfirmationSheet({
@@ -23,6 +25,7 @@ export function ConfirmationSheet({
   title,
   description,
   children,
+  returnFocusRef,
 }: ConfirmationSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -35,9 +38,10 @@ export function ConfirmationSheet({
 
     // Store active element for focus return
     previousActiveElementRef.current =
-      document.activeElement instanceof HTMLElement
+      returnFocusRef?.current ??
+      (document.activeElement instanceof HTMLElement
         ? document.activeElement
-        : null;
+        : null);
     const previousOverflow = document.body.style.overflow;
     const background: { element: HTMLElement; inert: boolean }[] = [];
     let ancestor: HTMLElement | null = sheetRef.current?.parentElement ?? null;
@@ -105,7 +109,7 @@ export function ConfirmationSheet({
         previousActiveElementRef.current.focus();
       }
     };
-  }, [isOpen]);
+  }, [isOpen, returnFocusRef]);
 
   if (!isOpen) return null;
 
